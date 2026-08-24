@@ -1,0 +1,203 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-display: "Cormorant Garamond", "Times New Roman", serif;
+  --font-sans: "Inter", "Helvetica Neue", Arial, sans-serif;
+  --font-size-sm: 0.9rem;
+  --font-size-xs: 0.85rem;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-warm: var(--warm);
+  --color-ink: var(--ink);
+
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px -8px rgb(0 0 0 / 0.08);
+  --shadow-elevated: 0 2px 4px rgb(0 0 0 / 0.04), 0 24px 48px -16px rgb(0 0 0 / 0.18);
+  --shadow-card: 0 1px 1px rgb(0 0 0 / 0.03), 0 12px 32px -12px rgb(0 0 0 / 0.12);
+}
+
+:root {
+  --radius: 0.25rem;
+
+  /* Ivoire / crème */
+  --background: oklch(0.97 0.008 85);
+  --foreground: oklch(0.16 0.006 60);
+  --ink: oklch(0.11 0.004 60);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.16 0.006 60);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.16 0.006 60);
+
+  /* Rouge de la maison — signature de marque, utilisé avec parcimonie */
+  --primary: #e00014;
+  --primary-foreground: oklch(0.98 0.006 85);
+
+  --secondary: oklch(0.94 0.012 80);
+  --secondary-foreground: oklch(0.2 0.008 60);
+
+  --muted: oklch(0.945 0.01 80);
+  --muted-foreground: oklch(0.47 0.014 65);
+
+  --accent: oklch(0.92 0.016 75);
+  --accent-foreground: oklch(0.18 0.008 60);
+
+  --destructive: oklch(0.55 0.18 27);
+  --destructive-foreground: oklch(0.98 0.006 85);
+
+  --border: oklch(0.88 0.012 75);
+  --input: oklch(0.88 0.012 75);
+  --ring: #e00014;
+
+  /* Beige */
+  --warm: oklch(0.91 0.02 78);
+
+  /* Fond footer — beige chaud légèrement plus soutenu que l'ivoire */
+  --footer-bg: oklch(0.93 0.018 75);
+  --footer-border: oklch(0.84 0.02 70);
+}
+
+.dark {
+  --background: oklch(0.13 0.006 60);
+  --foreground: oklch(0.96 0.008 85);
+  --ink: oklch(0.96 0.008 85);
+  --card: oklch(0.17 0.008 60);
+  --card-foreground: oklch(0.96 0.008 85);
+  --popover: oklch(0.17 0.008 60);
+  --popover-foreground: oklch(0.96 0.008 85);
+  --primary: oklch(0.6 0.2 25);
+  --primary-foreground: oklch(0.13 0.006 60);
+  --secondary: oklch(0.22 0.008 60);
+  --secondary-foreground: oklch(0.96 0.008 85);
+  --muted: oklch(0.22 0.008 60);
+  --muted-foreground: oklch(0.68 0.012 75);
+  --accent: oklch(0.25 0.01 60);
+  --accent-foreground: oklch(0.96 0.008 85);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.6 0.2 25);
+  --warm: oklch(0.2 0.012 60);
+}
+
+@layer base {
+  * { border-color: var(--color-border); }
+  html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "cv11";
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    letter-spacing: 0;
+    font-weight: 400;
+  }
+}
+
+@layer utilities {
+  .font-display { font-family: var(--font-display); }
+  .text-balance { text-wrap: balance; }
+  .text-pretty  { text-wrap: pretty; }
+
+  /* Small uppercase editorial label, e.g. "EXPÉRIENCE" */
+  .eyebrow {
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  /* Thin underline link/button used across the site instead of pill buttons */
+  .link-underline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid currentColor;
+    transition: opacity 400ms cubic-bezier(0.22, 1, 0.36, 1), gap 400ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .link-underline:hover { opacity: 0.6; gap: 0.75rem; }
+
+  /* Thin bordered button, luxury style */
+  .btn-outline-editorial {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    padding: 0.95rem 2.1rem;
+    border: 1px solid currentColor;
+    transition: background-color 450ms cubic-bezier(0.22, 1, 0.36, 1),
+                color 450ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .btn-fill-editorial {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    padding: 0.95rem 2.1rem;
+    background-color: var(--color-primary);
+    color: var(--color-primary-foreground);
+    border-radius: 0;
+    transition: opacity 450ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .btn-fill-editorial:hover { opacity: 0.85; }
+
+  .hover-lift {
+    transition: transform 400ms cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 400ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .hover-lift:hover { transform: translateY(-4px); box-shadow: var(--shadow-elevated); }
+
+  .img-zoom { transition: transform 900ms cubic-bezier(0.22, 1, 0.36, 1); }
+  .group:hover .img-zoom { transform: scale(1.05); }
+
+  .scroll-fade-mask {
+    mask-image: linear-gradient(to right, transparent, black 2%, black 98%, transparent);
+  }
+
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+}

@@ -1,0 +1,602 @@
+// Prisma schema — Hotel Nahoui
+// Auth system supports OTP (email/SMS), OAuth (Google/Facebook), password (admins)
+// Designed to be consumed by both the Next.js web app and a future Flutter mobile app via REST API
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  MODERATOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum AuthProvider {
+  EMAIL_OTP
+  PHONE_OTP
+  GOOGLE
+  FACEBOOK
+  PASSWORD
+}
+
+enum OtpChannel {
+  EMAIL
+  SMS
+}
+
+enum OtpPurpose {
+  LOGIN
+  REGISTER
+  VERIFY_EMAIL
+  VERIFY_PHONE
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CARD
+  MOBILE_MONEY
+  BANK_TRANSFER
+  CASH
+  ON_SITE
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String?  @unique
+  emailVerified DateTime?
+  phone         String?  @unique
+  phoneVerified DateTime?
+  name          String?
+  image         String?
+  passwordHash  String?
+  role          Role     @default(USER)
+  isActive      Boolean  @default(true)
+  lastLoginAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  bookings      Booking[]
+  reviews       Review[]
+  userLocations UserLocation[]
+  uploadedPhotos Photo[]   @relation("PhotoUploader")
+  photoLikes     PhotoLike[]
+  blogPosts      BlogPost[] @relation("BlogAuthor")
+
+  @@index([role])
+}
+
+// Association entre utilisateurs et localités (pour admins et modérateurs)
+model UserLocation {
+  id         String   @id @default(cuid())
+  userId     String
+  locationId String
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, locationId])
+  @@index([userId])
+  @@index([locationId])
+}
+
+// Linked OAuth accounts (Google, Facebook, ...)
+model Account {
+  id                String   @id @default(cuid())
+  userId            String
+  provider          AuthProvider
+  providerAccountId String
+  email             String?
+  accessToken       String?  @db.Text
+  refreshToken      String?  @db.Text
+  expiresAt         DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+// Refresh-token sessions. Both web (cookie) and mobile (Bearer) use this.
+model Session {
+  id              String   @id @default(cuid())
+  userId          String
+  refreshTokenHash String  @unique
+  userAgent       String?
+  ipAddress       String?
+  device          String?  // "web" | "mobile" | platform info
+  expiresAt       DateTime
+  revokedAt       DateTime?
+  createdAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// One-time passwords (email or SMS)
+model OtpCode {
+  id          String     @id @default(cuid())
+  identifier  String     // email or phone (E.164)
+  channel     OtpChannel
+  purpose     OtpPurpose @default(LOGIN)
+  codeHash    String
+  attempts    Int        @default(0)
+  consumedAt  DateTime?
+  expiresAt   DateTime
+  createdAt   DateTime   @default(now())
+
+  @@index([identifier, channel])
+  @@index([expiresAt])
+}
+
+// =============================================================================
+//  CATALOGUE — Localisations, types de chambres, chambres, médias
+// =============================================================================
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+enum MediaProvider {
+  LOCAL    // fichier uploadé dans /public/uploads
+  YOUTUBE  // ID YouTube (vidéos)
+  EXTERNAL // URL externe (CDN, Cloudinary, etc.)
+}
+
+// Une localisation = un site physique de l'hôtel (ex: "Résidence Bingerville").
+// L'admin peut en créer plusieurs.
+model Location {
+  id               String   @id @default(cuid())
+  slug             String   @unique
+  name             String
+  shortDescription String?  @db.Text
+  description      String?  @db.Text
+  address          String?
+  city             String?
+  country          String?  @default("Côte d'Ivoire")
+  latitude         Float?
+  longitude        Float?
+  mapLink          String?
+  phone            String?
+  email            String?
+  coverImageUrl    String?
+  amenities        String[] @default([])
+  isPublished      Boolean  @default(true)
+  isFeatured       Boolean  @default(false)
+  order            Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  rooms Room[]
+  dishes Dish[]
+  media Media[]
+  userLocations UserLocation[]
+  photoAlbums PhotoAlbum[]
+
+  @@index([isPublished, order])
+}
+
+// Type de chambre (Suite Présidentielle, Confort, etc.) — géré par l'admin.
+model RoomType {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String?  @db.Text
+  order       Int      @default(0)
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  rooms Room[]
+
+  @@index([isPublished, order])
+}
+
+// Une chambre = une offre de séjour, rattachée à une localisation et un type.
+model Room {
+  id               String   @id @default(cuid())
+  slug             String   @unique
+  name             String
+  roomNumber       String?
+  shortDescription String?  @db.Text
+  description      String?  @db.Text
+
+  locationId String
+  roomTypeId String
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  roomType   RoomType @relation(fields: [roomTypeId], references: [id], onDelete: Restrict)
+
+  // Tarif & devise (en plus petite unité, ex: 50000 = 50 000 XOF)
+  basePrice  Int     @default(0)
+  currency   String  @default("XOF")
+
+  // Caractéristiques
+  maxGuests  Int     @default(2)
+  beds       Int     @default(1)
+  bathrooms  Int     @default(1)
+  sizeSqm    Int?    // surface en m²
+
+  amenities      String[] @default([])
+  coverImageUrl  String?
+
+  isPublished Boolean  @default(true)
+  isFeatured  Boolean  @default(false)
+  order       Int      @default(0)
+
+  // Check-in/Check-out policies
+  checkInStart String? @default("15:00")
+  checkInEnd   String? @default("22:00")
+  checkOutTime String? @default("11:00")
+  checkInMethod String? @default("Arrivée autonome avec clavier")
+  cancellationPolicy String? @default("Annulation gratuite avant 7 jours, 50% de remboursement avant 3 jours")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  media    Media[]
+  bookings Booking[]
+  reviews  Review[]
+
+  @@index([locationId])
+  @@index([roomTypeId])
+  @@index([isPublished, order])
+}
+
+// Réservation de chambre par un utilisateur
+model Booking {
+  id        String        @id @default(cuid())
+  roomId    String
+  userId    String?
+  room      Room          @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user      User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  checkIn   DateTime
+  checkOut  DateTime
+  adults    Int           @default(1)
+  children  Int           @default(0)
+
+  // Guest contact details
+  guestFirstName String?
+  guestLastName  String?
+  guestEmail     String?
+  guestPhone     String?
+
+  // Payment reference
+  reference String? @unique
+
+  status    BookingStatus @default(PENDING)
+  expiresAt DateTime?     // Expiration time for PENDING bookings (15 min window)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  payment   Payment?
+  reviews   Review[]
+
+  @@index([roomId, checkIn, checkOut])
+  @@index([userId])
+  @@index([status])
+  @@index([reference])
+  @@index([expiresAt])
+}
+
+// Paiement de réservation
+model Payment {
+  id              String        @id @default(cuid())
+  bookingId       String        @unique
+  booking         Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  reference       String        @unique
+  amount          Int           // Montant en plus petite unité (ex: 50000 = 50 000 XOF)
+  currency        String        @default("XOF")
+  status          PaymentStatus @default(PENDING)
+  method          PaymentMethod @default(CARD)
+
+  // FineoPay details
+  transactionId   String?       @unique
+  paymentLink     String?
+  provider        String        @default("fineopay")
+
+  // Customer details
+  customerName    String?
+  customerEmail   String?
+  customerPhone   String?
+
+  // Metadata
+  metadata        Json?
+
+  paidAt          DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([bookingId])
+  @@index([reference])
+  @@index([status])
+  @@index([transactionId])
+}
+
+// Avis sur les chambres
+model Review {
+  id        String        @id @default(cuid())
+  roomId    String
+  userId    String?
+  bookingId String?
+  
+  room      Room          @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user      User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  booking   Booking?      @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  rating    Int           // 1-5 stars
+  comment   String
+  status    ReviewStatus  @default(PENDING)
+  
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([roomId])
+  @@index([userId])
+  @@index([bookingId])
+  @@index([status])
+}
+
+// Catégories de plats du restaurant
+model DishCategory {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String?  @db.Text
+  order       Int      @default(0)
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  dishes      Dish[]
+
+  @@index([isPublished, order])
+}
+
+// Plats du restaurant
+model Dish {
+  id           String       @id @default(cuid())
+  slug         String       @unique
+  name         String
+  description  String?      @db.Text
+  price        Int
+  currency     String       @default("XOF")
+  
+  categoryId   String
+  category     DishCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  
+  locationId   String
+  location     Location     @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  
+  imageUrl     String?
+  isAvailable  Boolean      @default(true)
+  isPublished  Boolean      @default(false)
+  isFeatured   Boolean      @default(false)
+  order        Int          @default(0)
+  
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([categoryId])
+  @@index([locationId])
+  @@index([isPublished, order])
+  @@index([isAvailable])
+}
+
+// Galerie média (images & vidéos) attachée à une Location OU à une Room.
+// Une seule des deux FK est renseignée à la fois.
+model Media {
+  id           String        @id @default(cuid())
+  type         MediaType
+  provider     MediaProvider @default(LOCAL)
+  url          String        // URL publique (locale: /uploads/xxx, sinon URL absolue)
+  thumbnailUrl String?       // utile pour vidéos (poster)
+  title        String?
+  alt          String?
+  order        Int           @default(0)
+  width        Int?
+  height       Int?
+  durationSec  Int?          // pour les vidéos
+  sizeBytes    Int?          // pour les fichiers uploadés
+
+  locationId String?
+  roomId     String?
+  location   Location? @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  room       Room?     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([locationId, order])
+  @@index([roomId, order])
+}
+
+// Album photo pour le photobook hôtel
+model PhotoAlbum {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String?  @db.Text
+  type        AlbumType @default(GALLERY)
+  coverImage  String?
+  isPublished Boolean  @default(true)
+  isFeatured  Boolean  @default(false)
+  order       Int      @default(0)
+  
+  locationId  String?
+  location    Location? @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  
+  photos      Photo[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isPublished, order])
+  @@index([locationId])
+}
+
+// Photo individuelle dans le photobook
+model Photo {
+  id          String      @id @default(cuid())
+  slug        String      @unique
+  title       String?
+  description String?     @db.Text
+  imageUrl    String
+  thumbnailUrl String?
+  width       Int?
+  height      Int?
+  sizeBytes   Int?
+  
+  albumId     String
+  album       PhotoAlbum  @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  
+  uploadedBy  String?     // user ID if uploaded by client
+  uploader    User?       @relation("PhotoUploader", fields: [uploadedBy], references: [id], onDelete: SetNull)
+  
+  isApproved  Boolean     @default(true) // for client uploads
+  isFeatured  Boolean     @default(false)
+  viewCount   Int         @default(0)
+  likeCount   Int         @default(0)
+  downloadCount Int      @default(0)
+  order       Int         @default(0)
+  
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  likes       PhotoLike[]
+
+  @@index([albumId, order])
+  @@index([isApproved])
+  @@index([isFeatured])
+}
+
+// Likes sur les photos par les utilisateurs
+model PhotoLike {
+  id        String   @id @default(cuid())
+  userId    String
+  photoId   String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photo Photo @relation(fields: [photoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, photoId])
+  @@index([photoId])
+  @@index([userId])
+}
+
+enum AlbumType {
+  GALLERY     // Galerie officielle (photos pro)
+  GUEST       // Album clients (UGC)
+  EVENT       // Événements (mariages, conférences)
+  ROOM        // Photos de chambres
+  AMENITY     // Photos d'équipements
+}
+
+// Configuration du photobook (téléchargements, etc.)
+model PhotobookSettings {
+  id                     String   @id @default(cuid())
+  allowDownloads         Boolean  @default(true)
+  requireBookingForDownload Boolean @default(true)
+  watermarkEnabled       Boolean  @default(false)
+  watermarkText          String?  @default("Hotel Nahoui")
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
+// Blog posts pour le site
+model BlogPost {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  excerpt     String?  @db.Text
+  content     String   @db.Text
+  coverImage  String?
+  
+  isPublished Boolean  @default(false)
+  isFeatured  Boolean  @default(false)
+  publishedAt DateTime?
+  
+  categoryId  String?
+  category    BlogCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  
+  authorId    String
+  author      User     @relation("BlogAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  
+  viewCount   Int      @default(0)
+  likeCount   Int      @default(0)
+  
+  order       Int      @default(0)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isPublished])
+  @@index([isFeatured])
+  @@index([categoryId])
+}
+
+// Catégories de blog
+model BlogCategory {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?  @db.Text
+  
+  order       Int      @default(0)
+  
+  posts       BlogPost[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ContactSubmission {
+  id          String   @id @default(cuid())
+  firstName   String
+  lastName    String
+  email       String
+  phone       String?
+  subject     String
+  message     String   @db.Text
+  status      String   @default("new") // new, read, replied, archived
+  reply       String?  @db.Text
+  repliedAt   DateTime?
+  repliedBy   String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
