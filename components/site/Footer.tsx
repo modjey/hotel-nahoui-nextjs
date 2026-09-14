@@ -1,5 +1,34 @@
 "use client";
 import Link from "next/link";
+import { Facebook, Instagram } from "lucide-react";
+import { TikTokIcon, WhatsAppIcon } from "@/components/site/social-icons";
+
+const socialLinks = [
+  {
+    name: "Facebook",
+    href: "https://www.facebook.com/hotelnahouibalmer",
+    icon: Facebook,
+    bg: "bg-[#1877F2]",
+  },
+  {
+    name: "Instagram",
+    href: "https://www.instagram.com/hotel_nahoui/",
+    icon: Instagram,
+    bg: "bg-gradient-to-br from-[#feda75] via-[#d62976] to-[#4f5bd5]",
+  },
+  {
+    name: "TikTok",
+    href: "https://www.tiktok.com/@nahouihotel?is_from_webapp=1&sender_device=pc",
+    icon: TikTokIcon,
+    bg: "bg-black",
+  },
+  {
+    name: "WhatsApp",
+    href: "https://api.whatsapp.com/send?phone=%2B2250788494979",
+    icon: WhatsAppIcon,
+    bg: "bg-[#25D366]",
+  },
+];
 
 const footerSections = [
   {
@@ -75,13 +104,19 @@ export function Footer() {
                 </a>
               ))}
             </div>
-            <div className="mt-6 flex gap-5 eyebrow text-muted-foreground">
-              <a href="https://www.facebook.com/hotelnahouibalmer" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
-                Facebook
-              </a>
-              <a href="https://www.instagram.com/hotel_nahoui/" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
-                Instagram
-              </a>
+            <div className="mt-6 flex flex-wrap gap-3">
+              {socialLinks.map((social) => (
+                <a
+                  key={social.name}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={social.name}
+                  className={`flex h-10 w-10 items-center justify-center rounded-full text-white shadow-sm transition-transform hover:scale-110 ${social.bg}`}
+                >
+                  <social.icon className="h-4 w-4" />
+                </a>
+              ))}
             </div>
           </div>
         </div>

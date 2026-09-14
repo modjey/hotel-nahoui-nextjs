@@ -4,8 +4,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-display: "Cormorant Garamond", "Times New Roman", serif;
-  --font-sans: "Inter", "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Playfair Display", "Times New Roman", serif;
+  --font-sans: "Raleway", "Helvetica Neue", Arial, sans-serif;
   --font-size-sm: 0.9rem;
   --font-size-xs: 0.85rem;
 
@@ -125,6 +125,7 @@
 
 @layer utilities {
   .font-display { font-family: var(--font-display); }
+  .font-script { font-family: var(--font-script), var(--font-display); }
   .text-balance { text-wrap: balance; }
   .text-pretty  { text-wrap: pretty; }
 

@@ -11,11 +11,10 @@ export function HotelHistorySection() {
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
-          src="/assets/env.png"
+          src="/assets/image3.jpg"
           alt="Hôtel Nahoui Balmer, façade"
           className="absolute inset-0 h-full w-full object-cover"
         />
-        <div className="absolute inset-0 bg-black/25" />
       </div>
 
       <div className="mx-auto max-w-[900px] px-6 -mt-24 lg:-mt-32 relative z-10 pb-24 lg:pb-32 text-center">

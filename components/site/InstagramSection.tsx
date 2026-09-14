@@ -8,6 +8,9 @@ const posts = [
   "/assets/conf.png",
   "/assets/env.png",
   "/assets/service.png",
+  "/assets/cocktail.jpg",
+  "/assets/restoservice.png",
+  "/assets/espace-jeux.jpg",
 ];
 
 export function InstagramSection() {
@@ -16,12 +19,17 @@ export function InstagramSection() {
       <div className="mx-auto max-w-[1440px] px-6 lg:px-10">
         <div className="text-center mb-12">
           <span className="eyebrow text-primary">Suivez-nous</span>
-          <h2 className="font-display mt-5 text-3xl sm:text-4xl font-light">
+          <a
+            href="https://www.instagram.com/hotel_nahoui/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-display mt-5 block text-3xl sm:text-4xl font-light hover:opacity-70 transition-opacity"
+          >
             @hotel_nahoui
-          </h2>
+          </a>
         </div>
 
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
+        <div className="mx-auto grid max-w-5xl grid-cols-3 gap-3 sm:gap-5">
           {posts.map((src, i) => (
             <motion.a
               key={src + i}

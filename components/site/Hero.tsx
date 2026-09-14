@@ -23,44 +23,42 @@ export function Hero() {
         <div className="absolute inset-0 bg-black/20" />
       </div>
 
-      <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center text-white">
-        <motion.span
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-          className="eyebrow"
-        >
-          Une maison d&rsquo;exception
-        </motion.span>
-
+      <div className="relative z-10 flex h-full flex-col items-center justify-start pt-14 sm:pt-20 lg:pt-24 px-6 text-center text-white">
         <motion.h1
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
-          className="font-display mt-6 text-[42px] leading-[1.05] sm:text-6xl lg:text-[84px] font-light"
+          className="font-script text-6xl leading-[1.1] sm:text-7xl lg:text-8xl font-normal"
         >
-          Hôtel Nahoui Balmer
+          Hôtel Nahoui
         </motion.h1>
 
-        <motion.p
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}
-          className="mt-6 max-w-md text-sm sm:text-base font-light text-white/85"
-        >
-          L&rsquo;élégance et l&rsquo;hospitalité au cœur de San Pedro.
-        </motion.p>
+        {/* <motion.div
+          initial={{ opacity: 0, scaleX: 0 }}
+          animate={{ opacity: 1, scaleX: 1 }}
+          transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.35 }}
+          className="mt-4 h-px w-10 bg-white/60"
+        /> */}
 
-        <motion.div
+        <motion.span
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.45 }}
+          className="eyebrow mt-4"
+        >
+          San Pedro
+        </motion.span>
+
+        {/* <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1], delay: 0.45 }}
+          transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1], delay: 0.6 }}
           className="mt-10"
         >
           <Link href="/stays" className="link-underline text-white">
             Découvrir
           </Link>
-        </motion.div>
+        </motion.div> */}
       </div>
 
       <motion.div
