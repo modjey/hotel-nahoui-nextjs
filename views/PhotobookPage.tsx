@@ -370,7 +370,7 @@ export function PhotobookPage() {
 
       {/* Lightbox */}
       {lightboxOpen && photos.length > 0 && (
-        <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xl flex items-center justify-center">
           <button onClick={closeLightbox} className="absolute top-6 right-6 text-white/80 hover:text-white z-10">
             <X className="h-6 w-6" />
           </button>

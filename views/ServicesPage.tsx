@@ -1,27 +1,33 @@
 "use client";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import {
   Sparkles, Presentation, Users, Mic, GlassWater, Car, Plane,
   UtensilsCrossed, Heart, PawPrint, Music, Sun, CheckCircle2, Layers, Calendar,
+  Waves, Wine, Dumbbell, Gamepad2, PartyPopper, Compass,
 } from "lucide-react";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
-import { EditorialSplit } from "@/components/site/EditorialSplit";
 
 const quickLinks = [
-  { id: "piscine", label: "Piscine" },
-  { id: "bar", label: "Bar VIP" },
-  { id: "sport", label: "Salle de sport" },
-  { id: "conference", label: "Conférence" },
-  { id: "evenements", label: "Événements" },
-  { id: "jeux", label: "Espace jeux" },
-  { id: "spa", label: "SPA" },
-  { id: "experience", label: "Expérience" },
+  { id: "piscine", label: "Piscine", icon: Waves },
+  { id: "bar", label: "Bar VIP", icon: Wine },
+  { id: "sport", label: "Salle de sport", icon: Dumbbell },
+  { id: "conference", label: "Conférence", icon: Presentation },
+  { id: "evenements", label: "Événements", icon: PartyPopper },
+  { id: "jeux", label: "Espace jeux", icon: Gamepad2 },
+  { id: "spa", label: "SPA", icon: Sparkles },
+  { id: "experience", label: "Expérience", icon: Compass },
 ];
 
 const gymEquipment = ["Tapis de course", "Vélos d'appartement", "Appareils de musculation", "Haltères et poids libres", "Bancs de musculation"];
-const conferenceEquipment = ["Vidéoprojecteur & écran de projection", "Système de sonorisation", "Climatisation", "Tables et chaises modulables", "Connexion Wi-Fi haut débit"];
+const conferenceEquipment = ["Vidéoprojecteur & écran", "Système de sonorisation", "Climatisation", "Tables & chaises modulables", "Wi-Fi haut débit"];
+const conferenceStats = [
+  { icon: Users, v: "100", l: "Capacité max." },
+  { icon: Layers, v: "Multi", l: "Salles" },
+  { icon: Presentation, v: "100%", l: "Modulable" },
+];
 
 const clientExperiences = [
   { icon: Sun, title: "Brunch", description: "Formule brunch savoureuse pour commencer la journée avec style." },
@@ -34,7 +40,99 @@ const clientExperiences = [
   { icon: PawPrint, title: "Pet Friendly", description: "L'Hôtel Nahoui accueille vos compagnons à quatre pattes dans un cadre adapté." },
 ];
 
+type ServiceBlockProps = {
+  eyebrow: string;
+  title: string;
+  text: string;
+  cta: { label: string; href: string };
+  image: string;
+  imageAlt: string;
+  reverse?: boolean;
+  features?: string[];
+  stats?: { icon: React.ElementType; v: string; l: string }[];
+};
+
+function ServiceBlock({ eyebrow, title, text, cta, image, imageAlt, reverse, features, stats }: ServiceBlockProps) {
+  return (
+    <div className="mx-auto max-w-[1440px] px-6 lg:px-10 py-6 lg:py-8">
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+        className="grid grid-cols-1 lg:grid-cols-2 overflow-hidden rounded-sm bg-white shadow-[var(--shadow-elevated)]"
+      >
+        <div className={`relative h-64 sm:h-80 lg:h-auto overflow-hidden ${reverse ? "lg:order-2" : ""}`}>
+          <img src={image} alt={imageAlt} loading="lazy" className="img-zoom absolute inset-0 h-full w-full object-cover" />
+        </div>
+
+        <div className="flex items-center p-8 sm:p-10 lg:p-14">
+          <div className="max-w-lg">
+            <span className="eyebrow text-primary">{eyebrow}</span>
+            <h2 className="font-display mt-3 text-2xl sm:text-3xl lg:text-4xl font-light leading-[1.1]">{title}</h2>
+            <p className="mt-4 text-sm leading-relaxed text-muted-foreground text-pretty">{text}</p>
+
+            {stats && (
+              <div className="mt-6 grid grid-cols-3 gap-4">
+                {stats.map((s) => (
+                  <div key={s.l}>
+                    <s.icon className="h-4 w-4 text-primary mb-2" />
+                    <div className="font-display text-xl font-light">{s.v}</div>
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">{s.l}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {features && (
+              <div className="mt-5 flex flex-wrap gap-2">
+                {features.map((f) => (
+                  <span key={f} className="inline-flex items-center gap-1.5 rounded-full bg-secondary/60 px-3 py-1.5 text-xs text-foreground">
+                    <CheckCircle2 className="h-3 w-3 text-primary shrink-0" /> {f}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-7">
+              <Link href={cta.href} className="btn-fill-editorial">
+                {cta.label}
+              </Link>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 export function ServicesPage() {
+  const [activeId, setActiveId] = useState(quickLinks[0].id);
+  const isClickScrolling = useRef(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (isClickScrolling.current) return;
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) setActiveId(entry.target.id);
+        });
+      },
+      { rootMargin: "-160px 0px -65% 0px", threshold: 0 }
+    );
+    quickLinks.forEach((l) => {
+      const el = document.getElementById(l.id);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, []);
+
+  const handleNavClick = (id: string) => {
+    setActiveId(id);
+    isClickScrolling.current = true;
+    window.setTimeout(() => { isClickScrolling.current = false; }, 800);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Nav />
@@ -56,19 +154,39 @@ export function ServicesPage() {
         </div>
       </section>
 
-      {/* Quick nav */}
+      {/* Quick nav — pill segmented control with sliding active indicator */}
       <div className="border-b border-border bg-background/95 sticky top-20 z-30 backdrop-blur-xl">
-        <div className="mx-auto max-w-[1440px] px-6 lg:px-10 flex items-center gap-8 overflow-x-auto no-scrollbar py-5">
-          {quickLinks.map((l) => (
-            <a key={l.id} href={`#${l.id}`} className="eyebrow text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap shrink-0">
-              {l.label}
-            </a>
-          ))}
+        <div className="mx-auto max-w-[1440px] px-6 lg:px-10 py-3.5">
+          <div className="flex items-center justify-start lg:justify-center gap-1.5 overflow-x-auto no-scrollbar">
+            {quickLinks.map((l) => {
+              const active = activeId === l.id;
+              return (
+                <a
+                  key={l.id}
+                  href={`#${l.id}`}
+                  onClick={() => handleNavClick(l.id)}
+                  className={`relative flex items-center gap-2 shrink-0 rounded-full px-4 py-2.5 text-xs font-medium uppercase tracking-wider whitespace-nowrap transition-colors duration-300 ${
+                    active ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {active && (
+                    <motion.span
+                      layoutId="services-nav-pill"
+                      className="absolute inset-0 rounded-full bg-primary"
+                      transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                    />
+                  )}
+                  <l.icon className="relative z-10 h-3.5 w-3.5" />
+                  <span className="relative z-10">{l.label}</span>
+                </a>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      <div id="piscine" className="scroll-mt-32">
-        <EditorialSplit
+      <div id="piscine" className="scroll-mt-36">
+        <ServiceBlock
           eyebrow="Détente"
           title="Piscine"
           text="Notre piscine extérieure vous accueille tout au long de la journée pour une baignade rafraîchissante ou un moment de calme absolu, dans un cadre serein. Douche, maître-nageur et bassin pour enfants complètent cet espace."
@@ -78,8 +196,8 @@ export function ServicesPage() {
         />
       </div>
 
-      <div id="bar" className="scroll-mt-32">
-        <EditorialSplit
+      <div id="bar" className="scroll-mt-36">
+        <ServiceBlock
           eyebrow="Vie nocturne"
           title="Bar VIP"
           text="Véritable lieu de vie, le Bar VIP accueille aussi bien les retrouvailles entre amis que les soirées festives. Musique, lumières tamisées et service soigné composent une atmosphère élégante."
@@ -91,85 +209,57 @@ export function ServicesPage() {
       </div>
 
       {/* Cocktails banner */}
-      <section className="relative h-[55vh] min-h-[380px] w-full overflow-hidden">
+      <section className="relative h-[42vh] min-h-[300px] w-full overflow-hidden">
         <img src="/assets/cocktail.jpg" alt="Cocktails de l'Hôtel Nahoui Balmer" className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-black/40" />
         <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center text-white">
-          <GlassWater className="h-6 w-6 mb-5 text-white/80" />
+          <GlassWater className="h-6 w-6 mb-4 text-white/80" />
           <span className="eyebrow">Focus cocktails</span>
-          <h2 className="font-display mt-5 text-3xl sm:text-4xl font-light max-w-lg">
+          <h2 className="font-display mt-4 text-3xl sm:text-4xl font-light max-w-lg">
             Grands classiques revisités, créations originales.
           </h2>
         </div>
       </section>
 
-      <div id="sport" className="scroll-mt-32">
-        <EditorialSplit
+      <div id="sport" className="scroll-mt-36">
+        <ServiceBlock
           eyebrow="Fitness"
           title="Salle de Sport"
           text="Équipée des derniers appareils cardiovasculaires et de musculation, notre salle vous offre un espace complet pour garder la forme, avec l'accompagnement d'un coach qualifié. Ouverte tous les jours de 9h à 19h."
           cta={{ label: "Découvrir", href: "/bien-etre" }}
           image="/assets/sport.jpg"
           imageAlt="Salle de sport de l'Hôtel Nahoui Balmer"
+          features={gymEquipment}
         />
       </div>
-      <div className="mx-auto max-w-[1440px] px-6 lg:px-10 -mt-16 lg:-mt-24 pb-16 lg:pb-24">
-        <div className="flex flex-wrap gap-x-10 gap-y-2 lg:pl-[calc(50%+4rem)]">
-          {gymEquipment.map((e) => (
-            <span key={e} className="flex items-center gap-2 text-sm text-muted-foreground">
-              <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" /> {e}
-            </span>
-          ))}
-        </div>
-      </div>
 
-      <div id="conference" className="scroll-mt-32">
-        <EditorialSplit
+      <div id="conference" className="scroll-mt-36">
+        <ServiceBlock
           eyebrow="Événementiel"
           title="Salle de Conférence"
-          text="Des espaces modulables entièrement équipés pour vos événements professionnels — réunions d'affaires, formations, ateliers ou présentations. Traiteur sur mesure disponible."
+          text="Des espaces modulables entièrement équipés pour vos événements professionnels - réunions d'affaires, formations, ateliers ou présentations. Traiteur sur mesure disponible."
           cta={{ label: "Nous contacter", href: "/contact" }}
           image="/assets/conf.png"
           imageAlt="Salle de conférence de l'Hôtel Nahoui Balmer"
           reverse
+          stats={conferenceStats}
+          features={conferenceEquipment}
         />
       </div>
-      <div className="mx-auto max-w-[1440px] px-6 lg:px-10 -mt-16 lg:-mt-24 pb-16 lg:pb-24">
-        <div className="grid grid-cols-3 gap-8 max-w-md lg:ml-auto lg:pr-[calc(50%+4rem)] lg:mr-0">
-          {[
-            { icon: Users, v: "100", l: "Capacité max." },
-            { icon: Layers, v: "Multi", l: "Salles disponibles" },
-            { icon: Presentation, v: "100%", l: "Modulable" },
-          ].map((s) => (
-            <div key={s.l}>
-              <s.icon className="h-5 w-5 text-primary mb-3" />
-              <div className="font-display text-2xl font-light">{s.v}</div>
-              <div className="eyebrow text-muted-foreground mt-1">{s.l}</div>
-            </div>
-          ))}
-        </div>
-        <div className="mt-8 flex flex-wrap gap-x-10 gap-y-2 lg:pr-[calc(50%+4rem)]">
-          {conferenceEquipment.map((e) => (
-            <span key={e} className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Mic className="h-3.5 w-3.5 text-primary shrink-0" /> {e}
-            </span>
-          ))}
-        </div>
-      </div>
 
-      <div id="evenements" className="scroll-mt-32">
-        <EditorialSplit
+      <div id="evenements" className="scroll-mt-36">
+        <ServiceBlock
           eyebrow="Réceptions"
           title="Événements"
-          text="Organisez vos réceptions, cocktails, anniversaires ou mariages dans un cadre élégant en plein air, autour de la piscine — jusqu'à 200 personnes. Service sur mesure et ambiance lumineuse."
+          text="Organisez vos réceptions, cocktails, anniversaires ou mariages dans un cadre élégant en plein air, autour de la piscine - jusqu'à 200 personnes. Service sur mesure et ambiance lumineuse."
           cta={{ label: "Nous contacter", href: "/contact" }}
           image="/assets/env.png"
           imageAlt="Événements de l'Hôtel Nahoui Balmer"
         />
       </div>
 
-      <div id="jeux" className="scroll-mt-32">
-        <EditorialSplit
+      <div id="jeux" className="scroll-mt-36">
+        <ServiceBlock
           eyebrow="Pour les enfants"
           title="Espace Jeux"
           text="Sécurisé, ludique et coloré, notre espace de jeux invite les enfants à s'amuser en toute liberté. Les parents profitent de moments de tranquillité pendant que les petits vivent leurs aventures."
@@ -180,8 +270,8 @@ export function ServicesPage() {
         />
       </div>
 
-      <div id="spa" className="scroll-mt-32">
-        <EditorialSplit
+      <div id="spa" className="scroll-mt-36">
+        <ServiceBlock
           eyebrow="Bien-être"
           title="SPA"
           text="Soins bien-être sur mesure, gestes experts et senteurs délicates — directement dans l'intimité de votre chambre. Une parenthèse sensorielle hors du temps pour apaiser le corps et l'esprit."
@@ -192,15 +282,15 @@ export function ServicesPage() {
       </div>
 
       {/* Expérience Nahoui */}
-      <section id="experience" className="scroll-mt-32 mx-auto max-w-[1440px] px-6 lg:px-10 py-24 lg:py-32 border-t border-border">
-        <div className="text-center mb-16">
+      <section id="experience" className="scroll-mt-36 mx-auto max-w-[1440px] px-6 lg:px-10 py-16 lg:py-20 border-t border-border">
+        <div className="text-center mb-12">
           <span className="eyebrow text-primary">Sur mesure</span>
-          <h2 className="font-display mt-5 text-4xl sm:text-5xl font-light">L&rsquo;Expérience Nahoui</h2>
-          <p className="mt-4 text-muted-foreground max-w-xl mx-auto">
+          <h2 className="font-display mt-4 text-3xl sm:text-4xl font-light">L&rsquo;Expérience Nahoui</h2>
+          <p className="mt-3 text-muted-foreground max-w-xl mx-auto">
             Vivez bien plus qu&rsquo;un séjour — découvrez nos attentions particulières.
           </p>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {clientExperiences.map((exp, i) => (
             <motion.div
               key={exp.title}
@@ -208,8 +298,11 @@ export function ServicesPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.6, delay: (i % 4) * 0.06 }}
+              className="hover-lift rounded-sm bg-white shadow-[var(--shadow-card)] p-5"
             >
-              <exp.icon className="h-6 w-6 text-primary mb-4" />
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary mb-3">
+                <exp.icon className="h-4 w-4" />
+              </span>
               <h3 className="font-display text-lg font-light">{exp.title}</h3>
               <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">{exp.description}</p>
             </motion.div>
@@ -218,28 +311,28 @@ export function ServicesPage() {
       </section>
 
       {/* Circuits teaser */}
-      <section className="mx-auto max-w-[1440px] px-6 lg:px-10 pb-24 lg:pb-32">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center border-t border-border pt-16">
-          <div>
+      <section className="mx-auto max-w-[1440px] px-6 lg:px-10 pb-16 lg:pb-20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center rounded-sm overflow-hidden bg-warm p-8 lg:p-0">
+          <div className="lg:pl-14">
             <span className="eyebrow text-primary">Excursions</span>
-            <h2 className="font-display mt-5 text-3xl sm:text-4xl font-light">Circuits & découverte du littoral</h2>
+            <h2 className="font-display mt-4 text-3xl sm:text-4xl font-light">Circuits & découverte du littoral</h2>
             <p className="mt-4 text-muted-foreground max-w-md">
               Six circuits guidés à la découverte de San Pedro, Grand Béréby, Sassandra et les plus beaux sites naturels du littoral ivoirien.
             </p>
-            <div className="mt-8">
+            <div className="mt-7">
               <Link href="/evenements" className="link-underline text-foreground">
                 Voir tous les circuits
               </Link>
             </div>
           </div>
-          <div className="relative aspect-[16/10] overflow-hidden">
+          <div className="relative aspect-[16/10] lg:h-full overflow-hidden">
             <img src="/assets/env.png" alt="Circuits sur le littoral ivoirien" className="absolute inset-0 h-full w-full object-cover" />
           </div>
         </div>
       </section>
 
       {/* CTA */}
-      <section className="bg-ink text-white text-center py-20 lg:py-28">
+      <section className="bg-ink text-white text-center py-16 lg:py-20">
         <span className="eyebrow text-white/70">Réservation</span>
         <h2 className="font-display mt-5 text-3xl sm:text-4xl font-light">Profitez de nos services.</h2>
         <div className="mt-9">

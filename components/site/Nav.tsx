@@ -63,6 +63,12 @@ export function Nav() {
     { href: "/contact",    label: "Contact" },
   ];
 
+  // Onglets secondaires affichés uniquement dans le drawer mobile
+  const drawerExtraLinks = [
+    { href: "/photobook", label: "Photobook" },
+    { href: "/blog",      label: "Blog" },
+  ];
+
   const handleUserClick = () => {
     if (user) {
       setIsUserMenuOpen((v) => !v);
@@ -253,7 +259,7 @@ export function Nav() {
               className="fixed top-0 left-0 bottom-0 z-[70] w-full sm:w-[420px] bg-background flex flex-col"
             >
               {/* Sidebar header */}
-              <div className="flex items-center justify-between px-8 h-20 border-b border-border">
+              <div className="flex items-center justify-between px-8 h-16 border-b border-border">
                 <span className="eyebrow text-primary">Menu</span>
                 <button
                   onClick={() => setIsSidebarOpen(false)}
@@ -265,9 +271,9 @@ export function Nav() {
               </div>
 
               {/* Sidebar content */}
-              <div className="flex-1 overflow-y-auto px-8 py-10 flex flex-col">
+              <div className="flex-1 overflow-y-auto px-8 py-6 flex flex-col">
                 <nav className="flex flex-col">
-                  {navLinks.map((link, i) => (
+                  {[...navLinks, ...drawerExtraLinks].map((link, i) => (
                     <motion.div
                       key={link.href}
                       initial={{ opacity: 0, x: 20 }}
@@ -277,7 +283,7 @@ export function Nav() {
                       <Link
                         href={link.href}
                         onClick={() => setIsSidebarOpen(false)}
-                        className={`block py-4 font-display text-2xl lg:text-3xl font-light border-b border-border transition-colors hover:text-primary ${
+                        className={`block py-2.5 font-display text-lg lg:text-xl font-light border-b border-border transition-colors hover:text-primary ${
                           isActive(link.href) ? "text-primary" : "text-foreground"
                         }`}
                       >
@@ -292,7 +298,7 @@ export function Nav() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: 0.5 }}
-                  className="mt-10"
+                  className="mt-6"
                 >
                   <Link
                     href="/stays"
@@ -308,13 +314,13 @@ export function Nav() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: 0.6 }}
-                  className="mt-8 flex gap-3"
+                  className="mt-5 flex gap-3"
                 >
                   {languages.map((lang) => (
                     <button
                       key={lang.code}
                       onClick={() => setLanguage(lang.code)}
-                      className={`eyebrow px-4 py-2 border transition-colors ${
+                      className={`eyebrow px-3.5 py-1.5 border transition-colors ${
                         language === lang.code
                           ? "border-primary text-primary"
                           : "border-border text-muted-foreground hover:border-foreground"
@@ -330,7 +336,7 @@ export function Nav() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: 0.7 }}
-                  className="mt-10 pt-8 border-t border-border"
+                  className="mt-6 pt-5 border-t border-border"
                 >
                   {user ? (
                     <div className="space-y-4">

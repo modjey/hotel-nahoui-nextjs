@@ -50,7 +50,7 @@ export function SearchBar() {
         {/* Dates */}
         <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
           <PopoverTrigger asChild>
-            <button className="flex items-center sm:flex-[2] px-6 py-5 hover:bg-secondary/50 transition-colors text-left border-b sm:border-b-0 sm:border-r border-border">
+            <button className="flex items-center sm:flex-[2] px-5 py-3.5 sm:px-6 sm:py-5 hover:bg-secondary/50 transition-colors text-left border-b sm:border-b-0 sm:border-r border-border">
               <Calendar className="h-4 w-4 text-muted-foreground mr-3 shrink-0" />
               <div className="min-w-0">
                 <div className="eyebrow text-muted-foreground">Dates du séjour</div>
@@ -85,7 +85,7 @@ export function SearchBar() {
         {/* Guests */}
         <Popover open={guestPickerOpen} onOpenChange={setGuestPickerOpen}>
           <PopoverTrigger asChild>
-            <button className="flex items-center sm:flex-1 px-6 py-5 hover:bg-secondary/50 transition-colors text-left border-b sm:border-b-0 border-border">
+            <button className="flex items-center sm:flex-1 px-5 py-3.5 sm:px-6 sm:py-5 hover:bg-secondary/50 transition-colors text-left border-b sm:border-b-0 border-border">
               <Users className="h-4 w-4 text-muted-foreground mr-3 shrink-0" />
               <div>
                 <div className="eyebrow text-muted-foreground">Voyageurs</div>

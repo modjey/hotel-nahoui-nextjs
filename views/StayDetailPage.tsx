@@ -17,7 +17,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 type Room = {
   id: string;
@@ -73,7 +72,6 @@ function StayDetailPageContent() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [guestPickerOpen, setGuestPickerOpen] = useState(false);
-  const [mobileDatePickerOpen, setMobileDatePickerOpen] = useState(false);
   const [mobileGuestPickerOpen, setMobileGuestPickerOpen] = useState(false);
   const [availability, setAvailability] = useState<boolean | null>(null);
   const [checkingAvailability, setCheckingAvailability] = useState(false);
@@ -93,7 +91,6 @@ function StayDetailPageContent() {
   const reviewSectionRef = useRef<HTMLDivElement>(null);
   const [saved, setSaved] = useState(false);
   const [savedRooms, setSavedRooms] = useState<string[]>([]);
-  const isMobile = useIsMobile();
 
   // Load saved rooms from localStorage
   const savedRoomsFromStorage = useMemo(() => {
@@ -666,50 +663,42 @@ function StayDetailPageContent() {
           {/* Mobile: Date picker */}
           <div className="lg:hidden py-6 border-b border-border">
             <div className="border border-border rounded-xl overflow-hidden">
-              <div className="grid grid-cols-2">
-                <Popover open={mobileDatePickerOpen} onOpenChange={setMobileDatePickerOpen}>
-                  <PopoverTrigger asChild>
-                    <button className="p-3 border-r border-b border-border text-left hover:bg-secondary/50 transition-colors">
-                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Arrivée</div>
-                      <div className="text-sm font-medium">{checkIn ? format(checkIn, 'dd MMM yyyy', { locale: fr }) : 'Ajouter date'}</div>
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarPicker
-                      mode="range"
-                      selected={{ from: checkIn, to: checkOut }}
-                      onSelect={(range) => {
-                        setCheckIn(range?.from);
-                        setCheckOut(range?.to);
-                      }}
-                      disabled={(date) => {
-                        // Désactiver les dates passées
-                        if (date < new Date()) return true;
+              <div className="grid grid-cols-2 border-b border-border">
+                <div className="p-3 border-r border-border">
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Arrivée</div>
+                  <div className="text-sm font-medium">{checkIn ? format(checkIn, 'dd MMM yyyy', { locale: fr }) : 'Sélectionner'}</div>
+                </div>
+                <div className="p-3">
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Départ</div>
+                  <div className="text-sm font-medium">{checkOut ? format(checkOut, 'dd MMM yyyy', { locale: fr }) : 'Sélectionner'}</div>
+                </div>
+              </div>
+              <div className="p-3 border-b border-border flex justify-center">
+                <CalendarPicker
+                  mode="range"
+                  selected={{ from: checkIn, to: checkOut }}
+                  onSelect={(range) => {
+                    setCheckIn(range?.from);
+                    setCheckOut(range?.to);
+                  }}
+                  disabled={(date) => {
+                    // Désactiver les dates passées
+                    if (date < new Date()) return true;
 
-                        // Désactiver les dates déjà réservées (exclure les annulées)
-                        const isBooked = bookings.some((b) => {
-                          // Exclure les réservations annulées
-                          if (b.status === "CANCELLED") return false;
-                          const checkIn = new Date(b.checkIn);
-                          const checkOut = new Date(b.checkOut);
-                          return isWithinInterval(date, { start: checkIn, end: new Date(checkOut.getTime() - 1) }) ||
-                                 isSameDay(date, checkIn) ||
-                                 isSameDay(date, new Date(checkOut.getTime() - 1));
-                        });
-                        return isBooked;
-                      }}
-                      numberOfMonths={1}
-                    />
-                  </PopoverContent>
-                </Popover>
-                <Popover open={mobileDatePickerOpen} onOpenChange={setMobileDatePickerOpen}>
-                  <PopoverTrigger asChild>
-                    <button className="p-3 border-b border-border text-left hover:bg-secondary/50 transition-colors">
-                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Départ</div>
-                      <div className="text-sm font-medium">{checkOut ? format(checkOut, 'dd MMM yyyy', { locale: fr }) : 'Ajouter date'}</div>
-                    </button>
-                  </PopoverTrigger>
-                </Popover>
+                    // Désactiver les dates déjà réservées (exclure les annulées)
+                    const isBooked = bookings.some((b) => {
+                      // Exclure les réservations annulées
+                      if (b.status === "CANCELLED") return false;
+                      const checkIn = new Date(b.checkIn);
+                      const checkOut = new Date(b.checkOut);
+                      return isWithinInterval(date, { start: checkIn, end: new Date(checkOut.getTime() - 1) }) ||
+                             isSameDay(date, checkIn) ||
+                             isSameDay(date, new Date(checkOut.getTime() - 1));
+                    });
+                    return isBooked;
+                  }}
+                  numberOfMonths={1}
+                />
               </div>
               <Popover open={mobileGuestPickerOpen} onOpenChange={setMobileGuestPickerOpen}>
                 <PopoverTrigger asChild>
@@ -1008,7 +997,7 @@ function StayDetailPageContent() {
                           });
                           return isBooked;
                         }}
-                        numberOfMonths={isMobile ? 1 : 2}
+                        numberOfMonths={2}
                       />
                     </PopoverContent>
                   </Popover>
@@ -1162,6 +1151,7 @@ function StayDetailPageContent() {
               initialCheckOut={checkOut}
               initialAdults={adults}
               initialChildren={children}
+              bookings={bookings}
               onClose={() => setBookingFlowOpen(false)}
             />
           </motion.div>
@@ -1171,7 +1161,7 @@ function StayDetailPageContent() {
   );
 }
 
-function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdults, initialChildren, onClose }: { room: Room | null; initialCheckIn: Date | undefined; initialCheckOut: Date | undefined; initialAdults: number; initialChildren: number; onClose: () => void }) {
+function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdults, initialChildren, bookings, onClose }: { room: Room | null; initialCheckIn: Date | undefined; initialCheckOut: Date | undefined; initialAdults: number; initialChildren: number; bookings: { id: string; checkIn: string; checkOut: string; status: string }[]; onClose: () => void }) {
   const { user, refresh } = useAuth();
   const steps = ["Dates", "Voyageurs", "Détails", "Récapitulatif"] as const;
   type Step = typeof steps[number];
@@ -1258,9 +1248,6 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
     return { firstName: '', lastName: '', email: '', phone: '' };
   });
 
-  const today = new Date();
-  const fmt = (d: Date) => d.toISOString().slice(0, 10);
-
   // Store booking flow state in window for OAuth redirect
   useEffect(() => {
     (window as unknown as { __bookingFlowState?: unknown }).__bookingFlowState = {
@@ -1304,12 +1291,48 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
   const nights = checkIn && checkOut ? differenceInDays(checkOut, checkIn) : 3;
   const total = room?.basePrice ? room.basePrice * nights : 0;
 
+  // Real-time availability check whenever the selected dates change
+  const [availability, setAvailability] = useState<boolean | null>(null);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
+  const [conflictingBookings, setConflictingBookings] = useState<{ id: string; checkIn: string; checkOut: string; status: string }[]>([]);
+  const [isOwnBooking, setIsOwnBooking] = useState(false);
+
+  useEffect(() => {
+    if (!room?.slug || !checkIn || !checkOut || checkOut <= checkIn) {
+      setAvailability(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setCheckingAvailability(true);
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/rooms/${room.slug}/availability?checkIn=${checkIn.toISOString()}&checkOut=${checkOut.toISOString()}&userId=${user?.id || ''}`);
+        const data = await res.json();
+        if (cancelled) return;
+        if (data.success) {
+          setAvailability(data.data.available);
+          setConflictingBookings(data.data.conflictingBookings || []);
+          setIsOwnBooking(data.data.isOwnBooking || false);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error("Erreur vérification disponibilité", err);
+          setAvailability(null);
+        }
+      } finally {
+        if (!cancelled) setCheckingAvailability(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [room?.slug, checkIn, checkOut, user?.id]);
+
   const validateStep = () => {
     const newErrors: Record<string, string> = {};
     if (step === 'Dates') {
       if (!checkIn) newErrors.checkIn = 'Date d\'arrivée requise';
       if (!checkOut) newErrors.checkOut = 'Date de départ requise';
       if (checkIn && checkOut && checkOut <= checkIn) newErrors.dates = 'Le départ doit être après l\'arrivée';
+      if (checkIn && checkOut && checkOut > checkIn && availability === false) newErrors.dates = isOwnBooking ? 'Vous avez déjà une réservation pour ces dates' : 'Cette chambre n\'est plus disponible pour ces dates';
     }
     if (step === 'Voyageurs') {
       if (adults < 1) newErrors.adults = 'Au moins 1 adulte requis';
@@ -1348,7 +1371,7 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
   };
 
   const canContinue =
-    (step === 'Dates' && checkIn && checkOut && checkOut > checkIn) ||
+    (step === 'Dates' && checkIn && checkOut && checkOut > checkIn && !checkingAvailability && availability !== false) ||
     (step === 'Voyageurs' && adults >= 1 && room && adults + children <= room.maxGuests) ||
     (step === 'Détails' && user && guestInfo.firstName && guestInfo.lastName && (guestInfo.email || guestInfo.phone)) ||
     step === 'Récapitulatif';
@@ -1497,21 +1520,75 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
                   <div className="border border-border rounded-3xl p-7 bg-card">
                     <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground"><Calendar className="h-4 w-4" />Votre voyage</div>
                     <div className="mt-4 space-y-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <label className="block">
-                          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Arrivée</span>
-                          <div className="mt-1.5">
-                            <input type="date" value={checkIn ? fmt(checkIn) : ''} min={fmt(today)} onChange={(e) => setCheckIn(e.target.value ? new Date(e.target.value) : undefined)} className={inputCls} />
-                          </div>
-                        </label>
-                        <label className="block">
-                          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Départ</span>
-                          <div className="mt-1.5">
-                            <input type="date" value={checkOut ? fmt(checkOut) : ''} min={checkIn ? fmt(checkIn) : fmt(today)} onChange={(e) => setCheckOut(e.target.value ? new Date(e.target.value) : undefined)} className={inputCls} />
-                          </div>
-                        </label>
+                      <div className="grid grid-cols-2 rounded-xl border border-border overflow-hidden">
+                        <div className="p-3 border-r border-border">
+                          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Arrivée</div>
+                          <div className="text-sm font-medium">{checkIn ? format(checkIn, 'dd MMM yyyy', { locale: fr }) : 'Sélectionner'}</div>
+                        </div>
+                        <div className="p-3">
+                          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Départ</div>
+                          <div className="text-sm font-medium">{checkOut ? format(checkOut, 'dd MMM yyyy', { locale: fr }) : 'Sélectionner'}</div>
+                        </div>
+                      </div>
+                      <div className="flex justify-center rounded-xl border border-border p-3">
+                        <CalendarPicker
+                          mode="range"
+                          selected={{ from: checkIn, to: checkOut }}
+                          onSelect={(range) => {
+                            setCheckIn(range?.from);
+                            setCheckOut(range?.to);
+                          }}
+                          disabled={(date) => {
+                            // Désactiver les dates passées
+                            if (date < new Date()) return true;
+
+                            // Désactiver les dates déjà réservées (exclure les annulées)
+                            const isBooked = bookings.some((b) => {
+                              // Exclure les réservations annulées
+                              if (b.status === "CANCELLED") return false;
+                              const bCheckIn = new Date(b.checkIn);
+                              const bCheckOut = new Date(b.checkOut);
+                              return isWithinInterval(date, { start: bCheckIn, end: new Date(bCheckOut.getTime() - 1) }) ||
+                                     isSameDay(date, bCheckIn) ||
+                                     isSameDay(date, new Date(bCheckOut.getTime() - 1));
+                            });
+                            return isBooked;
+                          }}
+                          numberOfMonths={1}
+                        />
                       </div>
                       {errors.dates && <p className="mt-2 text-sm text-destructive flex items-center gap-1"><AlertCircle className="h-4 w-4" />{errors.dates}</p>}
+
+                      {checkIn && checkOut && checkOut > checkIn && (
+                        checkingAvailability ? (
+                          <p className="text-sm text-muted-foreground flex items-center gap-2">
+                            <span className="h-3.5 w-3.5 rounded-full border-2 border-muted-foreground border-t-transparent animate-spin" />
+                            Vérification de la disponibilité…
+                          </p>
+                        ) : availability === false ? (
+                          <div className="p-3 rounded-lg bg-destructive/10">
+                            <p className="text-sm font-medium text-destructive flex items-center gap-1">
+                              <AlertCircle className="h-4 w-4" />
+                              {isOwnBooking ? "Vous avez déjà une réservation pour ces dates" : "Chambre indisponible pour ces dates"}
+                            </p>
+                            {conflictingBookings.length > 0 && (
+                              <div className="mt-1">
+                                {conflictingBookings.map((booking, idx) => (
+                                  <div key={idx} className="text-xs text-muted-foreground">
+                                    {new Date(booking.checkIn).toLocaleDateString('fr-FR')} – {new Date(booking.checkOut).toLocaleDateString('fr-FR')}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ) : availability === true ? (
+                          <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
+                            <Check className="h-4 w-4" />
+                            Chambre disponible pour ces dates
+                          </p>
+                        ) : null
+                      )}
+
                       <p className="mt-4 text-sm text-muted-foreground">{nights} nuit{nights > 1 ? "s" : ""} · {room?.location.city ? `${room.location.city}, ${room.location.name}` : room?.location.name}</p>
                     </div>
                   </div>

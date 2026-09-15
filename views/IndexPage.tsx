@@ -20,7 +20,7 @@ export function IndexPage() {
       <main>
         <Hero />
 
-        <div className="relative z-20 flex justify-center px-6 -mt-24 sm:-mt-32 lg:-mt-40">
+        <div className="relative z-20 flex justify-center px-6 -mt-64 sm:-mt-32 lg:-mt-40">
           <SearchBar />
         </div>
 
