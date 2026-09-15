@@ -1,21 +1,81 @@
 "use client";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+
+const slides = [
+  "/uploads/rooms/Image3.jpg",
+  "/uploads/rooms/Image4.jpg",
+  "/uploads/rooms/Image6.jpg",
+  "/uploads/rooms/Image7.jpg",
+  "/uploads/rooms/Image8.jpg",
+];
+
+const SLIDE_DURATION = 5500;
+
+function HistorySlideshow() {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIndex((prev) => (prev + 1) % slides.length);
+    }, SLIDE_DURATION);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="relative h-[70vh] min-h-[520px] w-full overflow-hidden bg-ink">
+      <AnimatePresence initial={false}>
+        <motion.div
+          key={index}
+          initial={{ opacity: 0, scale: 1 }}
+          animate={{ opacity: 1, scale: 1.12 }}
+          exit={{ opacity: 0 }}
+          transition={{
+            opacity: { duration: 1.4, ease: [0.22, 1, 0.36, 1] },
+            scale: { duration: SLIDE_DURATION / 1000 + 1.4, ease: "linear" },
+          }}
+          className="absolute inset-0"
+        >
+          <img
+            src={slides[index]}
+            alt="Hôtel Nahoui Balmer"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        </motion.div>
+      </AnimatePresence>
+
+      <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/10 pointer-events-none" />
+
+      {/* Slide indicators */}
+      <div className="absolute bottom-7 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2">
+        {slides.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setIndex(i)}
+            aria-label={`Aller à l'image ${i + 1}`}
+            className="group relative h-1.5 w-8 overflow-hidden rounded-full bg-white/30"
+          >
+            {i === index && (
+              <motion.span
+                key={index}
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ duration: SLIDE_DURATION / 1000, ease: "linear" }}
+                className="absolute inset-0 origin-left rounded-full bg-white"
+              />
+            )}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function HotelHistorySection() {
   return (
     <section className="relative">
-      <div className="relative h-[70vh] min-h-[520px] w-full overflow-hidden">
-        <motion.img
-          initial={{ opacity: 0, scale: 1.05 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
-          src="/assets/image3.jpg"
-          alt="Hôtel Nahoui Balmer, façade"
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-      </div>
+      <HistorySlideshow />
 
       <div className="mx-auto max-w-[900px] px-6 -mt-24 lg:-mt-32 relative z-10 pb-24 lg:pb-32 text-center">
         <div className="bg-background px-8 py-14 lg:px-20 lg:py-20 shadow-[var(--shadow-elevated)]">
