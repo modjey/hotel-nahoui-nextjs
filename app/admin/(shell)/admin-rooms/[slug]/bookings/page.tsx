@@ -1,24 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isWithinInterval, addMonths, subMonths } from "date-fns";
 import { fr } from "date-fns/locale";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Calendar as CalendarPicker } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { BookingFormDialog } from "@/components/admin/BookingFormDialog";
 import { api, ApiError } from "@/lib/api-client";
 import { useApi } from "@/hooks/use-api";
 import { toast } from "sonner";
 import { Plus, Calendar as CalendarIcon, Users, Pencil, Trash2, ArrowLeft, ChevronLeft, ChevronRight, Eye } from "lucide-react";
-import { normalizeIvoryCoastPhone } from "@/lib/auth/schemas";
 
 type Room = {
   id: string;
@@ -55,40 +51,14 @@ type Booking = {
   };
 };
 
-type User = {
-  id: string;
-  name: string;
-  email: string;
-  phone: string | null;
-  image: string | null;
-};
-
 export default function AdminRoomBookingsPage() {
   const params = useParams<{ slug: string }>();
   const slug = params?.slug;
-  const router = useRouter();
-  const { data: roomData, loading: roomLoading, refetch: refetchRoom } = useApi<{ room: Room }>(`/api/admin/admin-rooms/${slug}`);
+  const { data: roomData, loading: roomLoading } = useApi<{ room: Room }>(`/api/admin/admin-rooms/${slug}`);
   const { data: bookingsData, loading: bookingsLoading, refetch: refetchBookings } = useApi<{ bookings: Booking[] }>(`/api/admin/bookings?roomSlug=${slug}`);
-  const { data: usersData } = useApi<{ users: User[] }>("/api/admin/users");
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
-  const [formData, setFormData] = useState({
-    userId: "",
-    newName: "",
-    newEmail: "",
-    newPhone: "",
-    checkIn: "",
-    checkOut: "",
-    adults: 1,
-    children: 0,
-    status: "CONFIRMED",
-    paymentAmount: "",
-    paymentCurrency: "XOF",
-    paymentStatus: "SUCCESS",
-    paymentMethod: "CASH",
-    transactionId: "",
-  });
 
   // Palette de couleurs pour différencier les réservations
   const bookingColors = [
@@ -107,133 +77,12 @@ export default function AdminRoomBookingsPage() {
     const index = bookings.findIndex(b => b.id === bookingId);
     return bookingColors[index % bookingColors.length];
   };
-  const [creatingUser, setCreatingUser] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [bookingDetailOpen, setBookingDetailOpen] = useState(false);
-  const [datePickerOpen, setDatePickerOpen] = useState(false);
-  const [guestPickerOpen, setGuestPickerOpen] = useState(false);
-  const [userSearch, setUserSearch] = useState("");
 
   const room = roomData?.room;
   const bookings = bookingsData?.bookings || [];
-  const users = usersData?.users || [];
-  const filteredUsers = users.filter(u =>
-    u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
-    u.email.toLowerCase().includes(userSearch.toLowerCase())
-  );
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!room) return;
-
-    // Vérifier qu'un utilisateur est sélectionné ou créé
-    if (!creatingUser && !formData.userId) {
-      toast.error("Veuillez sélectionner un utilisateur ou en créer un nouveau");
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      let userId = formData.userId;
-
-      // Créer l'utilisateur si nécessaire
-      if (creatingUser) {
-        // Vérifier si l'email existe déjà
-        const existingUserByEmail = users.find(u => u.email === formData.newEmail);
-        if (existingUserByEmail) {
-          toast.error("Un utilisateur avec cet email existe déjà. Veuillez le sélectionner dans la liste.");
-          setSubmitting(false);
-          return;
-        }
-
-        // Vérifier si le numéro de téléphone existe déjà (si fourni)
-        if (formData.newPhone) {
-          const normalizedPhone = normalizeIvoryCoastPhone(formData.newPhone);
-          if (normalizedPhone) {
-            const existingUserByPhone = users.find(u => u.phone === normalizedPhone);
-            if (existingUserByPhone) {
-              toast.error("Un utilisateur avec ce numéro de téléphone existe déjà. Veuillez le sélectionner dans la liste.");
-              setSubmitting(false);
-              return;
-            }
-          }
-        }
-
-        const userResponse = await api.post("/api/admin/users", {
-          name: formData.newName,
-          email: formData.newEmail,
-          phone: formData.newPhone ? normalizeIvoryCoastPhone(formData.newPhone) : null,
-        });
-        userId = (userResponse as any).user.id;
-      }
-
-      const payload = {
-        roomId: room.id,
-        userId: userId,
-        guestFirstName: creatingUser ? formData.newName.split(' ')[0] : undefined,
-        guestLastName: creatingUser ? formData.newName.split(' ').slice(1).join(' ') : undefined,
-        guestEmail: creatingUser ? formData.newEmail : undefined,
-        guestPhone: creatingUser ? formData.newPhone : undefined,
-        checkIn: new Date(formData.checkIn).toISOString(),
-        checkOut: new Date(formData.checkOut).toISOString(),
-        adults: formData.adults,
-        children: formData.children,
-        status: formData.status,
-      };
-
-      if (editingBooking) {
-        await api.patch(`/api/admin/bookings/${editingBooking.id}`, payload);
-        toast.success("Réservation modifiée");
-      } else {
-        const bookingResponse = await api.post("/api/admin/bookings", payload);
-        toast.success("Réservation créée");
-
-        // Créer le paiement si un montant est spécifié
-        if (formData.paymentAmount) {
-          const paymentPayload: any = {
-            bookingId: (bookingResponse as any).booking.id,
-            amount: parseFloat(formData.paymentAmount),
-            currency: formData.paymentCurrency,
-            status: formData.paymentStatus,
-            method: formData.paymentMethod,
-            reference: `PAY-${Date.now()}`,
-          };
-          if (formData.transactionId) {
-            paymentPayload.transactionId = formData.transactionId;
-          }
-          await api.post("/api/admin/payments", paymentPayload);
-          toast.success("Paiement créé");
-        }
-      }
-
-      setDialogOpen(false);
-      setEditingBooking(null);
-      setFormData({
-        userId: "",
-        newName: "",
-        newEmail: "",
-        newPhone: "",
-        checkIn: "",
-        checkOut: "",
-        adults: 1,
-        children: 0,
-        status: "CONFIRMED",
-        paymentAmount: "",
-        paymentCurrency: "XOF",
-        paymentStatus: "SUCCESS",
-        paymentMethod: "CASH",
-        transactionId: "",
-      });
-      setCreatingUser(false);
-      refetchBookings();
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Erreur");
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Supprimer cette réservation ?")) return;
@@ -248,45 +97,11 @@ export default function AdminRoomBookingsPage() {
 
   const handleEdit = (booking: Booking) => {
     setEditingBooking(booking);
-    setFormData({
-      userId: booking.userId || "",
-      newName: booking.guestFirstName && booking.guestLastName ? `${booking.guestFirstName} ${booking.guestLastName}` : booking.guestFirstName || "",
-      newEmail: booking.guestEmail || "",
-      newPhone: booking.guestPhone || "",
-      checkIn: booking.checkIn.split("T")[0],
-      checkOut: booking.checkOut.split("T")[0],
-      adults: booking.adults,
-      children: booking.children,
-      status: booking.status,
-      paymentAmount: "",
-      paymentCurrency: "XOF",
-      paymentStatus: "SUCCESS",
-      paymentMethod: "CASH",
-      transactionId: "",
-    });
-    setCreatingUser(!booking.userId);
     setDialogOpen(true);
   };
 
   const openCreateDialog = () => {
     setEditingBooking(null);
-    setFormData({
-      userId: "",
-      newName: "",
-      newEmail: "",
-      newPhone: "",
-      checkIn: "",
-      checkOut: "",
-      adults: 1,
-      children: 0,
-      status: "CONFIRMED",
-      paymentAmount: "",
-      paymentCurrency: "XOF",
-      paymentStatus: "SUCCESS",
-      paymentMethod: "CASH",
-      transactionId: "",
-    });
-    setCreatingUser(false);
     setDialogOpen(true);
   };
 
@@ -321,334 +136,21 @@ export default function AdminRoomBookingsPage() {
                 Retour
               </Button>
             </Link>
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={openCreateDialog}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nouvelle réservation
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>{editingBooking ? "Modifier" : "Créer"} une réservation</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-4">
-                    <Tabs value={creatingUser ? "new" : "existing"} onValueChange={(value) => {
-                      setCreatingUser(value === "new");
-                      if (value === "new") {
-                        setFormData({ ...formData, userId: "" });
-                      }
-                    }}>
-                      <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="existing">Utilisateur existant</TabsTrigger>
-                        <TabsTrigger value="new">Nouvel utilisateur</TabsTrigger>
-                      </TabsList>
-                      <TabsContent value="existing" className="space-y-3">
-                        <Input
-                          placeholder="Rechercher un utilisateur..."
-                          value={userSearch}
-                          onChange={(e) => setUserSearch(e.target.value)}
-                          className="w-full"
-                        />
-                        <div className="max-h-48 overflow-y-auto border border-input rounded-md">
-                          {filteredUsers.length === 0 ? (
-                            <div className="p-3 text-sm text-muted-foreground text-center">
-                              Aucun utilisateur trouvé
-                            </div>
-                          ) : (
-                            filteredUsers.map((u) => (
-                              <div
-                                key={u.id}
-                                onClick={() => {
-                                  setFormData({ ...formData, userId: u.id });
-                                }}
-                                className={`p-3 flex items-center gap-3 cursor-pointer hover:bg-muted transition-colors ${
-                                  formData.userId === u.id ? "bg-muted" : ""
-                                }`}
-                              >
-                                {u.image ? (
-                                  <img
-                                    src={u.image}
-                                    alt={u.name}
-                                    className="w-10 h-10 rounded-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                                    <span className="text-sm font-medium">
-                                      {u.name.charAt(0).toUpperCase()}
-                                    </span>
-                                  </div>
-                                )}
-                                <div className="flex-1">
-                                  <div className="font-medium text-sm">{u.name}</div>
-                                  <div className="text-xs text-muted-foreground">{u.email}</div>
-                                  {u.phone && (
-                                    <div className="text-xs text-muted-foreground">{u.phone}</div>
-                                  )}
-                                </div>
-                                {formData.userId === u.id && (
-                                  <div className="w-4 h-4 rounded-full bg-primary" />
-                                )}
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </TabsContent>
-                      <TabsContent value="new" className="space-y-3">
-                        <div>
-                          <Label>Nom complet *</Label>
-                          <Input
-                            value={formData.newName}
-                            onChange={(e) => setFormData({ ...formData, newName: e.target.value })}
-                            placeholder="ex: Jean Dupont"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <Label>Email *</Label>
-                          <Input
-                            type="email"
-                            value={formData.newEmail}
-                            onChange={(e) => setFormData({ ...formData, newEmail: e.target.value })}
-                            placeholder="ex: jean@example.com"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <Label>Téléphone</Label>
-                          <Input
-                            value={formData.newPhone}
-                            onChange={(e) => setFormData({ ...formData, newPhone: e.target.value })}
-                            placeholder="ex: 07 00 00 00 00"
-                          />
-                        </div>
-                      </TabsContent>
-                    </Tabs>
-
-                    <div>
-                      <Label>Dates du séjour *</Label>
-                      <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-                        <PopoverTrigger asChild>
-                          <button
-                            type="button"
-                            className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm text-left flex items-center justify-between hover:bg-accent hover:text-accent-foreground"
-                          >
-                            {formData.checkIn && formData.checkOut
-                              ? `${format(new Date(formData.checkIn), "dd MMM yyyy", { locale: fr })} → ${format(new Date(formData.checkOut), "dd MMM yyyy", { locale: fr })}`
-                              : formData.checkIn
-                                ? `Arrivée ${format(new Date(formData.checkIn), "dd MMM yyyy", { locale: fr })} · choisissez un départ`
-                                : "Sélectionner arrivée et départ"}
-                            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <div className="space-y-3">
-                            <CalendarPicker
-                              mode="range"
-                              selected={formData.checkIn && formData.checkOut ? { from: new Date(formData.checkIn), to: new Date(formData.checkOut) } : undefined}
-                              onSelect={(range) => {
-                                setFormData({
-                                  ...formData,
-                                  checkIn: range?.from?.toISOString().split('T')[0] || '',
-                                  checkOut: range?.to?.toISOString().split('T')[0] || '',
-                                });
-                              }}
-                              disabled={(date) => {
-                                // Désactiver les dates passées
-                                if (date < new Date()) return true;
-
-                                // Désactiver les dates déjà réservées
-                                const isBooked = bookings.some((b) => {
-                                  const checkIn = new Date(b.checkIn);
-                                  const checkOut = new Date(b.checkOut);
-                                  return isWithinInterval(date, { start: checkIn, end: new Date(checkOut.getTime() - 1) }) ||
-                                         isSameDay(date, checkIn) ||
-                                         isSameDay(date, new Date(checkOut.getTime() - 1));
-                                });
-                                return isBooked;
-                              }}
-                              numberOfMonths={2}
-                            />
-                            <div className="flex justify-end p-3 border-t border-border">
-                              <button
-                                type="button"
-                                onClick={() => setDatePickerOpen(false)}
-                                className="h-10 px-6 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
-                              >
-                                Confirmer
-                              </button>
-                            </div>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-
-                    <div>
-                      <Label>Voyageurs *</Label>
-                      <Popover open={guestPickerOpen} onOpenChange={setGuestPickerOpen}>
-                        <PopoverTrigger asChild>
-                          <button
-                            type="button"
-                            className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm text-left flex items-center justify-between hover:bg-accent hover:text-accent-foreground"
-                          >
-                            {formData.adults} adulte{formData.adults > 1 ? "s" : ""} · {formData.children} enfant{formData.children > 1 ? "s" : ""} (max {room.maxGuests})
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-80 p-4" align="start">
-                          <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <div className="text-sm font-medium">Adultes</div>
-                                <div className="text-xs text-muted-foreground">13 ans et plus</div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => setFormData({ ...formData, adults: Math.max(1, formData.adults - 1) })}
-                                  className="h-8 w-8 rounded-full border border-border flex items-center justify-center hover:border-foreground"
-                                >
-                                  −
-                                </button>
-                                <span className="w-6 text-center">{formData.adults}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => setFormData({ ...formData, adults: Math.min(room.maxGuests - formData.children, formData.adults + 1) })}
-                                  disabled={formData.adults + formData.children >= room.maxGuests}
-                                  className="h-8 w-8 rounded-full border border-border flex items-center justify-center hover:border-foreground disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  +
-                                </button>
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <div className="text-sm font-medium">Enfants</div>
-                                <div className="text-xs text-muted-foreground">2–12 ans</div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => setFormData({ ...formData, children: Math.max(0, formData.children - 1) })}
-                                  className="h-8 w-8 rounded-full border border-border flex items-center justify-center hover:border-foreground"
-                                >
-                                  −
-                                </button>
-                                <span className="w-6 text-center">{formData.children}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => setFormData({ ...formData, children: Math.min(room.maxGuests - formData.adults, formData.children + 1) })}
-                                  disabled={formData.adults + formData.children >= room.maxGuests}
-                                  className="h-8 w-8 rounded-full border border-border flex items-center justify-center hover:border-foreground disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  +
-                                </button>
-                              </div>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => setGuestPickerOpen(false)}
-                              className="w-full h-10 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
-                            >
-                              Confirmer
-                            </button>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-
-                    <div>
-                      <Label>Statut</Label>
-                      <select
-                        value={formData.status}
-                        onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                        className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      >
-                        <option value="CONFIRMED">Confirmé</option>
-                        <option value="PENDING">En attente</option>
-                        <option value="CANCELLED">Annulé</option>
-                      </select>
-                    </div>
-
-                    <div className="border-t border-border pt-4">
-                      <h4 className="font-medium mb-3">Paiement</h4>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <Label>Montant *</Label>
-                          <Input
-                            type="number"
-                            value={formData.paymentAmount}
-                            onChange={(e) => setFormData({ ...formData, paymentAmount: e.target.value })}
-                            required
-                          />
-                        </div>
-                        <div>
-                          <Label>Devise</Label>
-                          <select
-                            value={formData.paymentCurrency}
-                            onChange={(e) => setFormData({ ...formData, paymentCurrency: e.target.value })}
-                            className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                          >
-                            <option value="XOF">XOF</option>
-                            <option value="EUR">EUR</option>
-                            <option value="USD">USD</option>
-                          </select>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3 mt-3">
-                        <div>
-                          <Label>Statut du paiement</Label>
-                          <select
-                            value={formData.paymentStatus}
-                            onChange={(e) => setFormData({ ...formData, paymentStatus: e.target.value })}
-                            className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                          >
-                            <option value="SUCCESS">Payé</option>
-                            <option value="PENDING">En attente</option>
-                            <option value="FAILED">Échoué</option>
-                          </select>
-                        </div>
-                        <div>
-                          <Label>Méthode de paiement</Label>
-                          <select
-                            value={formData.paymentMethod}
-                            onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
-                            className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                          >
-                            <option value="CASH">Espèces</option>
-                            <option value="MOBILE_MONEY">Mobile Money</option>
-                            <option value="CARD">Carte bancaire</option>
-                            <option value="BANK_TRANSFER">Virement</option>
-                            <option value="ON_SITE">Paiement sur place</option>
-                          </select>
-                        </div>
-                      </div>
-                      <div className="mt-3">
-                        <Label>Transaction ID (optionnel)</Label>
-                        <Input
-                          type="text"
-                          value={formData.transactionId}
-                          onChange={(e) => setFormData({ ...formData, transactionId: e.target.value })}
-                          placeholder="ID de transaction externe"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end gap-2">
-                    <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                      Annuler
-                    </Button>
-                    <Button type="submit" disabled={submitting}>
-                      {submitting ? "Traitement..." : editingBooking ? "Modifier" : "Créer"}
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
+            <Button onClick={openCreateDialog}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nouvelle réservation
+            </Button>
           </div>
         }
+      />
+
+      <BookingFormDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        rooms={[{ ...room, bookings }]}
+        fixedRoomId={room.id}
+        editingBooking={editingBooking}
+        onSaved={refetchBookings}
       />
 
       {/* Calendrier des réservations */}
@@ -737,7 +239,7 @@ export default function AdminRoomBookingsPage() {
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-primary" />
-            <span className="text-muted-foreground">Aujourd'hui</span>
+            <span className="text-muted-foreground">Aujourd&apos;hui</span>
           </div>
         </div>
       </div>

@@ -13,6 +13,7 @@ import { api } from "@/lib/api-client";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
+import HotelBookingCalendar, { type GuestCount, buildAvailabilityMap } from "@/components/site/HotelBookingCalendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -92,15 +93,11 @@ function StayDetailPageContent() {
   const [saved, setSaved] = useState(false);
   const [savedRooms, setSavedRooms] = useState<string[]>([]);
 
-  // Load saved rooms from localStorage
-  const savedRoomsFromStorage = useMemo(() => {
-    const saved = localStorage.getItem('savedRooms');
-    return saved ? JSON.parse(saved) : [];
-  }, []);
-
+  // Load saved rooms from localStorage (client-only)
   useEffect(() => {
-    setSavedRooms(savedRoomsFromStorage);
-  }, [savedRoomsFromStorage]);
+    const saved = localStorage.getItem('savedRooms');
+    setSavedRooms(saved ? JSON.parse(saved) : []);
+  }, []);
 
   // Check if current room is saved
   const isRoomSaved = useMemo(() => savedRooms.includes(slug || ''), [savedRooms, slug]);
@@ -144,18 +141,13 @@ function StayDetailPageContent() {
   };
 
 
-  // Restore booking flow state after OAuth redirect
-  const shouldRestoreBookingFlow = useMemo(() => {
-    const storedBookingFlow = localStorage.getItem('bookingFlowOpen');
-    return storedBookingFlow === 'true';
-  }, []);
-
+  // Restore booking flow state after OAuth redirect (client-only)
   useEffect(() => {
-    if (shouldRestoreBookingFlow) {
+    if (localStorage.getItem('bookingFlowOpen') === 'true') {
       setBookingFlowOpen(true);
       localStorage.removeItem('bookingFlowOpen');
     }
-  }, [shouldRestoreBookingFlow]);
+  }, []);
 
   // Check authentication status
   useEffect(() => {
@@ -189,12 +181,6 @@ function StayDetailPageContent() {
       }
     })();
   }, [slug]);
-
-  useEffect(() => {
-    if (room && checkIn && !checkOut) {
-      setCheckOut(addDays(checkIn, 3));
-    }
-  }, [room, checkIn, checkOut]);
 
   // Check availability when dates change
   useEffect(() => {
@@ -250,6 +236,9 @@ function StayDetailPageContent() {
       }
     })();
   }, [slug]);
+
+  // Nuits déjà réservées (le jour de départ reste disponible comme arrivée)
+  const availabilityMap = useMemo(() => buildAvailabilityMap(bookings), [bookings]);
 
   // Submit review handler
   const handleSubmitReview = async () => {
@@ -444,6 +433,18 @@ function StayDetailPageContent() {
   };
 
   const nights = checkIn && checkOut ? differenceInDays(checkOut, checkIn) : 0;
+
+  const handleSelectionChange = (newCheckIn: Date | null, newCheckOut: Date | null) => {
+    setCheckIn(newCheckIn ?? undefined);
+    setCheckOut(newCheckOut ?? undefined);
+  };
+
+  const handleGuestsChange = (guests: GuestCount) => {
+    const maxGuests = room?.maxGuests ?? guests.adults + guests.children;
+    const nextAdults = Math.min(guests.adults, maxGuests);
+    setAdults(nextAdults);
+    setChildren(Math.min(guests.children, maxGuests - nextAdults));
+  };
 
   const handlePrevImage = () => {
     setCurrentImageIndex((prev) => (prev === 0 ? p.gallery.length - 1 : prev - 1));
@@ -813,6 +814,22 @@ function StayDetailPageContent() {
           </div>
 
           <div className="py-6 border-b border-border">
+            <h2 className="font-display text-2xl mb-4">Disponibilités</h2>
+            <HotelBookingCalendar
+              hotelName={room.name}
+              availability={availabilityMap}
+              basePrice={room.basePrice}
+              currencyLabel={room.currency === "XOF" ? "FCFA" : room.currency}
+              monthsToShow={2}
+              maxGuestsPerRoom={room.maxGuests}
+              initialCheckIn={checkIn ?? null}
+              initialCheckOut={checkOut ?? null}
+              onSelectionChange={handleSelectionChange}
+              onGuestsChange={handleGuestsChange}
+            />
+          </div>
+
+          <div className="py-6 border-b border-border">
             <h2 className="font-display text-2xl mb-4">Où vous serez</h2>
             <div className="aspect-[16/9] rounded-2xl bg-muted relative overflow-hidden border border-border">
               <iframe
@@ -1163,16 +1180,16 @@ function StayDetailPageContent() {
 
 function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdults, initialChildren, bookings, onClose }: { room: Room | null; initialCheckIn: Date | undefined; initialCheckOut: Date | undefined; initialAdults: number; initialChildren: number; bookings: { id: string; checkIn: string; checkOut: string; status: string }[]; onClose: () => void }) {
   const { user, refresh } = useAuth();
-  const steps = ["Dates", "Voyageurs", "Détails", "Récapitulatif"] as const;
+  const steps = ["Dates", "Détails", "Récapitulatif"] as const;
   type Step = typeof steps[number];
   const [step, setStep] = useState<Step>(() => {
     const storedState = localStorage.getItem('bookingFlowState');
     if (storedState) {
       try {
         const state = JSON.parse(storedState);
-        const restoredStep = state.step === 'Auth' ? 'Details' : state.step;
+        const restoredStep = state.step === 'Auth' ? 'Détails' : state.step;
         localStorage.removeItem('bookingFlowState');
-        return restoredStep || 'Dates';
+        return (steps as readonly string[]).includes(restoredStep) ? restoredStep : 'Dates';
       } catch {
         return 'Dates';
       }
@@ -1211,29 +1228,32 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
     }
     return initialCheckOut;
   });
+  const maxGuests = room?.maxGuests ?? 10;
   const [adults, setAdults] = useState(() => {
+    const clamp = (v: number) => Math.min(v || 1, maxGuests);
     const storedState = localStorage.getItem('bookingFlowState');
     if (storedState) {
       try {
         const state = JSON.parse(storedState);
-        return state.adults || initialAdults || 1;
+        return clamp(state.adults || initialAdults || 1);
       } catch {
-        return initialAdults || 1;
+        return clamp(initialAdults || 1);
       }
     }
-    return initialAdults || 1;
+    return clamp(initialAdults || 1);
   });
   const [children, setChildren] = useState(() => {
+    const clamp = (v: number) => Math.min(v || 0, Math.max(0, maxGuests - adults));
     const storedState = localStorage.getItem('bookingFlowState');
     if (storedState) {
       try {
         const state = JSON.parse(storedState);
-        return state.children || initialChildren || 0;
+        return clamp(state.children || initialChildren || 0);
       } catch {
-        return initialChildren || 0;
+        return clamp(initialChildren || 0);
       }
     }
-    return initialChildren || 0;
+    return clamp(initialChildren || 0);
   });
   const [guestInfo, setGuestInfo] = useState(() => {
     const storedState = localStorage.getItem('bookingFlowState');
@@ -1291,6 +1311,8 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
   const nights = checkIn && checkOut ? differenceInDays(checkOut, checkIn) : 3;
   const total = room?.basePrice ? room.basePrice * nights : 0;
 
+  const overlayAvailabilityMap = useMemo(() => buildAvailabilityMap(bookings), [bookings]);
+
   // Real-time availability check whenever the selected dates change
   const [availability, setAvailability] = useState<boolean | null>(null);
   const [checkingAvailability, setCheckingAvailability] = useState(false);
@@ -1334,10 +1356,6 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
       if (checkIn && checkOut && checkOut <= checkIn) newErrors.dates = 'Le départ doit être après l\'arrivée';
       if (checkIn && checkOut && checkOut > checkIn && availability === false) newErrors.dates = isOwnBooking ? 'Vous avez déjà une réservation pour ces dates' : 'Cette chambre n\'est plus disponible pour ces dates';
     }
-    if (step === 'Voyageurs') {
-      if (adults < 1) newErrors.adults = 'Au moins 1 adulte requis';
-      if (room && adults + children > room.maxGuests) newErrors.guests = `Maximum ${room.maxGuests} voyageurs autorisés`;
-    }
     if (step === 'Détails') {
       // Only validate details if user is authenticated
       if (user) {
@@ -1372,7 +1390,6 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
 
   const canContinue =
     (step === 'Dates' && checkIn && checkOut && checkOut > checkIn && !checkingAvailability && availability !== false) ||
-    (step === 'Voyageurs' && adults >= 1 && room && adults + children <= room.maxGuests) ||
     (step === 'Détails' && user && guestInfo.firstName && guestInfo.lastName && (guestInfo.email || guestInfo.phone)) ||
     step === 'Récapitulatif';
 
@@ -1520,43 +1537,25 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
                   <div className="border border-border rounded-3xl p-7 bg-card">
                     <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground"><Calendar className="h-4 w-4" />Votre voyage</div>
                     <div className="mt-4 space-y-4">
-                      <div className="grid grid-cols-2 rounded-xl border border-border overflow-hidden">
-                        <div className="p-3 border-r border-border">
-                          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Arrivée</div>
-                          <div className="text-sm font-medium">{checkIn ? format(checkIn, 'dd MMM yyyy', { locale: fr }) : 'Sélectionner'}</div>
-                        </div>
-                        <div className="p-3">
-                          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Départ</div>
-                          <div className="text-sm font-medium">{checkOut ? format(checkOut, 'dd MMM yyyy', { locale: fr }) : 'Sélectionner'}</div>
-                        </div>
-                      </div>
-                      <div className="flex justify-center rounded-xl border border-border p-3">
-                        <CalendarPicker
-                          mode="range"
-                          selected={{ from: checkIn, to: checkOut }}
-                          onSelect={(range) => {
-                            setCheckIn(range?.from);
-                            setCheckOut(range?.to);
-                          }}
-                          disabled={(date) => {
-                            // Désactiver les dates passées
-                            if (date < new Date()) return true;
-
-                            // Désactiver les dates déjà réservées (exclure les annulées)
-                            const isBooked = bookings.some((b) => {
-                              // Exclure les réservations annulées
-                              if (b.status === "CANCELLED") return false;
-                              const bCheckIn = new Date(b.checkIn);
-                              const bCheckOut = new Date(b.checkOut);
-                              return isWithinInterval(date, { start: bCheckIn, end: new Date(bCheckOut.getTime() - 1) }) ||
-                                     isSameDay(date, bCheckIn) ||
-                                     isSameDay(date, new Date(bCheckOut.getTime() - 1));
-                            });
-                            return isBooked;
-                          }}
-                          numberOfMonths={1}
-                        />
-                      </div>
+                      <HotelBookingCalendar
+                        availability={overlayAvailabilityMap}
+                        basePrice={room?.basePrice ?? 0}
+                        currencyLabel={room?.currency === "XOF" ? "FCFA" : room?.currency ?? "FCFA"}
+                        monthsToShow={1}
+                        maxGuestsPerRoom={room?.maxGuests ?? 4}
+                        initialCheckIn={checkIn ?? null}
+                        initialCheckOut={checkOut ?? null}
+                        onSelectionChange={(ci, co) => {
+                          setCheckIn(ci ?? undefined);
+                          setCheckOut(co ?? undefined);
+                        }}
+                        onGuestsChange={(guests) => {
+                          const maxGuests = room?.maxGuests ?? guests.adults + guests.children;
+                          const nextAdults = Math.min(guests.adults, maxGuests);
+                          setAdults(nextAdults);
+                          setChildren(Math.min(guests.children, maxGuests - nextAdults));
+                        }}
+                      />
                       {errors.dates && <p className="mt-2 text-sm text-destructive flex items-center gap-1"><AlertCircle className="h-4 w-4" />{errors.dates}</p>}
 
                       {checkIn && checkOut && checkOut > checkIn && (
@@ -1590,38 +1589,6 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
                       )}
 
                       <p className="mt-4 text-sm text-muted-foreground">{nights} nuit{nights > 1 ? "s" : ""} · {room?.location.city ? `${room.location.city}, ${room.location.name}` : room?.location.name}</p>
-                    </div>
-                  </div>
-                )}
-
-                {step === "Voyageurs" && (
-                  <div className="border border-border rounded-3xl p-7 bg-card">
-                    <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground"><Users className="h-4 w-4" />Qui vient</div>
-                    <div className="mt-4 space-y-4">
-                      <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50">
-                        <div>
-                          <div className="text-sm font-medium">Adultes</div>
-                          <div className="text-xs text-muted-foreground">13 ans et plus</div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => setAdults(Math.max(1, adults - 1))} className="h-8 w-8 rounded-full border border-border flex items-center justify-center hover:border-foreground">−</button>
-                          <span className="w-6 text-center">{adults}</span>
-                          <button onClick={() => setAdults(Math.min(room?.maxGuests || 10, adults + 1))} disabled={!!(room && adults + children >= room.maxGuests)} className="h-8 w-8 rounded-full border border-border flex items-center justify-center hover:border-foreground disabled:opacity-30">+</button>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50">
-                        <div>
-                          <div className="text-sm font-medium">Enfants</div>
-                          <div className="text-xs text-muted-foreground">2–12 ans</div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => setChildren(Math.max(0, children - 1))} className="h-8 w-8 rounded-full border border-border flex items-center justify-center hover:border-foreground">−</button>
-                          <span className="w-6 text-center">{children}</span>
-                          <button onClick={() => setChildren(Math.min((room?.maxGuests || 10) - adults, children + 1))} disabled={!!(room && adults + children >= room.maxGuests)} className="h-8 w-8 rounded-full border border-border flex items-center justify-center hover:border-foreground disabled:opacity-30">+</button>
-                        </div>
-                      </div>
-                      {errors.guests && <p className="mt-2 text-sm text-destructive flex items-center gap-1"><AlertCircle className="h-4 w-4" />{errors.guests}</p>}
-                      <p className="mt-2 text-xs text-muted-foreground">Ce logement accueille jusqu&apos;à {room?.maxGuests} voyageurs.</p>
                     </div>
                   </div>
                 )}

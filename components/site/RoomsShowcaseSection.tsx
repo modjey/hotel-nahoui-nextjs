@@ -20,6 +20,9 @@ export function RoomsShowcaseSection() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const [loopEnabled, setLoopEnabled] = useState(false);
+  const pausedRef = useRef(false);
+  const resumeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -33,6 +36,53 @@ export function RoomsShowcaseSection() {
       }
     })();
   }, []);
+
+  // Active la boucle infinie seulement si le contenu déborde du conteneur
+  useEffect(() => {
+    if (loading || rooms.length === 0) return;
+    const el = scrollerRef.current;
+    if (!el) return;
+    setLoopEnabled(el.scrollWidth > el.clientWidth + 8);
+  }, [loading, rooms]);
+
+  // Défilement automatique : boucle fluide, pause quand pausedRef est vrai
+  useEffect(() => {
+    if (!loopEnabled) return;
+    const el = scrollerRef.current;
+    if (!el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    let raf = 0;
+    const step = () => {
+      if (!pausedRef.current) {
+        el.scrollLeft += 0.5;
+        const marker = el.children[rooms.length] as HTMLElement | undefined;
+        const wrapAt = marker ? marker.offsetLeft : el.scrollWidth / 2;
+        if (el.scrollLeft >= wrapAt) el.scrollLeft -= wrapAt;
+      }
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [loopEnabled, rooms.length]);
+
+  useEffect(() => {
+    return () => {
+      if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current);
+    };
+  }, []);
+
+  const pauseAutoScroll = () => {
+    pausedRef.current = true;
+    if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current);
+  };
+
+  const resumeAutoScroll = (delay = 0) => {
+    if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current);
+    resumeTimeoutRef.current = setTimeout(() => {
+      pausedRef.current = false;
+    }, delay);
+  };
 
   const scroll = (direction: "left" | "right") => {
     const el = scrollerRef.current;
@@ -113,18 +163,25 @@ export function RoomsShowcaseSection() {
           <div
             ref={scrollerRef}
             onWheel={handleWheel}
-            className="no-scrollbar flex snap-x snap-mandatory gap-5 overflow-x-auto overflow-y-hidden scroll-smooth pb-2"
+            onMouseEnter={pauseAutoScroll}
+            onMouseLeave={() => resumeAutoScroll()}
+            onTouchStart={pauseAutoScroll}
+            onTouchEnd={() => resumeAutoScroll(2500)}
+            onFocusCapture={pauseAutoScroll}
+            onBlurCapture={() => resumeAutoScroll(1500)}
+            className="no-scrollbar flex gap-5 overflow-x-auto overflow-y-hidden pb-2"
           >
-            {rooms.map((room, i) => (
+            {(loopEnabled ? [...rooms, ...rooms] : rooms).map((room, i) => (
               <motion.div
-                key={room.id}
+                key={`${room.id}-${i}`}
                 initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-80px" }}
                 transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: (i % 4) * 0.08 }}
-                className="w-[60%] shrink-0 snap-start sm:w-[calc(50%-0.5rem)] lg:w-[calc(25%-0.9375rem)]"
+                aria-hidden={i >= rooms.length}
+                className="w-[60%] shrink-0 sm:w-[calc(50%-0.5rem)] lg:w-[calc(25%-0.9375rem)]"
               >
-                <Link href={`/stays/${room.id}`} className="group block">
+                <Link href={`/stays/${room.id}`} className="group block" tabIndex={i >= rooms.length ? -1 : undefined}>
                   <div className="relative overflow-hidden aspect-[3/4] bg-muted">
                     <img
                       src={room.coverImageUrl || "/assets/hero.png"}

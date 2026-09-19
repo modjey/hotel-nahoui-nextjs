@@ -23,7 +23,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { api, ApiError } from "@/lib/api-client";
 import { toast } from "sonner";
-import { Search, Eye, CheckCircle, XCircle, Clock, X } from "lucide-react";
+import { Search, Eye, CheckCircle, XCircle, Clock, Pencil } from "lucide-react";
+import { BookingFormDialog } from "@/components/admin/BookingFormDialog";
 import Link from "next/link";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -33,6 +34,9 @@ interface AdminRoom {
   name: string;
   slug: string;
   maxGuests: number;
+  basePrice: number;
+  currency: string;
+  bookings: { id: string; checkIn: string; checkOut: string; status: string }[];
 }
 
 interface Booking {
@@ -90,13 +94,6 @@ const statusLabels: Record<string, string> = {
   COMPLETED: "Terminée",
 };
 
-const statusColors: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  PENDING: "secondary",
-  CONFIRMED: "default",
-  CANCELLED: "destructive",
-  COMPLETED: "outline",
-};
-
 const statusIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   PENDING: Clock,
   CONFIRMED: CheckCircle,
@@ -112,20 +109,8 @@ export default function AdminBookingsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [createOpen, setCreateOpen] = useState(false);
+  const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
   const [rooms, setRooms] = useState<AdminRoom[]>([]);
-  const [creating, setCreating] = useState(false);
-  const [createForm, setCreateForm] = useState({
-    roomId: "",
-    checkIn: "",
-    checkOut: "",
-    adults: "1",
-    children: "0",
-    guestFirstName: "",
-    guestLastName: "",
-    guestEmail: "",
-    guestPhone: "",
-    status: "PENDING",
-  });
 
   const fetchBookings = useCallback(async () => {
     try {
@@ -169,50 +154,15 @@ export default function AdminBookingsPage() {
   };
 
   const openCreateModal = () => {
+    setEditingBooking(null);
     setCreateOpen(true);
     if (rooms.length === 0) fetchRooms();
   };
 
-  const createBooking = async () => {
-    if (!createForm.roomId || !createForm.checkIn || !createForm.checkOut || !createForm.guestFirstName || !createForm.guestLastName) {
-      toast.error("Chambre, dates, prénom et nom sont requis");
-      return;
-    }
-
-    setCreating(true);
-    try {
-      await api.post("/api/admin/admin-bookings", {
-        roomId: createForm.roomId,
-        checkIn: createForm.checkIn,
-        checkOut: createForm.checkOut,
-        adults: parseInt(createForm.adults, 10),
-        children: parseInt(createForm.children, 10),
-        guestFirstName: createForm.guestFirstName,
-        guestLastName: createForm.guestLastName,
-        guestEmail: createForm.guestEmail || null,
-        guestPhone: createForm.guestPhone || null,
-        status: createForm.status,
-      });
-      toast.success("Réservation créée sans paiement");
-      setCreateOpen(false);
-      setCreateForm({
-        roomId: "",
-        checkIn: "",
-        checkOut: "",
-        adults: "1",
-        children: "0",
-        guestFirstName: "",
-        guestLastName: "",
-        guestEmail: "",
-        guestPhone: "",
-        status: "PENDING",
-      });
-      fetchBookings();
-    } catch (error) {
-      toast.error(error instanceof ApiError ? error.message : "Erreur lors de la création");
-    } finally {
-      setCreating(false);
-    }
+  const openEditModal = (booking: Booking) => {
+    setEditingBooking(booking);
+    setCreateOpen(true);
+    if (rooms.length === 0) fetchRooms();
   };
 
   const updateBookingStatus = async (bookingId: string, reference: string, newStatus: string) => {
@@ -243,90 +193,14 @@ export default function AdminBookingsPage() {
         }
       />
 
-      {createOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="w-full max-w-2xl rounded-2xl bg-card border border-border p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-xl font-semibold">Créer une réservation</h2>
-                <p className="text-sm text-muted-foreground">La réservation sera créée sans paiement.</p>
-              </div>
-              <Button variant="ghost" size="icon" onClick={() => setCreateOpen(false)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+      <BookingFormDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        rooms={rooms}
+        editingBooking={editingBooking}
+        onSaved={fetchBookings}
+      />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="sm:col-span-2">
-                <label className="text-sm font-medium">Chambre</label>
-                <Select value={createForm.roomId} onValueChange={(value) => setCreateForm((form) => ({ ...form, roomId: value }))}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Sélectionner une chambre" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {rooms.map((room) => (
-                      <SelectItem key={room.id} value={room.id}>{room.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Arrivée</label>
-                <Input type="datetime-local" value={createForm.checkIn} onChange={(e) => setCreateForm((form) => ({ ...form, checkIn: e.target.value }))} className="mt-1" />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Départ</label>
-                <Input type="datetime-local" value={createForm.checkOut} onChange={(e) => setCreateForm((form) => ({ ...form, checkOut: e.target.value }))} className="mt-1" />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Adultes</label>
-                <Input type="number" min="1" value={createForm.adults} onChange={(e) => setCreateForm((form) => ({ ...form, adults: e.target.value }))} className="mt-1" />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Enfants</label>
-                <Input type="number" min="0" value={createForm.children} onChange={(e) => setCreateForm((form) => ({ ...form, children: e.target.value }))} className="mt-1" />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Prénom</label>
-                <Input value={createForm.guestFirstName} onChange={(e) => setCreateForm((form) => ({ ...form, guestFirstName: e.target.value }))} className="mt-1" />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Nom</label>
-                <Input value={createForm.guestLastName} onChange={(e) => setCreateForm((form) => ({ ...form, guestLastName: e.target.value }))} className="mt-1" />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Email</label>
-                <Input type="email" value={createForm.guestEmail} onChange={(e) => setCreateForm((form) => ({ ...form, guestEmail: e.target.value }))} className="mt-1" />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Téléphone</label>
-                <Input value={createForm.guestPhone} onChange={(e) => setCreateForm((form) => ({ ...form, guestPhone: e.target.value }))} className="mt-1" />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="text-sm font-medium">Statut</label>
-                <Select value={createForm.status} onValueChange={(value) => setCreateForm((form) => ({ ...form, status: value }))}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PENDING">En attente</SelectItem>
-                    <SelectItem value="CANCELLED">Annulée</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-2 mt-6">
-              <Button onClick={createBooking} disabled={creating} className="flex-1">
-                {creating ? "Création..." : "Créer sans paiement"}
-              </Button>
-              <Button variant="outline" onClick={() => setCreateOpen(false)} className="flex-1">
-                Annuler
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="rounded-2xl bg-card border border-border">
         {/* Filters */}
@@ -446,6 +320,14 @@ export default function AdminBookingsPage() {
                             <Eye className="h-4 w-4" />
                           </Button>
                         </Link>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEditModal(booking)}
+                          title="Modifier"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                         {booking.status === "PENDING" && (
                           <>
                             <Button
