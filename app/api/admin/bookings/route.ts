@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { notifyAdminNewBooking } from "@/lib/notifications";
 import { ok, fail, parseBody, withAuth } from "@/lib/auth/api";
 import { z } from "zod";
 
@@ -126,6 +127,20 @@ const handler = withAuth(async (req) => {
           },
         },
       },
+    });
+
+    await notifyAdminNewBooking({
+      reference: booking.reference,
+      roomName: booking.room?.name,
+      checkIn: booking.checkIn,
+      checkOut: booking.checkOut,
+      adults: booking.adults,
+      children: booking.children,
+      status: booking.status,
+      guestFirstName: booking.guestFirstName,
+      guestLastName: booking.guestLastName,
+      guestEmail: booking.guestEmail,
+      guestPhone: booking.guestPhone,
     });
 
     return ok({ booking });

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fineoPayService } from '@/lib/fineopay';
+import { createAdminNotification } from '@/lib/notifications';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -76,6 +77,16 @@ export async function POST(request: NextRequest) {
         status: paymentStatus,
         booking_status: paymentStatus === 'SUCCESS' ? 'CONFIRMED' : 'PENDING',
       });
+
+      if (paymentStatus === 'SUCCESS' || paymentStatus === 'FAILED') {
+        const guestName = [existingPayment.booking?.guestFirstName, existingPayment.booking?.guestLastName].filter(Boolean).join(' ') || 'Client';
+        await createAdminNotification({
+          type: paymentStatus === 'SUCCESS' ? 'PAYMENT_SUCCESS' : 'PAYMENT_FAILED',
+          title: paymentStatus === 'SUCCESS' ? 'Paiement reçu' : 'Paiement échoué',
+          message: `${guestName} — ${existingPayment.amount} ${existingPayment.currency} (réf ${existingPayment.reference})`,
+          link: '/admin/bookings',
+        });
+      }
     } else {
       console.log('=== PAYMENT NOT FOUND ===', {
         reference: payment.reference,

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { notifyAdminNewBooking, createAdminNotification } from "@/lib/notifications";
 import { ok, fail, withAuth } from "@/lib/auth/api";
 import { z } from "zod";
 
@@ -63,6 +64,15 @@ const handler = withAuth(async (req) => {
         });
       }
 
+      if (parsed.status === "CONFIRMED" || parsed.status === "CANCELLED") {
+        await createAdminNotification({
+          type: parsed.status === "CONFIRMED" ? "BOOKING_CONFIRMED" : "BOOKING_CANCELLED",
+          title: parsed.status === "CONFIRMED" ? "Réservation confirmée" : "Réservation annulée",
+          message: `${existingBooking.guestFirstName || ""} ${existingBooking.guestLastName || ""} — réf ${existingBooking.reference || existingBooking.id}`.trim(),
+          link: "/admin/bookings",
+        });
+      }
+
       return ok({ booking });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -118,6 +128,20 @@ const handler = withAuth(async (req) => {
           reference: parsed.reference || `BK-${Date.now()}`,
           status: parsed.status,
         },
+      });
+
+      await notifyAdminNewBooking({
+        reference: booking.reference,
+        roomName: room.name,
+        checkIn: booking.checkIn,
+        checkOut: booking.checkOut,
+        adults: booking.adults,
+        children: booking.children,
+        status: booking.status,
+        guestFirstName: booking.guestFirstName,
+        guestLastName: booking.guestLastName,
+        guestEmail: booking.guestEmail,
+        guestPhone: booking.guestPhone,
       });
 
       return ok({ booking }, { status: 201 });

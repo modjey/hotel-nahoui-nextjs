@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { paymentProviderManager } from '@/lib/payment-provider';
 import { prisma } from '@/lib/prisma';
+import { createAdminNotification } from '@/lib/notifications';
 
 export async function POST(request: NextRequest) {
   try {
@@ -75,6 +76,16 @@ export async function POST(request: NextRequest) {
         booking_id: updatedPayment.bookingId,
         status: bookingStatus,
       });
+
+      if (payment.status === 'SUCCESS' || payment.status === 'FAILED') {
+        const guestName = [updatedPayment.booking.guestFirstName, updatedPayment.booking.guestLastName].filter(Boolean).join(' ') || 'Client';
+        await createAdminNotification({
+          type: payment.status === 'SUCCESS' ? 'PAYMENT_SUCCESS' : 'PAYMENT_FAILED',
+          title: payment.status === 'SUCCESS' ? 'Paiement reçu' : 'Paiement échoué',
+          message: `${guestName} — ${updatedPayment.amount} ${updatedPayment.currency} (réf ${updatedPayment.reference})`,
+          link: '/admin/bookings',
+        });
+      }
     }
     return NextResponse.json({
       success: true,

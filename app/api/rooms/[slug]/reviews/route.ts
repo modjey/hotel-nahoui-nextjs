@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from "@/lib/prisma";
+import { createAdminNotification } from "@/lib/notifications";
 import { ok, fail, withAuth } from "@/lib/auth/api";
 import { z } from "zod";
 
@@ -140,6 +141,13 @@ const postHandler = withAuth(async (req, { session }) => {
           },
         },
       },
+    });
+
+    await createAdminNotification({
+      type: "REVIEW_CREATED",
+      title: "Nouvel avis à modérer",
+      message: `${review.user?.name || "Un client"} a laissé un avis ${review.rating}/5 sur ${room.name}`,
+      link: "/admin/reviews",
     });
 
     return ok({ review });

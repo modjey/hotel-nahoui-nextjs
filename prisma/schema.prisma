@@ -600,3 +600,18 @@ model ContactSubmission {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+// Notifications internes du panneau admin
+model AdminNotification {
+  id        String   @id @default(cuid())
+  type      String   // BOOKING_CREATED, PAYMENT_SUCCESS, PAYMENT_FAILED, BOOKING_CANCELLED, REVIEW_CREATED, CONTACT_MESSAGE, USER_REGISTERED...
+  title     String
+  message   String
+  link      String?  // lien interne admin (ex: /admin/bookings/xxx)
+  read      Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([read])
+  @@index([createdAt])
+}

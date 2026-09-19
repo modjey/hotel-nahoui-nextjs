@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
+  Bell,
   MapPin,
   BedDouble,
   Tag,
@@ -24,6 +25,7 @@ const items = [
   { href: "/admin/admin-locations", label: "Localisations", icon: MapPin },
   { href: "/admin/admin-room-types", label: "Types de chambre", icon: Tag },
   { href: "/admin/admin-rooms", label: "Chambres", icon: BedDouble },
+  { href: "/admin/notifications", label: "Notifications", icon: Bell },
   { href: "/admin/bookings", label: "Réservations", icon: CalendarCheck },
   { href: "/admin/payments", label: "Paiements", icon: CreditCard },
   { href: "/admin/reviews", label: "Avis", icon: Star },

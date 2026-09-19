@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createAdminNotification } from "@/lib/notifications";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -24,6 +25,13 @@ export async function POST(req: NextRequest) {
         subject,
         message,
       },
+    });
+
+    await createAdminNotification({
+      type: "CONTACT_MESSAGE",
+      title: "Nouveau message de contact",
+      message: `${firstName} ${lastName} — ${subject}`,
+      link: "/admin/contact-submissions",
     });
 
     return NextResponse.json({

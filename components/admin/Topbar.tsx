@@ -1,7 +1,8 @@
 "use client";
-import { Bell, Search, Menu } from "lucide-react";
+import { Search, Menu } from "lucide-react";
 import { useState } from "react";
 import { MobileSidebar } from "./MobileSidebar";
+import { NotificationBell } from "./NotificationBell";
 
 export function Topbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -30,10 +31,7 @@ export function Topbar() {
         </div>
 
         <div className="flex items-center gap-2">
-          <button className="h-10 w-10 grid place-items-center rounded-full hover:bg-secondary relative" aria-label="Notifications">
-            <Bell className="h-4 w-4" />
-            <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary" />
-          </button>
+          <NotificationBell />
           <div className="flex items-center gap-3 pl-3 pr-1 h-10 rounded-full border border-border">
             <span className="text-sm font-medium">Admin</span>
             <span className="h-8 w-8 rounded-full bg-primary text-primary-foreground grid place-items-center text-sm font-medium">

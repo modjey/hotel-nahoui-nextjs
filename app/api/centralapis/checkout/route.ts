@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { centralApisService } from '@/lib/centralapis';
 import { prisma } from '@/lib/prisma';
+import { notifyAdminNewBooking } from '@/lib/notifications';
 
 export async function POST(request: NextRequest) {
   try {
@@ -53,11 +54,26 @@ export async function POST(request: NextRequest) {
     // Create Booking record in database
     const booking = await prisma.booking.create({
       data: bookingData,
+      include: { room: { select: { name: true } } },
     });
 
     console.log('=== BOOKING CREATED ===', {
       booking_id: booking.id,
       reference: booking.reference,
+    });
+
+    await notifyAdminNewBooking({
+      reference: booking.reference,
+      roomName: booking.room?.name,
+      checkIn: booking.checkIn,
+      checkOut: booking.checkOut,
+      adults: booking.adults,
+      children: booking.children,
+      status: booking.status,
+      guestFirstName: booking.guestFirstName,
+      guestLastName: booking.guestLastName,
+      guestEmail: booking.guestEmail,
+      guestPhone: booking.guestPhone,
     });
 
     // Create Payment record in database

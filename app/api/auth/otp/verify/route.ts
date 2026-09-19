@@ -3,6 +3,7 @@ import { fail, ok, parseBody, reqMeta, serializeUser } from "@/lib/auth/api";
 import { otpVerifySchema, identifierSchema } from "@/lib/auth/schemas";
 import { verifyOtp } from "@/lib/auth/otp";
 import { prisma } from "@/lib/prisma";
+import { createAdminNotification } from "@/lib/notifications";
 import { issueTokens, setAuthCookies } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
@@ -36,6 +37,12 @@ export async function POST(req: NextRequest) {
         name: parsed.data.name ?? null,
         role: "USER",
       },
+    });
+    await createAdminNotification({
+      type: "USER_REGISTERED",
+      title: "Nouvel utilisateur",
+      message: `${user.name || identifier} s'est inscrit via ${channel === "EMAIL" ? "email" : "SMS"}`,
+      link: "/admin/users",
     });
   } else {
     // Mark identifier verified if not yet
