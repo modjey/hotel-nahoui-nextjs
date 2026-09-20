@@ -56,8 +56,8 @@ const handler = withAuth(async (req) => {
         },
       });
 
-      // If payment exists and was successful, update it to REFUNDED
-      if (booking.payment && booking.payment.status === "SUCCESS") {
+      // If the booking is cancelled and its payment was successful, mark it as refunded
+      if (parsed.status === "CANCELLED" && booking.payment && booking.payment.status === "SUCCESS") {
         await prisma.payment.update({
           where: { id: booking.payment.id },
           data: { status: "REFUNDED" },

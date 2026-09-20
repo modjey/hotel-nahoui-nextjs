@@ -13,7 +13,7 @@ const bookingUpdateSchema = z.object({
   checkOut: z.string().optional(),
   adults: z.number().min(1).optional(),
   children: z.number().min(0).optional(),
-  status: z.enum(["CONFIRMED", "PENDING", "CANCELLED"]).optional(),
+  status: z.enum(["CONFIRMED", "PENDING", "CANCELLED", "COMPLETED"]).optional(),
 });
 
 export const runtime = "nodejs";

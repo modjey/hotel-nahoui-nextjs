@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { api, ApiError } from "@/lib/api-client";
 import { useApi } from "@/hooks/use-api";
 import { toast } from "sonner";
-import { ArrowLeft, User, Mail, Phone, Calendar, CreditCard, Users, BedDouble } from "lucide-react";
+import { ArrowLeft, User, Mail, Phone, Calendar, CreditCard, Users, BedDouble, Pencil, CheckCircle2, Trash2, CircleCheckBig } from "lucide-react";
+import { BookingFormDialog, type BookingFormRoom } from "@/components/admin/BookingFormDialog";
 
 type Booking = {
   id: string;
@@ -94,16 +95,57 @@ export default function AdminBookingDetailPage() {
   const [paymentReference, setPaymentReference] = useState("");
   const [paymentStatus, setPaymentStatus] = useState("SUCCESS");
   const [savingPayment, setSavingPayment] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editRoom, setEditRoom] = useState<BookingFormRoom | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  const setStatus = async (status: "CONFIRMED" | "COMPLETED" | "CANCELLED") => {
+    if (!data) return;
+    setActionLoading(status);
+    try {
+      await api.patch(`/api/admin/admin-bookings?id=${data.booking.id}`, { status });
+      toast.success(
+        status === "CONFIRMED" ? "Réservation confirmée" : status === "COMPLETED" ? "Séjour terminé" : "Réservation annulée"
+      );
+      refetch();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Erreur");
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   const cancelBooking = async () => {
     if (!data) return;
     if (!confirm(`Annuler la réservation ${data.booking.reference} ?`)) return;
+    await setStatus("CANCELLED");
+  };
+
+  const deleteBooking = async () => {
+    if (!data) return;
+    if (!confirm(`Supprimer définitivement la réservation ${data.booking.reference} ?`)) return;
+    setActionLoading("DELETE");
     try {
-      await api.patch(`/api/admin/admin-bookings?id=${data.booking.id}`, { status: "CANCELLED" });
-      toast.success("Réservation annulée");
+      await api.del(`/api/admin/bookings/${data.booking.id}`);
+      toast.success("Réservation supprimée");
       router.push("/admin/bookings");
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "Erreur");
+      setActionLoading(null);
+    }
+  };
+
+  const openEdit = async () => {
+    if (!data) return;
+    setActionLoading("EDIT");
+    try {
+      const res = await api.get<{ room: BookingFormRoom }>(`/api/admin/admin-rooms/${data.booking.room.slug}`);
+      setEditRoom(res.room);
+      setEditOpen(true);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Erreur");
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -212,14 +254,57 @@ export default function AdminBookingDetailPage() {
                 Retour
               </Button>
             </Link>
+            <Button variant="outline" onClick={openEdit} disabled={actionLoading === "EDIT"}>
+              <Pencil className="h-4 w-4 mr-2" />
+              Modifier
+            </Button>
+            {booking.status === "PENDING" && (
+              <Button onClick={() => setStatus("CONFIRMED")} disabled={actionLoading === "CONFIRMED"}>
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Confirmer
+              </Button>
+            )}
+            {booking.status === "CONFIRMED" && (
+              <Button variant="secondary" onClick={() => setStatus("COMPLETED")} disabled={actionLoading === "COMPLETED"}>
+                <CircleCheckBig className="h-4 w-4 mr-2" />
+                Terminée
+              </Button>
+            )}
             {booking.status !== "CANCELLED" && booking.status !== "COMPLETED" && (
-              <Button variant="destructive" onClick={cancelBooking}>
+              <Button variant="destructive" onClick={cancelBooking} disabled={actionLoading === "CANCELLED"}>
                 Annuler
               </Button>
             )}
+            <Button variant="outline" onClick={deleteBooking} disabled={actionLoading === "DELETE"}>
+              <Trash2 className="h-4 w-4" />
+            </Button>
           </div>
         }
       />
+
+      {editRoom && (
+        <BookingFormDialog
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          rooms={[editRoom]}
+          fixedRoomId={booking.room.id}
+          editingBooking={{
+            id: booking.id,
+            roomId: booking.room.id,
+            checkIn: booking.checkIn,
+            checkOut: booking.checkOut,
+            adults: booking.adults,
+            children: booking.children,
+            status: booking.status,
+            userId: booking.user?.id ?? null,
+            guestFirstName: booking.guestFirstName,
+            guestLastName: booking.guestLastName,
+            guestEmail: booking.guestEmail,
+            guestPhone: booking.guestPhone,
+          }}
+          onSaved={refetch}
+        />
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Informations client */}

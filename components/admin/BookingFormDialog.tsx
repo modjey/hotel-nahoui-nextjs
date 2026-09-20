@@ -406,6 +406,7 @@ function BookingForm({
             <option value="CONFIRMED">Confirmé</option>
             <option value="PENDING">En attente</option>
             <option value="CANCELLED">Annulé</option>
+            {editingBooking?.status === "COMPLETED" && <option value="COMPLETED">Terminée</option>}
           </select>
         </div>
 
