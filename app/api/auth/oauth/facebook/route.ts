@@ -10,9 +10,10 @@ export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const callbackUrl = searchParams.get("callbackUrl") || `${authConfig.appUrl}/`;
+  const origin = req.nextUrl.origin;
+  const callbackUrl = searchParams.get("callbackUrl") || `${origin}/`;
   const state = randomBytes(16).toString("hex");
-  const url = facebookAuthUrl(state);
+  const url = facebookAuthUrl(state, `${origin}/api/auth/oauth/facebook/callback`);
   const res = NextResponse.redirect(url);
   res.cookies.set("nh_oauth_state", state, {
     httpOnly: true,

@@ -16,7 +16,9 @@ export const authConfig = {
   cookieSecure: process.env.AUTH_COOKIE_SECURE
     ? process.env.AUTH_COOKIE_SECURE === "true"
     : process.env.NODE_ENV === "production",
-  appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+  appUrl:
+    process.env.NEXT_PUBLIC_APP_URL ??
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000"),
   isProd: process.env.NODE_ENV === "production",
 
   otp: {

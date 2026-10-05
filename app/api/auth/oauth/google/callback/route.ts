@@ -2,7 +2,6 @@ import { NextResponse, type NextRequest } from "next/server";
 import { reqMeta } from "@/lib/auth/api";
 import { exchangeGoogleCode, upsertUserFromOAuth } from "@/lib/auth/oauth";
 import { issueTokens, setAuthCookies } from "@/lib/auth/session";
-import { authConfig } from "@/lib/auth/config";
 
 export const runtime = "nodejs";
 
@@ -12,16 +11,17 @@ export async function GET(req: NextRequest) {
   const code = searchParams.get("code");
   const state = searchParams.get("state");
   const expectedState = req.cookies.get("nh_oauth_state")?.value;
-  const callbackUrl = req.cookies.get("nh_oauth_callback")?.value || `${authConfig.appUrl}/?auth=success`;
+  const origin = req.nextUrl.origin;
+  const callbackUrl = req.cookies.get("nh_oauth_callback")?.value || `${origin}/?auth=success`;
 
   if (!code || !state || !expectedState || state !== expectedState) {
-    return NextResponse.redirect(`${authConfig.appUrl}/?auth_error=oauth_state`);
+    return NextResponse.redirect(`${origin}/?auth_error=oauth_state`);
   }
 
   try {
     const profile = await exchangeGoogleCode(
       code,
-      `${authConfig.appUrl}/api/auth/oauth/google/callback`,
+      `${origin}/api/auth/oauth/google/callback`,
     );
     const user = await upsertUserFromOAuth(profile);
     const tokens = await issueTokens(user, reqMeta(req));
@@ -32,6 +32,6 @@ export async function GET(req: NextRequest) {
     return res;
   } catch (err) {
     console.error("[oauth google callback]", err);
-    return NextResponse.redirect(`${authConfig.appUrl}/?auth_error=google`);
+    return NextResponse.redirect(`${origin}/?auth_error=google`);
   }
 }

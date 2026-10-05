@@ -11,9 +11,10 @@ export const runtime = "nodejs";
 /** GET — start web OAuth flow (redirects to Google). */
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const callbackUrl = searchParams.get("callbackUrl") || `${authConfig.appUrl}/`;
+  const origin = req.nextUrl.origin;
+  const callbackUrl = searchParams.get("callbackUrl") || `${origin}/`;
   const state = randomBytes(16).toString("hex");
-  const url = googleAuthUrl(state);
+  const url = googleAuthUrl(state, `${origin}/api/auth/oauth/google/callback`);
   const res = NextResponse.redirect(url);
   res.cookies.set("nh_oauth_state", state, {
     httpOnly: true,
