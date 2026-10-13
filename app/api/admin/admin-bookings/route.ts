@@ -1,6 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { notifyAdminNewBooking, createAdminNotification } from "@/lib/notifications";
 import { ok, fail, withAuth } from "@/lib/auth/api";
+import {
+  BookingConflictError,
+  PENDING_BOOKING_TTL_MS,
+  generateBookingReference,
+  overlapBookingWhere,
+  validateBookingDates,
+  withRoomLock,
+} from "@/lib/bookings";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -41,8 +49,24 @@ const handler = withAuth(async (req) => {
         return fail("Réservation introuvable", 404, "NOT_FOUND");
       }
 
-      if (parsed.status === "CONFIRMED" && existingBooking.payment?.status !== "SUCCESS") {
-        return fail("Ajoutez un paiement payé avant de confirmer la réservation", 400, "PAYMENT_REQUIRED");
+      if (parsed.status === "CONFIRMED") {
+        if (existingBooking.payment?.status !== "SUCCESS") {
+          return fail("Ajoutez un paiement payé avant de confirmer la réservation", 400, "PAYMENT_REQUIRED");
+        }
+        // La chambre a pu être prise entre-temps : on refuse une confirmation en conflit.
+        const conflict = await prisma.booking.findFirst({
+          where: overlapBookingWhere(existingBooking.roomId, existingBooking.checkIn, existingBooking.checkOut, {
+            excludeBookingId: id,
+          }),
+          select: { id: true, reference: true },
+        });
+        if (conflict) {
+          return fail(
+            `Impossible de confirmer : la chambre est déjà occupée sur ces dates (réservation ${conflict.reference || conflict.id})`,
+            409,
+            "CONFLICT",
+          );
+        }
       }
 
       // Update booking status
@@ -50,6 +74,11 @@ const handler = withAuth(async (req) => {
         where: { id },
         data: {
           status: parsed.status,
+          // Un PENDING redevient temporaire ; les autres statuts libèrent la chambre.
+          expiresAt:
+            parsed.status === "PENDING"
+              ? new Date(Date.now() + PENDING_BOOKING_TTL_MS)
+              : null,
         },
         include: {
           payment: true,
@@ -89,10 +118,8 @@ const handler = withAuth(async (req) => {
       const parsed = createBookingSchema.parse(body);
       const checkInDate = new Date(parsed.checkIn);
       const checkOutDate = new Date(parsed.checkOut);
-
-      if (checkInDate >= checkOutDate) {
-        return fail("La date de départ doit être après la date d'arrivée", 400, "INVALID_DATES");
-      }
+      const dateError = validateBookingDates(checkInDate, checkOutDate, { allowPast: true });
+      if (dateError) return fail(dateError.message, 400, dateError.code);
 
       const room = await prisma.room.findUnique({ where: { id: parsed.roomId } });
       if (!room) return fail("Chambre introuvable", 404, "ROOM_NOT_FOUND");
@@ -101,33 +128,32 @@ const handler = withAuth(async (req) => {
         return fail(`Cette chambre peut accueillir au maximum ${room.maxGuests} voyageurs`, 400, "TOO_MANY_GUESTS");
       }
 
-      const overlapping = await prisma.booking.findFirst({
-        where: {
-          roomId: room.id,
-          status: { in: ["PENDING", "CONFIRMED"] },
-          checkIn: { lt: checkOutDate },
-          checkOut: { gt: checkInDate },
-        },
-      });
+      // Chevauchement vérifié et création sous verrou de la chambre.
+      const booking = await withRoomLock(room.id, async (tx) => {
+        const overlapping = await tx.booking.findFirst({
+          where: overlapBookingWhere(room.id, checkInDate, checkOutDate),
+          select: { id: true },
+        });
+        if (overlapping) {
+          throw new BookingConflictError("Cette chambre n'est pas disponible pour ces dates");
+        }
 
-      if (overlapping) {
-        return fail("Cette chambre n'est pas disponible pour ces dates", 409, "CONFLICT");
-      }
-
-      const booking = await prisma.booking.create({
-        data: {
-          roomId: room.id,
-          checkIn: checkInDate,
-          checkOut: checkOutDate,
-          adults: parsed.adults,
-          children: parsed.children,
-          guestFirstName: parsed.guestFirstName,
-          guestLastName: parsed.guestLastName,
-          guestEmail: parsed.guestEmail,
-          guestPhone: parsed.guestPhone,
-          reference: parsed.reference || `BK-${Date.now()}`,
-          status: parsed.status,
-        },
+        return tx.booking.create({
+          data: {
+            roomId: room.id,
+            checkIn: checkInDate,
+            checkOut: checkOutDate,
+            adults: parsed.adults,
+            children: parsed.children,
+            guestFirstName: parsed.guestFirstName,
+            guestLastName: parsed.guestLastName,
+            guestEmail: parsed.guestEmail,
+            guestPhone: parsed.guestPhone,
+            reference: parsed.reference || generateBookingReference(),
+            status: parsed.status,
+            expiresAt: parsed.status === "PENDING" ? new Date(Date.now() + PENDING_BOOKING_TTL_MS) : null,
+          },
+        });
       });
 
       await notifyAdminNewBooking({
@@ -148,6 +174,9 @@ const handler = withAuth(async (req) => {
     } catch (error) {
       if (error instanceof z.ZodError) {
         return fail("Données invalides", 400, "INVALID_BODY");
+      }
+      if (error instanceof BookingConflictError) {
+        return fail(error.message, 409, "CONFLICT");
       }
       console.error("Failed to create booking:", error);
       return fail("Failed to create booking", 500, "CREATE_FAILED");

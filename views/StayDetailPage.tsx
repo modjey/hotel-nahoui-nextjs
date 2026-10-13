@@ -13,7 +13,7 @@ import { api } from "@/lib/api-client";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
-import HotelBookingCalendar, { type GuestCount, buildAvailabilityMap } from "@/components/site/HotelBookingCalendar";
+import HotelBookingCalendar, { type GuestCount, buildAvailabilityMap, isRangeAvailable } from "@/components/site/HotelBookingCalendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -188,7 +188,7 @@ function StayDetailPageContent() {
     (async () => {
       setCheckingAvailability(true);
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/rooms/${slug}/availability?checkIn=${checkIn.toISOString()}&checkOut=${checkOut.toISOString()}&userId=${user?.id || ''}`);
+        const res = await fetch(`/api/rooms/${slug}/availability?checkIn=${checkIn.toISOString()}&checkOut=${checkOut.toISOString()}&userId=${user?.id || ''}`);
         const data = await res.json();
         if (data.success) {
           setAvailability(data.data.available);
@@ -209,7 +209,7 @@ function StayDetailPageContent() {
     if (!slug) return;
     (async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/rooms/${slug}/reviews?status=APPROVED`);
+        const res = await fetch(`/api/rooms/${slug}/reviews?status=APPROVED`);
         const data = await res.json();
         if (data.success) {
           setReviews(data.data.reviews);
@@ -226,7 +226,7 @@ function StayDetailPageContent() {
     if (!slug) return;
     (async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/rooms/${slug}/bookings`);
+        const res = await fetch(`/api/rooms/${slug}/bookings`);
         const data = await res.json();
         if (data.success) {
           setBookings(data.data.bookings || []);
@@ -249,7 +249,7 @@ function StayDetailPageContent() {
 
     try {
       setSubmittingReview(true);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/rooms/${slug}/reviews`, {
+      const res = await fetch(`/api/rooms/${slug}/reviews`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -265,7 +265,7 @@ function StayDetailPageContent() {
         setReviewRating(0);
         setReviewComment("");
         // Refresh reviews
-        const reviewsRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/rooms/${slug}/reviews?status=APPROVED`);
+        const reviewsRes = await fetch(`/api/rooms/${slug}/reviews?status=APPROVED`);
         const reviewsData = await reviewsRes.json();
         if (reviewsData.success) {
           setReviews(reviewsData.data.reviews);
@@ -1313,6 +1313,12 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
 
   const overlayAvailabilityMap = useMemo(() => buildAvailabilityMap(bookings), [bookings]);
 
+  // Vérification locale et immédiate : aucune nuit de la plage choisie ne doit être indisponible
+  const rangeFullyAvailable = useMemo(() => {
+    if (!checkIn || !checkOut || checkOut <= checkIn) return true;
+    return isRangeAvailable(overlayAvailabilityMap, checkIn, checkOut);
+  }, [checkIn, checkOut, overlayAvailabilityMap]);
+
   // Real-time availability check whenever the selected dates change
   const [availability, setAvailability] = useState<boolean | null>(null);
   const [checkingAvailability, setCheckingAvailability] = useState(false);
@@ -1328,7 +1334,7 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
     (async () => {
       setCheckingAvailability(true);
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/rooms/${room.slug}/availability?checkIn=${checkIn.toISOString()}&checkOut=${checkOut.toISOString()}&userId=${user?.id || ''}`);
+        const res = await fetch(`/api/rooms/${room.slug}/availability?checkIn=${encodeURIComponent(checkIn.toISOString())}&checkOut=${encodeURIComponent(checkOut.toISOString())}&userId=${user?.id || ''}`);
         const data = await res.json();
         if (cancelled) return;
         if (data.success) {
@@ -1354,7 +1360,8 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
       if (!checkIn) newErrors.checkIn = 'Date d\'arrivée requise';
       if (!checkOut) newErrors.checkOut = 'Date de départ requise';
       if (checkIn && checkOut && checkOut <= checkIn) newErrors.dates = 'Le départ doit être après l\'arrivée';
-      if (checkIn && checkOut && checkOut > checkIn && availability === false) newErrors.dates = isOwnBooking ? 'Vous avez déjà une réservation pour ces dates' : 'Cette chambre n\'est plus disponible pour ces dates';
+      if (checkIn && checkOut && checkOut > checkIn && !rangeFullyAvailable) newErrors.dates = 'Cette période contient des nuits déjà réservées. Choisissez une plage entièrement disponible.';
+      else if (checkIn && checkOut && checkOut > checkIn && availability === false) newErrors.dates = isOwnBooking ? 'Vous avez déjà une réservation pour ces dates' : 'Cette chambre n\'est plus disponible pour ces dates';
     }
     if (step === 'Détails') {
       // Only validate details if user is authenticated
@@ -1389,7 +1396,7 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
   };
 
   const canContinue =
-    (step === 'Dates' && checkIn && checkOut && checkOut > checkIn && !checkingAvailability && availability !== false) ||
+    (step === 'Dates' && checkIn && checkOut && checkOut > checkIn && rangeFullyAvailable && !checkingAvailability && availability !== false) ||
     (step === 'Détails' && user && guestInfo.firstName && guestInfo.lastName && (guestInfo.email || guestInfo.phone)) ||
     step === 'Récapitulatif';
 
@@ -1474,14 +1481,14 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
       const bookingResult = await bookingResponse.json();
 
       if (bookingResult.success && bookingResult.data?.booking) {
-        toast.success('Réservation confirmée avec succès !');
+        toast.success('Réservation enregistrée ! Finalisez le paiement pour la confirmer.');
         setConfirmed(true);
         setProcessingPayment(false);
         setTimeout(() => {
           window.location.href = '/bookings';
-        }, 2000);
+        }, 1800);
       } else {
-        toast.error('Erreur lors de la création de la réservation: ' + (bookingResult.message || 'Erreur inconnue'));
+        toast.error(bookingResult.error?.message || bookingResult.message || 'Erreur inconnue');
         setProcessingPayment(false);
       }
     } catch (error) {
@@ -1559,7 +1566,14 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
                       {errors.dates && <p className="mt-2 text-sm text-destructive flex items-center gap-1"><AlertCircle className="h-4 w-4" />{errors.dates}</p>}
 
                       {checkIn && checkOut && checkOut > checkIn && (
-                        checkingAvailability ? (
+                        !rangeFullyAvailable ? (
+                          <div className="p-3 rounded-lg bg-destructive/10">
+                            <p className="text-sm font-medium text-destructive flex items-center gap-1">
+                              <AlertCircle className="h-4 w-4" />
+                              Cette période contient des nuits déjà réservées. Choisissez une plage entièrement disponible.
+                            </p>
+                          </div>
+                        ) : checkingAvailability ? (
                           <p className="text-sm text-muted-foreground flex items-center gap-2">
                             <span className="h-3.5 w-3.5 rounded-full border-2 border-muted-foreground border-t-transparent animate-spin" />
                             Vérification de la disponibilité…
@@ -1690,6 +1704,18 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
               </motion.div>
             </AnimatePresence>
 
+            {confirmed && (
+              <div className="mt-8 border border-border rounded-3xl p-8 bg-card text-center">
+                <div className="mx-auto h-14 w-14 rounded-full bg-primary text-primary-foreground grid place-items-center">
+                  <Check className="h-6 w-6" />
+                </div>
+                <h2 className="font-display text-2xl mt-5">Réservation enregistrée</h2>
+                <p className="text-muted-foreground mt-2">
+                  Votre créneau est bloqué pendant 15 minutes. Finalisez le paiement depuis « Mes réservations »
+                  pour confirmer votre séjour.
+                </p>
+              </div>
+            )}
 
             {!confirmed && (
               <div className="mt-8 flex items-center justify-between gap-4">

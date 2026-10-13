@@ -30,13 +30,23 @@ export const GET = withAuth(async (req: NextRequest) => {
     console.error("[GET /api/admin/admin-dishes]", e);
     return fail("Erreur serveur", 500, "INTERNAL");
   }
-});
+}, { roles: ["ADMIN", "SUPER_ADMIN"] });
 
 /** POST /api/admin/admin-dishes — créer un plat. */
 export const POST = withAuth(async (req: NextRequest) => {
   try {
     const body = await req.json();
     const { name, description, price, currency, categoryId, locationId, imageUrl, isAvailable, isPublished, isFeatured, order } = body;
+
+    if (typeof name !== "string" || name.trim().length < 2) {
+      return fail("Le nom du plat est requis", 400, "BAD_REQUEST");
+    }
+    if (!Number.isFinite(Number(price)) || Number(price) < 0) {
+      return fail("Le prix doit être un nombre positif", 400, "BAD_REQUEST");
+    }
+    if (!categoryId || !locationId) {
+      return fail("Catégorie et localisation sont requises", 400, "BAD_REQUEST");
+    }
 
     const slug = slugify(name);
 
@@ -57,9 +67,9 @@ export const POST = withAuth(async (req: NextRequest) => {
       },
     });
 
-    return ok({ dish });
+    return ok({ dish }, { status: 201 });
   } catch (e) {
     console.error("[POST /api/admin/admin-dishes]", e);
     return fail("Erreur serveur", 500, "INTERNAL");
   }
-});
+}, { roles: ["ADMIN", "SUPER_ADMIN"] });

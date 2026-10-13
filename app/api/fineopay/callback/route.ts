@@ -1,112 +1,58 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { fineoPayService } from '@/lib/fineopay';
-import { createAdminNotification } from '@/lib/notifications';
-import { PrismaClient } from '@prisma/client';
+import { NextRequest, NextResponse } from "next/server";
+import { createAdminNotification } from "@/lib/notifications";
+import { normalizePaymentStatus, settlePaymentByReference } from "@/lib/payments";
 
-const prisma = new PrismaClient();
+export const runtime = "nodejs";
 
+/**
+ * Webhook FineoPay (route historique). Délégué au règlement idempotent partagé.
+ */
 export async function POST(request: NextRequest) {
   try {
     const callbackData = await request.json();
 
-    console.log('=== FINEOPAY CALLBACK RECEIVED ===', {
-      timestamp: new Date().toISOString(),
-      syncRef: callbackData.syncRef,
-      status: callbackData.status,
-      reference: callbackData.reference,
-      amount: callbackData.amount,
-    });
-
-    // Validate required fields
     if (!callbackData.syncRef || !callbackData.status || !callbackData.reference) {
-      console.error('Invalid callback data: missing required fields');
-      return NextResponse.json(
-        { success: false, message: 'Invalid callback data' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, message: "Invalid callback data" }, { status: 400 });
     }
 
-    // Process the callback
-    const payment = await fineoPayService.handleCallback(callbackData);
+    const incomingStatus = normalizePaymentStatus(callbackData.status);
+    const result = await settlePaymentByReference(
+      callbackData.reference,
+      incomingStatus,
+      callbackData.syncRef,
+    );
 
-    console.log('=== FINEOPAY CALLBACK PROCESSED ===', {
-      payment_id: payment.id,
-      reference: payment.reference,
-      status: payment.status,
-    });
+    if (!result.ok) {
+      console.error("[fineopay callback] unknown reference", callbackData.reference);
+      return NextResponse.json({ success: false, message: "Payment not found" }, { status: 404 });
+    }
 
-    // Update payment status in database
-    const existingPayment = await prisma.payment.findUnique({
-      where: { reference: payment.reference },
-      include: { booking: true },
-    });
-
-    if (existingPayment) {
-      // Update existing payment
-      // Convert status from lowercase "success"/"failed" to uppercase "SUCCESS"/"FAILED"
-      const paymentStatus = callbackData.status.toLowerCase() === 'success' ? 'SUCCESS' : callbackData.status.toLowerCase() === 'failed' ? 'FAILED' : 'PENDING';
-
-      await prisma.payment.update({
-        where: { id: existingPayment.id },
-        data: {
-          status: paymentStatus,
-          transactionId: callbackData.syncRef,
-          paidAt: paymentStatus === 'SUCCESS' ? new Date(callbackData.timestamp) : null,
-        },
+    if (result.changed && result.bookingStatus && incomingStatus === "SUCCESS") {
+      await createAdminNotification({
+        type: "PAYMENT_SUCCESS",
+        title: "Paiement reçu",
+        message: `${result.payment.amount} ${result.payment.currency} (réf ${result.payment.reference})`,
+        link: "/admin/bookings",
       });
-
-      // Update booking status based on payment status
-      if (paymentStatus === 'SUCCESS') {
-        await prisma.booking.update({
-          where: { id: existingPayment.bookingId },
-          data: { 
-            status: 'CONFIRMED',
-            expiresAt: null, // Clear expiration when confirmed
-          },
-        });
-      } else if (paymentStatus === 'FAILED') {
-        await prisma.booking.update({
-          where: { id: existingPayment.bookingId },
-          data: { status: 'PENDING' },
-        });
-      }
-
-      console.log('=== PAYMENT UPDATED ===', {
-        payment_id: existingPayment.id,
-        reference: payment.reference,
-        status: paymentStatus,
-        booking_status: paymentStatus === 'SUCCESS' ? 'CONFIRMED' : 'PENDING',
-      });
-
-      if (paymentStatus === 'SUCCESS' || paymentStatus === 'FAILED') {
-        const guestName = [existingPayment.booking?.guestFirstName, existingPayment.booking?.guestLastName].filter(Boolean).join(' ') || 'Client';
-        await createAdminNotification({
-          type: paymentStatus === 'SUCCESS' ? 'PAYMENT_SUCCESS' : 'PAYMENT_FAILED',
-          title: paymentStatus === 'SUCCESS' ? 'Paiement reçu' : 'Paiement échoué',
-          message: `${guestName} — ${existingPayment.amount} ${existingPayment.currency} (réf ${existingPayment.reference})`,
-          link: '/admin/bookings',
-        });
-      }
-    } else {
-      console.log('=== PAYMENT NOT FOUND ===', {
-        reference: payment.reference,
+    }
+    if (result.latePayment) {
+      await createAdminNotification({
+        type: "PAYMENT_SUCCESS",
+        title: "Paiement reçu après annulation",
+        message: `Réf ${result.payment.reference} — à rembourser ou reconfirmer manuellement`,
+        link: "/admin/bookings",
       });
     }
 
     return NextResponse.json({
       success: true,
-      data: payment,
+      data: { reference: result.payment.reference, status: result.payment.status },
     });
   } catch (error) {
-    console.error('=== FINEOPAY CALLBACK ERROR ===', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
-
+    console.error("[fineopay callback] error", error);
     return NextResponse.json(
-      { success: false, message: error instanceof Error ? error.message : 'Failed to process callback' },
-      { status: 500 }
+      { success: false, message: error instanceof Error ? error.message : "Failed to process callback" },
+      { status: 500 },
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

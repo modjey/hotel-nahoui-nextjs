@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { ok, fail } from "@/lib/auth/api";
+import { blockingBookingWhere } from "@/lib/bookings";
 import { NextRequest } from "next/server";
 
 export const runtime = "nodejs";
@@ -39,32 +40,21 @@ export async function GET(
       return fail("Chambre introuvable", 404, "NOT_FOUND");
     }
 
-    // Chercher les réservations qui chevauchent les dates demandées
-    // CONFIRMED: toujours bloquant
-    // PENDING: toujours bloquant (indépendamment de expiresAt)
-    // COMPLETED/CANCELLED: ne bloquent pas
+    // Chercher les réservations qui chevauchent les dates demandées.
+    // CONFIRMED = bloquant ; PENDING = bloquant tant que non expiré ;
+    // COMPLETED/CANCELLED ainsi que les PENDING expirés ne bloquent pas.
     const overlappingBookings = await prisma.booking.findMany({
       where: {
         roomId: room.id,
-        OR: [
-          {
-            status: "CONFIRMED",
-            checkIn: { lt: checkOutDate },
-            checkOut: { gt: checkInDate },
-          },
-          {
-            status: "PENDING",
-            checkIn: { lt: checkOutDate },
-            checkOut: { gt: checkInDate },
-          },
-        ],
+        ...blockingBookingWhere(),
+        checkIn: { lt: checkOutDate },
+        checkOut: { gt: checkInDate },
       },
+      select: { id: true, status: true, checkIn: true, checkOut: true, userId: true },
     });
 
-    console.log(`[Availability] Room: ${room.id}, Dates: ${checkIn} - ${checkOut}, Overlapping bookings: ${overlappingBookings.length}`, overlappingBookings.map((b: any) => ({ id: b.id, status: b.status, expiresAt: b.expiresAt, checkIn: b.checkIn, checkOut: b.checkOut, userId: b.userId })));
-
     // Vérifier si le conflit appartient à l'utilisateur connecté
-    const isOwnBooking = userId && overlappingBookings.some((b: any) => b.userId === userId);
+    const isOwnBooking = Boolean(userId) && overlappingBookings.some((b) => b.userId === userId);
 
     const isAvailable = overlappingBookings.length === 0;
 
@@ -75,7 +65,7 @@ export async function GET(
       checkOut: checkOutDate.toISOString(),
       overlappingBookings: overlappingBookings.length,
       isOwnBooking,
-      conflictingBookings: overlappingBookings.map((b: any) => ({
+      conflictingBookings: overlappingBookings.map((b) => ({
         checkIn: b.checkIn,
         checkOut: b.checkOut,
         status: b.status,

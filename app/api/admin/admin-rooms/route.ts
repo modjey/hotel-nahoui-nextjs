@@ -37,6 +37,7 @@ const handler = withAuth(async (req) => {
               guestEmail: true,
               guestPhone: true,
               status: true,
+              expiresAt: true,
               payment: { select: { status: true } },
               userId: true,
             },

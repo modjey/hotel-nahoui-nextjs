@@ -53,6 +53,6 @@ const handler = withAuth(async (req) => {
     size: file.size,
     type: file.type,
   });
-});
+}, { roles: ["ADMIN", "SUPER_ADMIN"] });
 
 export { handler as POST };

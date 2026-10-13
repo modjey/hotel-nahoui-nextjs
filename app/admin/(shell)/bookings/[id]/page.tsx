@@ -21,8 +21,6 @@ type Booking = {
   checkOut: string;
   adults: number;
   children: number;
-  total: number;
-  currency: string;
   status: string;
   createdAt: string;
   guestFirstName: string | null;
@@ -50,6 +48,7 @@ type Booking = {
     currency: string;
     method: string;
     provider: string | null;
+    transactionId: string | null;
     createdAt: string;
     updatedAt: string;
   } | null;
@@ -443,7 +442,7 @@ export default function AdminBookingDetailPage() {
                   </div>
                   <div>
                     <div className="text-muted-foreground">ID de transaction</div>
-                    <div className="font-medium break-all">{booking.payment.id}</div>
+                    <div className="font-medium break-all">{booking.payment.transactionId || "—"}</div>
                   </div>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 pt-2">
@@ -540,7 +539,9 @@ export default function AdminBookingDetailPage() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Total</span>
                 <span className="font-display text-xl">
-                  {new Intl.NumberFormat("fr-FR").format(booking.total)} {booking.currency}
+                  {booking.payment
+                    ? `${new Intl.NumberFormat("fr-FR").format(booking.payment.amount)} ${booking.payment.currency}`
+                    : "—"}
                 </span>
               </div>
             </div>

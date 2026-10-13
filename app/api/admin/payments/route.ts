@@ -1,14 +1,15 @@
 import { prisma } from "@/lib/prisma";
 import { ok, fail, parseBody, withAuth } from "@/lib/auth/api";
+import { generatePaymentReference } from "@/lib/bookings";
 import { z } from "zod";
 
 const paymentSchema = z.object({
-  bookingId: z.string(),
+  bookingId: z.string().min(1),
   amount: z.number().positive(),
-  currency: z.string(),
+  currency: z.string().min(1).max(8),
   status: z.enum(["SUCCESS", "PENDING", "FAILED"]),
   method: z.enum(["CASH", "MOBILE_MONEY", "CARD", "BANK_TRANSFER", "ON_SITE"]),
-  reference: z.string(),
+  reference: z.string().min(1).optional(),
   transactionId: z.string().optional(),
 });
 
@@ -20,29 +21,53 @@ const handler = withAuth(async (req) => {
     if (!parsed.ok) return parsed.response;
     const body = parsed.data;
 
-    // Vérifier que la réservation existe
     const booking = await prisma.booking.findUnique({
       where: { id: body.bookingId },
+      include: { payment: true },
     });
 
     if (!booking) {
       return fail("Réservation introuvable", 400, "INVALID_BOOKING");
     }
 
-    const payment = await prisma.payment.create({
-      data: {
-        bookingId: body.bookingId,
-        amount: body.amount,
-        currency: body.currency,
-        status: body.status,
-        method: body.method,
-        reference: body.reference,
-        transactionId: body.transactionId,
-        provider: "ADMIN",
-      },
+    const reference = body.reference || booking.payment?.reference || generatePaymentReference();
+
+    const payment = await prisma.$transaction(async (tx) => {
+      const saved = await tx.payment.upsert({
+        where: { bookingId: body.bookingId },
+        create: {
+          bookingId: body.bookingId,
+          amount: body.amount,
+          currency: body.currency,
+          status: body.status,
+          method: body.method,
+          reference,
+          transactionId: body.transactionId,
+          provider: "ADMIN",
+          paidAt: body.status === "SUCCESS" ? new Date() : null,
+        },
+        update: {
+          amount: body.amount,
+          currency: body.currency,
+          status: body.status,
+          method: body.method,
+          transactionId: body.transactionId,
+          paidAt: body.status === "SUCCESS" ? new Date() : null,
+        },
+      });
+
+      // Un paiement encaissé confirme la réservation et libère l'expiration.
+      if (body.status === "SUCCESS" && booking.status !== "COMPLETED") {
+        await tx.booking.update({
+          where: { id: booking.id },
+          data: { status: "CONFIRMED", expiresAt: null },
+        });
+      }
+
+      return saved;
     });
 
-    return ok({ payment });
+    return ok({ payment }, { status: 201 });
   }
 
   return fail("Méthode non autorisée", 405, "METHOD_NOT_ALLOWED");

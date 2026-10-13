@@ -24,12 +24,15 @@ export type AvailabilityMap = Record<string, DateAvailability>;
  * `excludeIds` permet d'ignorer certaines réservations (ex : celle en cours d'édition).
  */
 export function buildAvailabilityMap(
-  bookings: { id?: string; checkIn: string; checkOut: string; status: string }[],
+  bookings: { id?: string; checkIn: string; checkOut: string; status: string; expiresAt?: string | null }[],
   excludeIds: string[] = []
 ): AvailabilityMap {
   const map: AvailabilityMap = {};
+  const now = Date.now();
   for (const b of bookings) {
     if (b.status === "CANCELLED" || b.status === "COMPLETED") continue;
+    // Un PENDING expiré ne bloque plus la chambre.
+    if (b.status === "PENDING" && b.expiresAt && new Date(b.expiresAt).getTime() < now) continue;
     if (b.id && excludeIds.includes(b.id)) continue;
     const end = new Date(b.checkOut);
     const d = new Date(b.checkIn);
@@ -41,6 +44,23 @@ export function buildAvailabilityMap(
     }
   }
   return map;
+}
+
+/**
+ * Vérifie que toutes les nuits entre checkIn (inclus) et checkOut (exclu) sont disponibles.
+ * Permet de bloquer "Continuer" dès qu'une nuit de la plage choisie est indisponible,
+ * sans attendre la vérification serveur asynchrone.
+ */
+export function isRangeAvailable(availability: AvailabilityMap, checkIn: Date, checkOut: Date): boolean {
+  const cursor = new Date(checkIn);
+  cursor.setHours(0, 0, 0, 0);
+  const end = new Date(checkOut);
+  end.setHours(0, 0, 0, 0);
+  while (cursor < end) {
+    if (availability[toKey(cursor)]?.available === false) return false;
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return true;
 }
 
 export interface GuestCount {
@@ -442,7 +462,7 @@ export default function HotelBookingCalendar({
                           className={[
                             "relative flex h-12 flex-col items-center justify-center text-xs transition-colors",
                             !inMonth ? "invisible" : "",
-                            unavailable ? "cursor-not-allowed bg-[#EFEBE2] text-[#B7AF9E] line-through" : "",
+                            unavailable ? "cursor-not-allowed bg-[#E4E2DE] text-[#9A948A] line-through opacity-70" : "",
                             disabled && !unavailable && inMonth ? "cursor-not-allowed text-[#C9C3B6]" : "",
                             !disabled && inMonth ? "text-[#1C1B19] hover:bg-[#EFEBE2]" : "",
                             selected ? "!bg-[#2F4538] !text-white" : "",
@@ -471,7 +491,7 @@ export default function HotelBookingCalendar({
             <div className="mt-5 flex flex-wrap gap-4 text-xs text-[#6B655A]">
               <LegendDot className="bg-white border border-[#DDD8CD]" label="Disponible" />
               <LegendDot className="bg-[#2F4538]" label="Sélectionné" />
-              <LegendDot className="bg-[#EFEBE2]" label="Complet" muted />
+              <LegendDot className="bg-[#E4E2DE]" label="Complet" muted />
             </div>
           </div>
 

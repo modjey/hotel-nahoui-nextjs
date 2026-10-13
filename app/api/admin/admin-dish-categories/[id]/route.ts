@@ -63,6 +63,6 @@ const handler = withAuth(async (req: NextRequest) => {
   }
 
   return fail("Méthode non autorisée", 405, "METHOD_NOT_ALLOWED");
-});
+}, { roles: ["ADMIN", "SUPER_ADMIN"] });
 
 export { handler as GET, handler as PATCH, handler as DELETE };

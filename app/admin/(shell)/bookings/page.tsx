@@ -123,7 +123,6 @@ export default function AdminBookingsPage() {
           status: statusFilter !== "all" ? statusFilter : undefined,
         },
       });
-      console.log('=== BOOKINGS RESPONSE ===', response);
       setBookings(response.bookings);
       setTotalPages(response.pagination.totalPages);
     } catch (error) {

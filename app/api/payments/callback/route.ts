@@ -1,104 +1,74 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { paymentProviderManager } from '@/lib/payment-provider';
-import { prisma } from '@/lib/prisma';
-import { createAdminNotification } from '@/lib/notifications';
+import { NextRequest, NextResponse } from "next/server";
+import { paymentProviderManager } from "@/lib/payment-provider";
+import { createAdminNotification } from "@/lib/notifications";
+import { normalizePaymentStatus, settlePaymentByReference } from "@/lib/payments";
 
+export const runtime = "nodejs";
+
+/**
+ * Webhook de paiement. Idempotent : le fournisseur peut renvoyer plusieurs
+ * fois le même événement.
+ */
 export async function POST(request: NextRequest) {
   try {
     const callbackData = await request.json();
-
-    console.log('=== PAYMENT CALLBACK RECEIVED ===', {
-      timestamp: new Date().toISOString(),
-      provider: paymentProviderManager.getCurrentProvider(),
-      data: callbackData,
-    });
-
-    // Validate required fields based on provider
     const provider = paymentProviderManager.getCurrentProvider();
+
     let isValid = false;
-    
-    if (provider === 'fineopay') {
+    if (provider === "fineopay") {
       isValid = !!(callbackData.syncRef && callbackData.status && callbackData.reference);
-    } else if (provider === 'centralapis') {
+    } else if (provider === "centralapis") {
       isValid = !!(callbackData.partner_reference && callbackData.state);
     }
-    
+
     if (!isValid) {
-      console.error('Invalid callback data: missing required fields');
-      return NextResponse.json(
-        { success: false, message: 'Invalid callback data' },
-        { status: 400 }
-      );
+      console.error("[payment callback] invalid payload", { provider, callbackData });
+      return NextResponse.json({ success: false, message: "Invalid callback data" }, { status: 400 });
     }
 
-    // Process the callback using the current provider
-    const payment = await paymentProviderManager.handleCallback(callbackData);
+    const callbackPayment = await paymentProviderManager.handleCallback(callbackData);
+    const incomingStatus = normalizePaymentStatus(callbackPayment.status);
 
-    console.log('=== PAYMENT CALLBACK PROCESSED ===', {
-      payment_id: payment.id,
-      reference: payment.reference,
-      status: payment.status,
-    });
+    const result = await settlePaymentByReference(
+      callbackPayment.reference,
+      incomingStatus,
+      callbackPayment.transaction_id,
+    );
 
-    // Update payment status in database
-    const updatedPayment = await prisma.payment.update({
-      where: { reference: payment.reference },
-      data: {
-        status: payment.status as 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED',
-        transactionId: payment.transaction_id,
-        paidAt: payment.status === 'SUCCESS' ? new Date() : null,
-      },
-      include: { booking: true },
-    });
-
-    console.log('=== PAYMENT UPDATED ===', {
-      payment_id: updatedPayment.id,
-      status: updatedPayment.status,
-      booking_id: updatedPayment.bookingId,
-    });
-
-    // Update booking status based on payment status
-    if (updatedPayment.booking) {
-      let bookingStatus = updatedPayment.booking.status;
-      
-      if (payment.status === 'SUCCESS') {
-        bookingStatus = 'CONFIRMED';
-      } else if (payment.status === 'FAILED') {
-        bookingStatus = 'CANCELLED';
-      }
-
-      await prisma.booking.update({
-        where: { id: updatedPayment.bookingId },
-        data: { status: bookingStatus },
-      });
-
-      console.log('=== BOOKING UPDATED ===', {
-        booking_id: updatedPayment.bookingId,
-        status: bookingStatus,
-      });
-
-      if (payment.status === 'SUCCESS' || payment.status === 'FAILED') {
-        const guestName = [updatedPayment.booking.guestFirstName, updatedPayment.booking.guestLastName].filter(Boolean).join(' ') || 'Client';
-        await createAdminNotification({
-          type: payment.status === 'SUCCESS' ? 'PAYMENT_SUCCESS' : 'PAYMENT_FAILED',
-          title: payment.status === 'SUCCESS' ? 'Paiement reçu' : 'Paiement échoué',
-          message: `${guestName} — ${updatedPayment.amount} ${updatedPayment.currency} (réf ${updatedPayment.reference})`,
-          link: '/admin/bookings',
-        });
-      }
+    if (!result.ok) {
+      console.error("[payment callback] unknown reference", callbackPayment.reference);
+      return NextResponse.json({ success: false, message: "Payment not found" }, { status: 404 });
     }
-    return NextResponse.json({
-      success: true,
-      data: payment,
-    });
+
+    if (!result.changed) {
+      return NextResponse.json({
+        success: true,
+        data: { reference: result.payment.reference, status: result.payment.status },
+      });
+    }
+
+    if (result.latePayment) {
+      await createAdminNotification({
+        type: "PAYMENT_SUCCESS",
+        title: "Paiement reçu après annulation",
+        message: `Réf ${result.payment.reference} — à rembourser ou reconfirmer manuellement`,
+        link: "/admin/bookings",
+      });
+    } else if (result.bookingStatus === "CONFIRMED" || result.bookingStatus === "CANCELLED") {
+      await createAdminNotification({
+        type: incomingStatus === "SUCCESS" ? "PAYMENT_SUCCESS" : "PAYMENT_FAILED",
+        title: incomingStatus === "SUCCESS" ? "Paiement reçu" : "Paiement échoué",
+        message: `${result.payment.amount} ${result.payment.currency} (réf ${result.payment.reference})`,
+        link: "/admin/bookings",
+      });
+    }
+
+    return NextResponse.json({ success: true, data: result.payment });
   } catch (error) {
-    console.error('=== PAYMENT CALLBACK ERROR ===', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
-
+    console.error("[payment callback] error", error);
     return NextResponse.json(
-      { success: false, message: error instanceof Error ? error.message : 'Failed to process callback' },
-      { status: 500 }
+      { success: false, message: error instanceof Error ? error.message : "Failed to process callback" },
+      { status: 500 },
     );
   }
 }

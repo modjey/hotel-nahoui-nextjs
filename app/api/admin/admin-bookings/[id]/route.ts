@@ -19,10 +19,14 @@ const handler = withAuth(async (req) => {
         payment: {
           select: {
             id: true,
+            reference: true,
             status: true,
             amount: true,
             currency: true,
+            method: true,
             provider: true,
+            transactionId: true,
+            paidAt: true,
             createdAt: true,
             updatedAt: true,
           },

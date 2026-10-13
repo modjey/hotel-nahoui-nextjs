@@ -222,7 +222,6 @@ function BookingForm({
             currency: formData.paymentCurrency,
             status: formData.paymentStatus,
             method: formData.paymentMethod,
-            reference: `PAY-${Date.now()}`,
           };
           if (formData.transactionId) {
             paymentPayload.transactionId = formData.transactionId;

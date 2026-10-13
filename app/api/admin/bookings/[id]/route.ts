@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { ok, fail, parseBody, withAuth } from "@/lib/auth/api";
+import { PENDING_BOOKING_TTL_MS, overlapBookingWhere, validateBookingDates } from "@/lib/bookings";
 import { z } from "zod";
 
 const bookingUpdateSchema = z.object({
@@ -63,24 +64,14 @@ const handler = withAuth(async (req) => {
     if (body.checkIn || body.checkOut) {
       const checkIn = body.checkIn ? new Date(body.checkIn) : new Date(existing.checkIn);
       const checkOut = body.checkOut ? new Date(body.checkOut) : new Date(existing.checkOut);
-      if (checkIn >= checkOut) {
-        return fail("La date de départ doit être après la date d'arrivée", 400, "INVALID_DATES");
-      }
+      const dateError = validateBookingDates(checkIn, checkOut, { allowPast: true });
+      if (dateError) return fail(dateError.message, 400, dateError.code);
 
       // Vérifier les chevauchements de réservations (excluant la réservation actuelle)
       const roomId = body.roomId || existing.roomId;
       const overlapping = await prisma.booking.findFirst({
-        where: {
-          roomId,
-          status: { in: ["CONFIRMED", "PENDING"] },
-          id: { not: id },
-          OR: [
-            {
-              checkIn: { lt: checkOut },
-              checkOut: { gt: checkIn },
-            },
-          ],
-        },
+        where: overlapBookingWhere(roomId, checkIn, checkOut, { excludeBookingId: id }),
+        select: { id: true },
       });
 
       if (overlapping) {
@@ -101,7 +92,15 @@ const handler = withAuth(async (req) => {
         ...(body.checkOut && { checkOut: new Date(body.checkOut) }),
         ...(body.adults && { adults: body.adults }),
         ...(body.children !== undefined && { children: body.children }),
-        ...(body.status && { status: body.status }),
+        ...(body.status && {
+          status: body.status,
+          // Une réservation PENDING redevient temporaire ; les autres statuts
+          // libèrent la chambre immédiatement.
+          expiresAt:
+            body.status === "PENDING"
+              ? new Date(Date.now() + PENDING_BOOKING_TTL_MS)
+              : null,
+        }),
       },
       include: {
         room: {

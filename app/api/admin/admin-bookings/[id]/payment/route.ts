@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { ok, fail, withAuth } from "@/lib/auth/api";
+import { PENDING_BOOKING_TTL_MS } from "@/lib/bookings";
 import { NextRequest } from "next/server";
 
 export const runtime = "nodejs";
@@ -24,11 +25,17 @@ function normalizePaymentData(body: any, existingReference?: string) {
 
 async function syncBookingStatus(bookingId: string, paymentStatus?: string) {
   if (paymentStatus === "SUCCESS") {
-    await prisma.booking.update({ where: { id: bookingId }, data: { status: "CONFIRMED" } });
+    await prisma.booking.update({
+      where: { id: bookingId },
+      data: { status: "CONFIRMED", expiresAt: null },
+    });
     return;
   }
 
-  await prisma.booking.update({ where: { id: bookingId }, data: { status: "PENDING" } });
+  await prisma.booking.update({
+    where: { id: bookingId },
+    data: { status: "PENDING", expiresAt: new Date(Date.now() + PENDING_BOOKING_TTL_MS) },
+  });
 }
 
 const handler = withAuth(async (req: NextRequest) => {

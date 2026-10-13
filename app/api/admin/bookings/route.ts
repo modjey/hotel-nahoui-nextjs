@@ -1,6 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { notifyAdminNewBooking } from "@/lib/notifications";
 import { ok, fail, parseBody, withAuth } from "@/lib/auth/api";
+import {
+  BookingConflictError,
+  PENDING_BOOKING_TTL_MS,
+  generateBookingReference,
+  overlapBookingWhere,
+  validateBookingDates,
+  withRoomLock,
+} from "@/lib/bookings";
 import { z } from "zod";
 
 const bookingSchema = z.object({
@@ -70,64 +78,61 @@ const handler = withAuth(async (req) => {
     const room = await prisma.room.findUnique({ where: { id: body.roomId } });
     if (!room) return fail("Chambre introuvable", 400, "INVALID_ROOM");
 
-    // Vérifier les dates
+    // Vérifier les dates (les dates passées restent autorisées en admin)
     const checkIn = new Date(body.checkIn);
     const checkOut = new Date(body.checkOut);
-    if (checkIn >= checkOut) {
-      return fail("La date de départ doit être après la date d'arrivée", 400, "INVALID_DATES");
+    const dateError = validateBookingDates(checkIn, checkOut, { allowPast: true });
+    if (dateError) return fail(dateError.message, 400, dateError.code);
+
+    // Vérification du chevauchement et création sous verrou de la chambre :
+    // deux créations concurrentes ne peuvent pas se croiser.
+    let booking;
+    try {
+      booking = await withRoomLock(body.roomId, async (tx) => {
+        const overlapping = await tx.booking.findFirst({
+          where: overlapBookingWhere(body.roomId, checkIn, checkOut),
+          select: { id: true },
+        });
+        if (overlapping) throw new BookingConflictError("Cette chambre est déjà réservée pour ces dates");
+
+        return tx.booking.create({
+          data: {
+            roomId: body.roomId,
+            userId: body.userId,
+            guestFirstName: body.guestFirstName,
+            guestLastName: body.guestLastName,
+            guestEmail: body.guestEmail,
+            guestPhone: body.guestPhone,
+            checkIn,
+            checkOut,
+            adults: body.adults,
+            children: body.children,
+            status: body.status,
+            reference: generateBookingReference(),
+            expiresAt: body.status === "PENDING" ? new Date(Date.now() + PENDING_BOOKING_TTL_MS) : null,
+          },
+          include: {
+            room: {
+              select: {
+                id: true,
+                slug: true,
+                name: true,
+              },
+            },
+            payment: {
+              select: {
+                status: true,
+              },
+            },
+          },
+        });
+      });
+    } catch (e) {
+      if (e instanceof BookingConflictError) {
+        return fail(e.message, 400, "DATES_UNAVAILABLE");
+      }
+      throw e;
     }
-
-    // Vérifier les chevauchements de réservations
-    const overlapping = await prisma.booking.findFirst({
-      where: {
-        roomId: body.roomId,
-        status: { in: ["CONFIRMED", "PENDING"] },
-        OR: [
-          {
-            checkIn: { lt: checkOut },
-            checkOut: { gt: checkIn },
-          },
-        ],
-      },
-    });
-
-    if (overlapping) {
-      return fail("Cette chambre est déjà réservée pour ces dates", 400, "DATES_UNAVAILABLE");
-    }
-
-    // Générer une référence
-    const reference = `BK-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-
-    const booking = await prisma.booking.create({
-      data: {
-        roomId: body.roomId,
-        userId: body.userId,
-        guestFirstName: body.guestFirstName,
-        guestLastName: body.guestLastName,
-        guestEmail: body.guestEmail,
-        guestPhone: body.guestPhone,
-        checkIn,
-        checkOut,
-        adults: body.adults,
-        children: body.children,
-        status: body.status,
-        reference,
-      },
-      include: {
-        room: {
-          select: {
-            id: true,
-            slug: true,
-            name: true,
-          },
-        },
-        payment: {
-          select: {
-            status: true,
-          },
-        },
-      },
-    });
 
     await notifyAdminNewBooking({
       reference: booking.reference,

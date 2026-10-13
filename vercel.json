@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/cleanup-expired-bookings",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/archive-completed-bookings",
+      "schedule": "30 2 * * *"
+    }
+  ]
+}

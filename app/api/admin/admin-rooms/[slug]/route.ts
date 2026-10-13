@@ -47,6 +47,7 @@ const handler = withAuth(async (req) => {
             guestEmail: true,
             guestPhone: true,
             status: true,
+            expiresAt: true,
             payment: { select: { status: true } },
             userId: true,
             user: {
@@ -84,14 +85,17 @@ const handler = withAuth(async (req) => {
       if (!rt) return fail("Type de chambre introuvable", 400, "INVALID_ROOM_TYPE");
     }
 
-    if (body.slug && body.slug !== slug) {
-      const existing = await prisma.room.findFirst({ where: { slug: body.slug, id: { not: room.id } } });
+    // Le slug peut changer explicitement ou être dérivé du nom : on vérifie
+    // l'unicité dans les deux cas pour éviter une erreur P2002 non gérée.
+    const nextSlug = body.slug || (body.name ? slugify(body.name) : undefined);
+    if (nextSlug && nextSlug !== slug) {
+      const existing = await prisma.room.findFirst({ where: { slug: nextSlug, id: { not: room.id } } });
       if (existing) return fail("Slug déjà utilisé", 409, "SLUG_TAKEN");
     }
 
     const updated = await prisma.room.update({
       where: { slug },
-      data: body.slug ? body : { ...body, slug: body.name ? slugify(body.name) : undefined },
+      data: nextSlug ? { ...body, slug: nextSlug } : body,
     });
     return ok({ room: updated });
   }

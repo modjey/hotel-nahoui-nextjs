@@ -1,8 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { prisma } from "@/lib/prisma";
 import { createAdminNotification } from "@/lib/notifications";
 import { ok, fail, withAuth } from "@/lib/auth/api";
+import { getSession } from "@/lib/auth/session";
 import { z } from "zod";
+import type { ReviewStatus } from "@prisma/client";
 
 export const runtime = "nodejs";
 
@@ -29,15 +31,18 @@ export async function GET(
 
   try {
     const { searchParams } = new URL(req.url);
-    const status = searchParams.get("status");
+    const requestedStatus = searchParams.get("status");
+
+    // Route publique : seuls les avis approuvés sont exposés. Un admin
+    // authentifié peut explicitement demander les autres statuts.
+    const session = await getSession(req);
+    const canSeeAll = session?.role === "ADMIN" || session?.role === "SUPER_ADMIN" || session?.role === "MODERATOR";
+    const status = canSeeAll && requestedStatus ? requestedStatus : "APPROVED";
 
     const where: any = {
       roomId: room.id,
+      status: status as ReviewStatus,
     };
-
-    if (status) {
-      where.status = status;
-    }
 
     const reviews = await prisma.review.findMany({
       where,

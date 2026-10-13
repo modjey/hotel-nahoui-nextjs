@@ -1,50 +1,56 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { centralApisService } from '@/lib/centralapis';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { centralApisService } from "@/lib/centralapis";
+import { prisma } from "@/lib/prisma";
+import { normalizePaymentStatus, settlePaymentByReference } from "@/lib/payments";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+/**
+ * Polling de statut CentralApis (route historique) : aligne la base sur le
+ * statut réel, de façon idempotente.
+ */
 export async function GET(request: NextRequest) {
+  const reference = request.nextUrl.searchParams.get("reference");
+  if (!reference) {
+    return NextResponse.json({ success: false, message: "Reference is required" }, { status: 400 });
+  }
+
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const reference = searchParams.get('reference');
+    let providerStatus: Awaited<ReturnType<typeof centralApisService.getTransactionStatus>> = null;
+    try {
+      providerStatus = await centralApisService.getTransactionStatus(reference);
+    } catch (e) {
+      console.warn("[centralapis/status] provider lookup failed", e);
+    }
 
-    if (!reference) {
-      return NextResponse.json(
-        { success: false, message: 'Reference is required' },
-        { status: 400 }
+    if (providerStatus?.status) {
+      const result = await settlePaymentByReference(
+        providerStatus.reference || reference,
+        normalizePaymentStatus(providerStatus.status),
+        providerStatus.transaction_id,
       );
+      if (result.ok) {
+        return NextResponse.json({
+          success: true,
+          data: {
+            reference: result.payment.reference,
+            amount: result.payment.amount,
+            currency: result.payment.currency,
+            status: result.payment.status,
+            bookingStatus: result.bookingStatus,
+          },
+        });
+      }
     }
 
-    // Try to get transaction status from CentralApis
-    const transactionStatus = await centralApisService.getTransactionStatus(reference);
-
-    if (transactionStatus) {
-      // Update payment status in database if transaction exists
-      await prisma.payment.update({
-        where: { reference },
-        data: {
-          status: transactionStatus.status as 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED',
-          transactionId: transactionStatus.transaction_id,
-          paidAt: transactionStatus.status === 'SUCCESS' ? new Date() : null,
-        },
-      });
-
-      return NextResponse.json({
-        success: true,
-        data: transactionStatus,
-      });
-    }
-
-    // If not found in CentralApis, return from database
     const payment = await prisma.payment.findUnique({
       where: { reference },
-      include: { booking: true },
+      include: { booking: { select: { status: true } } },
     });
 
     if (!payment) {
-      return NextResponse.json(
-        { success: false, message: 'Payment not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, message: "Payment not found" }, { status: 404 });
     }
 
     return NextResponse.json({
@@ -61,10 +67,10 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error getting payment status:', error);
+    console.error("[centralapis/status] error", error);
     return NextResponse.json(
-      { success: false, message: error instanceof Error ? error.message : 'Failed to get payment status' },
-      { status: 500 }
+      { success: false, message: error instanceof Error ? error.message : "Failed to get payment status" },
+      { status: 500 },
     );
   }
 }

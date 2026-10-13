@@ -1,95 +1,58 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { centralApisService } from '@/lib/centralapis';
-import { prisma } from '@/lib/prisma';
-import { createAdminNotification } from '@/lib/notifications';
+import { NextRequest, NextResponse } from "next/server";
+import { createAdminNotification } from "@/lib/notifications";
+import { normalizePaymentStatus, settlePaymentByReference } from "@/lib/payments";
 
+export const runtime = "nodejs";
+
+/**
+ * Webhook CentralApis (route historique). Délégué au règlement idempotent partagé.
+ */
 export async function POST(request: NextRequest) {
   try {
     const callbackData = await request.json();
 
-    console.log('=== CENTRAL APIS CALLBACK RECEIVED ===', {
-      timestamp: new Date().toISOString(),
-      data: callbackData,
-    });
-
-    // Validate required fields
     if (!callbackData.partner_reference || !callbackData.state) {
-      console.error('Invalid callback data: missing required fields');
-      return NextResponse.json(
-        { success: false, message: 'Invalid callback data' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, message: "Invalid callback data" }, { status: 400 });
     }
 
-    // Process the callback
-    const payment = await centralApisService.handleCallback(callbackData);
+    const incomingStatus = normalizePaymentStatus(callbackData.state);
+    const result = await settlePaymentByReference(
+      callbackData.partner_reference,
+      incomingStatus,
+      callbackData.transaction_reference,
+    );
 
-    console.log('=== CENTRAL APIS CALLBACK PROCESSED ===', {
-      payment_id: payment.id,
-      reference: payment.reference,
-      status: payment.status,
-    });
+    if (!result.ok) {
+      console.error("[centralapis callback] unknown reference", callbackData.partner_reference);
+      return NextResponse.json({ success: false, message: "Payment not found" }, { status: 404 });
+    }
 
-    // Update payment status in database
-    const updatedPayment = await prisma.payment.update({
-      where: { reference: payment.reference },
-      data: {
-        status: payment.status as 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED',
-        transactionId: payment.transaction_id,
-        paidAt: payment.status === 'SUCCESS' ? new Date() : null,
-      },
-      include: { booking: true },
-    });
-
-    console.log('=== PAYMENT UPDATED ===', {
-      payment_id: updatedPayment.id,
-      status: updatedPayment.status,
-      booking_id: updatedPayment.bookingId,
-    });
-
-    // Update booking status based on payment status
-    if (updatedPayment.booking) {
-      let bookingStatus = updatedPayment.booking.status;
-      
-      if (payment.status === 'SUCCESS') {
-        bookingStatus = 'CONFIRMED';
-      } else if (payment.status === 'FAILED') {
-        bookingStatus = 'CANCELLED';
-      }
-
-      await prisma.booking.update({
-        where: { id: updatedPayment.bookingId },
-        data: { status: bookingStatus },
+    if (result.changed && result.bookingStatus && incomingStatus === "SUCCESS") {
+      await createAdminNotification({
+        type: "PAYMENT_SUCCESS",
+        title: "Paiement reçu",
+        message: `${result.payment.amount} ${result.payment.currency} (réf ${result.payment.reference})`,
+        link: "/admin/bookings",
       });
-
-      console.log('=== BOOKING UPDATED ===', {
-        booking_id: updatedPayment.bookingId,
-        status: bookingStatus,
+    }
+    if (result.latePayment) {
+      await createAdminNotification({
+        type: "PAYMENT_SUCCESS",
+        title: "Paiement reçu après annulation",
+        message: `Réf ${result.payment.reference} — à rembourser ou reconfirmer manuellement`,
+        link: "/admin/bookings",
       });
-
-      if (payment.status === 'SUCCESS' || payment.status === 'FAILED') {
-        const guestName = [updatedPayment.booking.guestFirstName, updatedPayment.booking.guestLastName].filter(Boolean).join(' ') || 'Client';
-        await createAdminNotification({
-          type: payment.status === 'SUCCESS' ? 'PAYMENT_SUCCESS' : 'PAYMENT_FAILED',
-          title: payment.status === 'SUCCESS' ? 'Paiement reçu' : 'Paiement échoué',
-          message: `${guestName} — ${updatedPayment.amount} ${updatedPayment.currency} (réf ${updatedPayment.reference})`,
-          link: '/admin/bookings',
-        });
-      }
     }
 
     return NextResponse.json({
       success: true,
-      data: payment,
+      data: { reference: result.payment.reference, status: result.payment.status },
     });
   } catch (error) {
-    console.error('=== CENTRAL APIS CALLBACK ERROR ===', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
-
+    console.error("[centralapis callback] error", error);
     return NextResponse.json(
-      { success: false, message: error instanceof Error ? error.message : 'Failed to process callback' },
-      { status: 500 }
+      { success: false, message: error instanceof Error ? error.message : "Failed to process callback" },
+      { status: 500 },
     );
   }
 }

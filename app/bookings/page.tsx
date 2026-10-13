@@ -8,7 +8,7 @@ import { api } from "@/lib/api-client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Calendar, MapPin, Users, CreditCard, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Calendar, MapPin, Users, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 type Booking = {
@@ -41,7 +41,6 @@ export default function MyBookingsPage() {
   const router = useRouter();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [payingBookingId, setPayingBookingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -49,6 +48,11 @@ export default function MyBookingsPage() {
       return;
     }
     fetchBookings();
+    // Rafraîchit l'état des paiements quand l'onglet reprend le focus
+    // (retour du fournisseur de paiement).
+    const onFocus = () => fetchBookings();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, router]);
 
@@ -60,42 +64,6 @@ export default function MyBookingsPage() {
       console.error("Error fetching bookings:", error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handlePayNow = async (booking: Booking) => {
-    if (!booking.payment) return;
-    setPayingBookingId(booking.id);
-    try {
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-      const response = await fetch("/api/payments/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: booking.payment.amount,
-          currency: booking.payment.currency,
-          reference: booking.payment.reference,
-          description: `Paiement réservation ${booking.room.name}`,
-          returnUrl: `${baseUrl}/bookings/confirmed?reference=${booking.payment.reference}`,
-          cancelUrl: `${baseUrl}/bookings/cancelled?reference=${booking.payment.reference}`,
-          customer: {
-            name: `${booking.guestFirstName} ${booking.guestLastName}`,
-            email: booking.guestEmail,
-            phone: booking.guestPhone,
-          },
-          metadata: { booking_id: booking.id, userId: user?.id },
-        }),
-      });
-      const result = await response.json();
-      if (result.success && result.data?.checkoutLink) {
-        window.open(result.data.checkoutLink, "_blank");
-      } else {
-        console.error("Payment checkout failed:", result);
-      }
-    } catch (error) {
-      console.error("Error initiating payment:", error);
-    } finally {
-      setPayingBookingId(null);
     }
   };
 
@@ -214,16 +182,6 @@ export default function MyBookingsPage() {
                         <p className="font-mono text-sm mt-1">{booking.reference || booking.payment?.reference || "-"}</p>
                       </div>
                       <div className="flex flex-col sm:flex-row items-center gap-6 w-full sm:w-auto">
-                        {booking.payment && booking.payment.status === "PENDING" && (
-                          <button
-                            onClick={() => handlePayNow(booking)}
-                            disabled={payingBookingId === booking.id}
-                            className="btn-fill-editorial w-full sm:w-auto disabled:opacity-60"
-                          >
-                            <CreditCard className="h-3.5 w-3.5" />
-                            {payingBookingId === booking.id ? "Traitement..." : "Payer maintenant"}
-                          </button>
-                        )}
                         <Link href={`/rooms/${booking.room.slug}`} className="link-underline text-foreground">
                           Voir la chambre
                         </Link>

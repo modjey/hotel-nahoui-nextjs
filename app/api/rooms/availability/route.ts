@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { fail, ok } from "@/lib/auth/api";
+import { blockingBookingWhere } from "@/lib/bookings";
 import { NextRequest } from "next/server";
 
 export const runtime = "nodejs";
@@ -39,7 +40,7 @@ export async function GET(req: NextRequest) {
     const overlappingBookings = await prisma.booking.findMany({
       where: {
         roomId: { in: roomIds },
-        status: { in: ["PENDING", "CONFIRMED"] },
+        ...blockingBookingWhere(),
         checkIn: { lt: checkOutDate },
         checkOut: { gt: checkInDate },
       },
