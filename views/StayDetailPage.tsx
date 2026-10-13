@@ -1163,7 +1163,7 @@ function StayDetailPageContent() {
           )
         ) : (
           <button onClick={() => setBookingFlowOpen(true)} className="btn-fill-editorial !min-h-12 shrink-0">
-            Réserver
+            Je réserve
           </button>
         )}
       </div>

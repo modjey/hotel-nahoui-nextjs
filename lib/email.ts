@@ -128,7 +128,7 @@ export async function sendAdminBookingNotification(booking: BookingNotificationD
 }
 
 export interface GuestBookingStatusData {
-  status: "CONFIRMED" | "CANCELLED" | "COMPLETED";
+  status: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
   reference?: string | null;
   roomName?: string | null;
   checkIn: Date | string;
@@ -144,6 +144,12 @@ const GUEST_STATUS_CONTENT: Record<
   GuestBookingStatusData["status"],
   { subject: string; heading: string; intro: (refunded?: boolean) => string }
 > = {
+  PENDING: {
+    subject: "Nous avons bien reçu votre réservation",
+    heading: "Réservation reçue",
+    intro: () =>
+      "Nous avons bien reçu votre demande de réservation. Votre chambre est bloquée 15 minutes le temps de finaliser le paiement.",
+  },
   CONFIRMED: {
     subject: "Votre réservation est confirmée",
     heading: "Réservation confirmée",
@@ -165,9 +171,10 @@ const GUEST_STATUS_CONTENT: Record<
 };
 
 /**
- * Envoie au client un email transactionnel quand l'admin confirme, annule
- * ou termine sa réservation. Ne lève jamais d'exception : un échec d'envoi
- * ne doit jamais faire échouer le changement de statut côté admin.
+ * Envoie au client un email transactionnel à chaque étape clé de sa réservation :
+ * réception (PENDING, juste après la création), confirmation, annulation ou fin de
+ * séjour. Ne lève jamais d'exception : un échec d'envoi ne doit jamais faire
+ * échouer la création de la réservation ou le changement de statut côté admin.
  */
 export async function sendGuestBookingStatusEmail(booking: GuestBookingStatusData) {
   const to = booking.guestEmail;

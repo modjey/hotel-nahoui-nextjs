@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { notifyAdminNewBooking } from "@/lib/notifications";
+import { notifyAdminNewBooking, notifyGuestBookingStatus } from "@/lib/notifications";
 import { ok, fail, parseBody, withAuth } from "@/lib/auth/api";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
@@ -155,19 +155,31 @@ export const POST = withAuth(async (req, ctx) => {
     });
 
     // Notifications best-effort : ne doivent jamais faire échouer la réservation.
-    await notifyAdminNewBooking({
-      reference: booking.reference,
-      roomName: booking.room?.name,
-      checkIn: booking.checkIn,
-      checkOut: booking.checkOut,
-      adults: booking.adults,
-      children: booking.children,
-      status: booking.status,
-      guestFirstName: booking.guestFirstName,
-      guestLastName: booking.guestLastName,
-      guestEmail: booking.guestEmail,
-      guestPhone: booking.guestPhone,
-    });
+    await Promise.allSettled([
+      notifyAdminNewBooking({
+        reference: booking.reference,
+        roomName: booking.room?.name,
+        checkIn: booking.checkIn,
+        checkOut: booking.checkOut,
+        adults: booking.adults,
+        children: booking.children,
+        status: booking.status,
+        guestFirstName: booking.guestFirstName,
+        guestLastName: booking.guestLastName,
+        guestEmail: booking.guestEmail,
+        guestPhone: booking.guestPhone,
+      }),
+      notifyGuestBookingStatus({
+        status: "PENDING",
+        reference: booking.reference,
+        roomName: booking.room?.name,
+        checkIn: booking.checkIn,
+        checkOut: booking.checkOut,
+        guestFirstName: booking.guestFirstName,
+        guestLastName: booking.guestLastName,
+        guestEmail: booking.guestEmail,
+      }),
+    ]);
 
     return ok({ booking }, { status: 201 });
   } catch (e) {

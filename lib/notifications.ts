@@ -77,8 +77,8 @@ export async function notifyAdminNewBooking(booking: BookingNotificationData) {
 }
 
 /**
- * Notifie le client par email transactionnel quand l'admin confirme,
- * annule ou termine sa réservation. Ne lève jamais d'exception.
+ * Notifie le client par email transactionnel à chaque étape clé de sa réservation
+ * (réception, confirmation, annulation, fin de séjour). Ne lève jamais d'exception.
  */
 export async function notifyGuestBookingStatus(booking: GuestBookingStatusData) {
   try {
