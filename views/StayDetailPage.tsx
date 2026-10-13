@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { Suspense, useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Star, MapPin, Calendar, Users, BedDouble, Bath, Shield, Clock, Share2, Award, ChevronLeft, ChevronRight, X, Check, AlertCircle, Sparkles, Images } from "lucide-react";
+import { Star, MapPin, Calendar, Users, Shield, Clock, Share2, ChevronLeft, ChevronRight, X, Check, AlertCircle, Sparkles, Images } from "lucide-react";
 import { format, addDays, differenceInDays, isWithinInterval, isSameDay } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
@@ -53,6 +53,13 @@ type Room = {
     order: number;
   }[];
 };
+
+function fcfa(value: number, currency = "XOF") {
+  if (currency !== "XOF") {
+    return new Intl.NumberFormat("fr-FR", { style: "currency", currency, maximumFractionDigits: 0 }).format(value);
+  }
+  return `${new Intl.NumberFormat("fr-FR").format(value).replace(/\u202f|\u00a0/g, " ")} FCFA`;
+}
 
 function StayDetailPageContent() {
   const params = useParams<{ slug: string }>();
@@ -297,14 +304,14 @@ function StayDetailPageContent() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Skeleton className="h-10 w-24 rounded-full" />
-              <Skeleton className="h-10 w-24 rounded-full" />
+              <Skeleton className="h-10 w-24" />
+              <Skeleton className="h-10 w-24" />
             </div>
           </div>
         </section>
 
         <section className="mx-auto max-w-7xl px-6 lg:px-10 mt-6">
-          <div className="grid grid-cols-4 grid-rows-2 gap-3 h-[60vh] min-h-[420px] rounded-3xl overflow-hidden">
+          <div className="grid grid-cols-4 grid-rows-2 gap-3 h-[60vh] min-h-[420px] overflow-hidden">
             <Skeleton className="col-span-2 row-span-2 h-full w-full" />
             <Skeleton className="h-full w-full" />
             <Skeleton className="h-full w-full" />
@@ -316,7 +323,7 @@ function StayDetailPageContent() {
         <section className="mx-auto max-w-7xl px-6 lg:px-10 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             <div className="flex items-center gap-6 pb-8 border-b border-border">
-              <Skeleton className="h-14 w-14 rounded-full" />
+              <Skeleton className="h-14 w-14" />
               <div className="space-y-2">
                 <Skeleton className="h-6 w-48" />
                 <Skeleton className="h-4 w-32" />
@@ -375,12 +382,12 @@ function StayDetailPageContent() {
 
             <div className="py-6 border-b border-border space-y-4">
               <Skeleton className="h-8 w-48" />
-              <Skeleton className="aspect-[16/9] w-full rounded-2xl" />
+              <Skeleton className="aspect-[16/9] w-full" />
             </div>
           </div>
 
           <div className="space-y-4">
-            <Skeleton className="h-96 rounded-2xl" />
+            <Skeleton className="h-96" />
           </div>
         </section>
       </div>
@@ -414,7 +421,7 @@ function StayDetailPageContent() {
     title: room.name,
     category: room.roomType.name,
     location: room.location.city ? `${room.location.city}, ${room.location.name}` : room.location.name,
-    country: "Côte d&apos;Ivoire",
+    country: "Côte d’Ivoire",
     price: room.basePrice,
     currency: room.currency,
     rating: reviewStats.approved > 0 ? reviewStats.averageRating : 0,
@@ -458,30 +465,34 @@ function StayDetailPageContent() {
     <div className="min-h-screen bg-background">
       <Nav />
 
-      <section className="mx-auto max-w-7xl px-6 lg:px-10 pt-10">
-        <div className="flex items-start justify-between gap-6 flex-wrap">
+      <section className="mx-auto max-w-[1440px] px-5 lg:px-10 pt-8 lg:pt-12">
+        <nav aria-label="Fil d'Ariane" className="text-sm text-muted-foreground flex items-center gap-2">
+          <Link href="/stays" className="hover:text-foreground">Chambres &amp; suites</Link>
+          <span aria-hidden="true">/</span>
+          <span className="text-foreground">{p.category}</span>
+        </nav>
+        <div className="mt-6 flex items-end justify-between gap-6 flex-wrap">
           <div>
             <span className="eyebrow text-primary">{p.category}</span>
-            <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl mt-3 font-light text-balance leading-[1.05]">
+            <h1 className="font-display text-[2.75rem] sm:text-6xl lg:text-7xl mt-4 text-balance leading-[0.98]">
               {p.title}
-              {room?.roomNumber && <span className="text-lg text-muted-foreground ml-3">N° {room.roomNumber}</span>}
             </h1>
-            <div className="flex items-center gap-4 mt-4 text-sm text-muted-foreground flex-wrap">
-              <span className="flex items-center gap-1.5"><Star className="h-3.5 w-3.5 fill-foreground text-foreground" /> <strong className="text-foreground">{p.rating.toFixed(2)}</strong> · {p.reviews} avis</span>
-              <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /> {p.location}, {p.country}</span>
-              {p.host.superhost && <span className="flex items-center gap-1.5"><Award className="h-3.5 w-3.5" /> Superhôte</span>}
+            <div className="flex items-center gap-x-5 gap-y-2 mt-5 text-[0.9375rem] text-muted-foreground flex-wrap">
+              {room?.roomNumber && <span>Chambre n° {room.roomNumber}</span>}
+              {p.reviews > 0 && (
+                <span className="flex items-center gap-1.5"><Star className="h-4 w-4 fill-primary text-primary" /> <strong className="text-foreground tabular">{p.rating.toFixed(1).replace(".", ",")}</strong> · {p.reviews} avis</span>
+              )}
+              <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4" /> {p.location}, {p.country}</span>
             </div>
           </div>
-          <div className="flex gap-2">
-            <button onClick={handleShare} className="h-10 px-4 border border-border text-sm flex items-center gap-2 hover:bg-secondary"><Share2 className="h-4 w-4"/> Partager</button>
-          </div>
+          <button onClick={handleShare} className="h-11 px-4 border border-border text-sm font-semibold flex items-center gap-2 hover:border-foreground transition-colors"><Share2 className="h-4 w-4"/> Partager</button>
         </div>
       </section>
 
       {/* Gallery */}
-      <section className="mx-auto max-w-7xl px-6 lg:px-10 mt-6">
+      <section className="mx-auto max-w-[1440px] px-5 lg:px-10 mt-8">
         {/* Mobile: single image with photo count */}
-        <div className="sm:hidden relative aspect-[4/3] rounded-2xl overflow-hidden">
+        <div className="sm:hidden relative aspect-[4/3] overflow-hidden">
           {p.gallery[0].type === 'video' && p.gallery[0].isYoutube ? (
             <iframe src={`https://www.youtube.com/embed/${getYoutubeId(p.gallery[0].url)}?autoplay=1&mute=1&loop=1&playlist=${getYoutubeId(p.gallery[0].url)}`} className="h-full w-full object-cover" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
           ) : p.gallery[0].type === 'video' ? (
@@ -491,14 +502,14 @@ function StayDetailPageContent() {
           )}
           <button onClick={() => { setCurrentImageIndex(0); setGalleryOpen(true); }} className="absolute inset-0" aria-label="Voir la galerie" />
           {p.gallery.length > 1 && (
-            <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5">
+            <div className="absolute bottom-3 right-3 bg-white/90 px-3 py-1.5 text-xs font-medium flex items-center gap-1.5">
               <Images className="h-3.5 w-3.5" />
               {p.gallery.length} photos
             </div>
           )}
         </div>
         {/* Desktop: 4-col grid */}
-        <div className="hidden sm:grid grid-cols-4 grid-rows-2 gap-3 h-[60vh] min-h-[420px] rounded-3xl overflow-hidden">
+        <div className="hidden sm:grid grid-cols-4 grid-rows-2 gap-3 h-[60vh] min-h-[420px] overflow-hidden">
           <motion.button
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }}
             onClick={() => { setCurrentImageIndex(0); setGalleryOpen(true); }}
@@ -517,7 +528,7 @@ function StayDetailPageContent() {
               <img src={p.gallery[0].url} alt={p.title} className="h-full w-full object-cover" />
             )}
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-              <span className="bg-white/90 backdrop-blur px-4 py-2 rounded-full text-sm font-medium">Voir toutes les photos</span>
+              <span className="bg-white/90 px-4 py-2 text-sm font-medium">Voir toutes les photos</span>
             </div>
           </motion.button>
           {p.gallery.slice(1, 4).map((g: { type: string; url: string; isYoutube: boolean }, i: number) => (
@@ -540,7 +551,7 @@ function StayDetailPageContent() {
                 <img src={g.url} alt="" loading="lazy" className="h-full w-full object-cover" />
               )}
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                <span className="bg-white/90 backdrop-blur px-3 py-1.5 rounded-full text-xs font-medium">Voir</span>
+                <span className="bg-white/90 px-3 py-1.5 text-xs font-medium">Voir</span>
               </div>
             </motion.button>
           ))}
@@ -576,19 +587,19 @@ function StayDetailPageContent() {
           <DialogTitle className="sr-only">Galerie de photos</DialogTitle>
           <button
             onClick={() => setGalleryOpen(false)}
-            className="absolute top-4 right-4 z-10 h-10 w-10 rounded-full bg-white/10 backdrop-blur text-white hover:bg-white/20 flex items-center justify-center transition-colors"
+            className="absolute top-4 right-4 z-10 h-10 w-10 bg-white/10 text-white hover:bg-white/20 flex items-center justify-center transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
           <button
             onClick={handlePrevImage}
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-white/10 backdrop-blur text-white hover:bg-white/20 flex items-center justify-center transition-colors"
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 bg-white/10 text-white hover:bg-white/20 flex items-center justify-center transition-colors"
           >
             <ChevronLeft className="h-6 w-6" />
           </button>
           <button
             onClick={handleNextImage}
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-white/10 backdrop-blur text-white hover:bg-white/20 flex items-center justify-center transition-colors"
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 bg-white/10 text-white hover:bg-white/20 flex items-center justify-center transition-colors"
           >
             <ChevronRight className="h-6 w-6" />
           </button>
@@ -645,32 +656,35 @@ function StayDetailPageContent() {
       </Dialog>
 
       {/* Content + booking */}
-      <section className="mx-auto max-w-7xl px-6 lg:px-10 py-8 pb-28 lg:pb-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <section className="mx-auto max-w-[1440px] px-5 lg:px-10 py-10 pb-28 lg:pb-16 grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-14">
         <div className="lg:col-span-2">
-          <div className="flex items-center gap-6 pb-8 border-b border-border">
-            <div className="h-14 w-14 rounded-full bg-secondary grid place-items-center font-display text-xl">{p.host.name[0]}</div>
-            <div>
-              <div className="font-display text-xl">Hébergé par {p.host.name}</div>
-              <div className="text-sm text-muted-foreground">Hôte depuis {p.host.since}{p.host.superhost ? " · Superhôte" : ""}</div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 py-6 border-b border-border">
-            <div className="flex items-center gap-3"><Users className="h-5 w-5 text-muted-foreground"/><div><div className="text-sm font-medium">{p.guests} voyageurs</div><div className="text-xs text-muted-foreground">Logement confortable</div></div></div>
-            <div className="flex items-center gap-3"><BedDouble className="h-5 w-5 text-muted-foreground"/><div><div className="text-sm font-medium">{p.beds} chambres</div><div className="text-xs text-muted-foreground">Draps inclus</div></div></div>
-            <div className="flex items-center gap-3"><Bath className="h-5 w-5 text-muted-foreground"/><div><div className="text-sm font-medium">{p.baths} salles de bain</div><div className="text-xs text-muted-foreground">Équipements premium</div></div></div>
-          </div>
+          {/* L'essentiel en chiffres */}
+          <dl className="grid grid-cols-2 sm:grid-cols-4 border-y border-border">
+            {[
+              { value: room.sizeSqm ? `${room.sizeSqm}` : "—", unit: "m²", label: "Surface" },
+              { value: `${p.guests}`, unit: "pers.", label: "Capacité" },
+              { value: `${p.beds}`, unit: p.beds > 1 ? "lits" : "lit", label: "Couchage" },
+              { value: `${p.baths}`, unit: p.baths > 1 ? "sdb" : "sdb", label: "Salle de bain" },
+            ].map((item, i) => (
+              <div key={item.label} className={`py-6 px-1 sm:px-5 ${i > 0 ? "sm:border-l border-border" : ""} ${i % 2 === 1 ? "border-l sm:border-l" : ""} ${i > 1 ? "border-t sm:border-t-0" : ""}`}>
+                <dt className="text-[0.8125rem] font-semibold text-muted-foreground">{item.label}</dt>
+                <dd className="mt-2 font-display text-4xl leading-none tabular">
+                  {item.value}<span className="ml-1 text-base text-muted-foreground font-sans">{item.unit}</span>
+                </dd>
+              </div>
+            ))}
+          </dl>
 
           {/* Mobile: Date picker */}
           <div className="lg:hidden py-6 border-b border-border">
-            <div className="border border-border rounded-xl overflow-hidden">
+            <div className="border border-border overflow-hidden">
               <div className="grid grid-cols-2 border-b border-border">
                 <div className="p-3 border-r border-border">
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Arrivée</div>
+                  <div className="text-xs text-muted-foreground">Arrivée</div>
                   <div className="text-sm font-medium">{checkIn ? format(checkIn, 'dd MMM yyyy', { locale: fr }) : 'Sélectionner'}</div>
                 </div>
                 <div className="p-3">
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Départ</div>
+                  <div className="text-xs text-muted-foreground">Départ</div>
                   <div className="text-sm font-medium">{checkOut ? format(checkOut, 'dd MMM yyyy', { locale: fr }) : 'Sélectionner'}</div>
                 </div>
               </div>
@@ -704,7 +718,7 @@ function StayDetailPageContent() {
               <Popover open={mobileGuestPickerOpen} onOpenChange={setMobileGuestPickerOpen}>
                 <PopoverTrigger asChild>
                   <button className="p-3 text-left hover:bg-secondary/50 transition-colors">
-                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Voyageurs</div>
+                    <div className="text-xs text-muted-foreground">Voyageurs</div>
                     <div className="text-sm font-medium">{adults + children} voyageur{adults + children > 1 ? 's' : ''}</div>
                   </button>
                 </PopoverTrigger>
@@ -716,9 +730,9 @@ function StayDetailPageContent() {
                         <div className="text-xs text-muted-foreground">13 ans ou plus</div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button onClick={() => setAdults(Math.max(1, adults - 1))} className="h-8 w-8 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors">-</button>
+                        <button onClick={() => setAdults(Math.max(1, adults - 1))} className="h-8 w-8 border border-border flex items-center justify-center hover:bg-secondary transition-colors">-</button>
                         <span className="w-6 text-center">{adults}</span>
-                        <button onClick={() => setAdults(Math.min(p.guests, adults + 1))} className="h-8 w-8 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors">+</button>
+                        <button onClick={() => setAdults(Math.min(p.guests, adults + 1))} className="h-8 w-8 border border-border flex items-center justify-center hover:bg-secondary transition-colors">+</button>
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
@@ -727,9 +741,9 @@ function StayDetailPageContent() {
                         <div className="text-xs text-muted-foreground">2 à 12 ans</div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button onClick={() => setChildren(Math.max(0, children - 1))} className="h-8 w-8 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors">-</button>
+                        <button onClick={() => setChildren(Math.max(0, children - 1))} className="h-8 w-8 border border-border flex items-center justify-center hover:bg-secondary transition-colors">-</button>
                         <span className="w-6 text-center">{children}</span>
-                        <button onClick={() => setChildren(Math.min(p.guests - adults, children + 1))} className="h-8 w-8 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors">+</button>
+                        <button onClick={() => setChildren(Math.min(p.guests - adults, children + 1))} className="h-8 w-8 border border-border flex items-center justify-center hover:bg-secondary transition-colors">+</button>
                       </div>
                     </div>
                   </div>
@@ -741,7 +755,7 @@ function StayDetailPageContent() {
           {/* Mobile: Own booking info */}
           {availability === false && isOwnBooking && (
             <div className="lg:hidden py-6 border-b border-border">
-              <div className={`p-4 rounded-xl ${isOwnBooking ? 'bg-primary/10' : 'bg-destructive/10'}`}>
+              <div className={`p-4 ${isOwnBooking ? 'bg-primary/10' : 'bg-destructive/10'}`}>
                 <p className={`text-sm font-medium mb-2 ${isOwnBooking ? 'text-primary' : 'text-destructive'}`}>
                   {isOwnBooking ? "Vous avez déjà réservé cette chambre pour ces dates" : "Cette chambre est déjà réservée pour ces dates"}
                 </p>
@@ -758,63 +772,58 @@ function StayDetailPageContent() {
                 )}
                 <button
                   onClick={() => window.location.href = '/bookings'}
-                  className="mt-3 w-full h-10 bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+                  className="mt-3 w-full btn-fill-editorial"
                 >
                   Voir ma réservation
                 </button>
               </div>
             </div>
           )}
-          {room.sizeSqm && (
-            <div className="py-4 border-b border-border">
-              <div className="text-sm text-muted-foreground">Surface : <span className="text-foreground font-medium">{room.sizeSqm} m²</span></div>
+          <div className="py-10 border-b border-border">
+            <span className="eyebrow text-primary">La chambre</span>
+            <p className="mt-5 font-display text-2xl sm:text-[1.75rem] leading-snug text-pretty max-w-3xl">{room.shortDescription || p.title}</p>
+            {p.description && p.description !== room.shortDescription && (
+              <p className="mt-5 text-[1.0625rem] text-muted-foreground leading-relaxed text-pretty max-w-2xl whitespace-pre-line">{p.description}</p>
+            )}
+          </div>
+
+          {p.amenities.length > 0 && (
+            <div className="py-10 border-b border-border">
+              <h2 className="font-display text-3xl">Équipements</h2>
+              <ul className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-x-10">
+                {p.amenities.map((a: string) => (
+                  <li key={a} className="flex items-center gap-3 py-3 border-b border-border text-[0.9375rem]">
+                    <Check className="h-4 w-4 text-primary shrink-0" />
+                    {a}
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 
-          <div className="py-6 border-b border-border">
-            <h2 className="font-display text-2xl mb-4">À propos de ce logement</h2>
-            <p className="text-muted-foreground leading-relaxed text-pretty max-w-2xl">{p.description}</p>
+          <div className="py-10 border-b border-border">
+            <h2 className="font-display text-3xl">Bon à savoir</h2>
+            <dl className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-px bg-border border border-border">
+              <div className="bg-background p-5">
+                <dt className="flex items-center gap-2 text-[0.8125rem] font-semibold text-muted-foreground"><Clock className="h-4 w-4" /> Arrivée</dt>
+                <dd className="mt-2 font-display text-2xl tabular">dès {(room?.checkInStart || "15:00").replace(":", "h")}</dd>
+                {room?.checkInMethod && <dd className="mt-1 text-sm text-muted-foreground">{room.checkInMethod}</dd>}
+              </div>
+              <div className="bg-background p-5">
+                <dt className="flex items-center gap-2 text-[0.8125rem] font-semibold text-muted-foreground"><Clock className="h-4 w-4" /> Départ</dt>
+                <dd className="mt-2 font-display text-2xl tabular">avant {(room?.checkOutTime || "11:00").replace(":", "h")}</dd>
+              </div>
+              <div className="bg-background p-5">
+                <dt className="flex items-center gap-2 text-[0.8125rem] font-semibold text-muted-foreground"><Shield className="h-4 w-4" /> Annulation</dt>
+                <dd className="mt-2 text-sm text-foreground leading-relaxed">
+                  {room?.cancellationPolicy || "Conditions précisées lors de la réservation. Contactez la réception pour toute question."}
+                </dd>
+              </div>
+            </dl>
           </div>
 
-          <div className="py-6 border-b border-border">
-            <h2 className="font-display text-2xl mb-4">Ce que ce lieu offre</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
-              {p.amenities.map((a: string) => (
-                <div key={a} className="flex items-center gap-3 py-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                  <span className="text-sm">{a}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="py-6 border-b border-border">
-            <h2 className="font-display text-2xl mb-4">Politiques et conditions</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-sm font-medium"><Clock className="h-4 w-4" /> Heure d&apos;arrivée</div>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <div>• {room?.checkInStart || '15:00'} – {room?.checkInEnd || '22:00'}</div>
-                  <div>• {room?.checkInMethod || 'Arrivée autonome avec clavier'}</div>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-sm font-medium"><Clock className="h-4 w-4" /> Heure de départ</div>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <div>• {room?.checkOutTime || '11:00'}</div>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-sm font-medium"><Shield className="h-4 w-4" /> Politique d&apos;annulation</div>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <div>• {room?.cancellationPolicy || 'Annulation gratuite avant 7 jours, 50% de remboursement avant 3 jours'}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="py-6 border-b border-border">
-            <h2 className="font-display text-2xl mb-4">Disponibilités</h2>
+          <div className="py-10 border-b border-border">
+            <h2 className="font-display text-3xl mb-6">Disponibilités &amp; tarifs</h2>
             <HotelBookingCalendar
               hotelName={room.name}
               availability={availabilityMap}
@@ -829,9 +838,9 @@ function StayDetailPageContent() {
             />
           </div>
 
-          <div className="py-6 border-b border-border">
-            <h2 className="font-display text-2xl mb-4">Où vous serez</h2>
-            <div className="aspect-[16/9] rounded-2xl bg-muted relative overflow-hidden border border-border">
+          <div className="py-10 border-b border-border">
+            <h2 className="font-display text-3xl mb-6">Situation</h2>
+            <div className="aspect-[16/9] bg-muted relative overflow-hidden border border-border">
               <iframe
                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3981.7777777777778!2d-6.6443927!3d4.7239875!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xf961312d9e1df9d:0x7ba51b79fb1fd8ea!2sH%C3%B4tel+Nahoui+Sp!5e0!3m2!1sfr!2sci!4v1620000000000!5m2!1sfr!2sci"
                 width="100%"
@@ -843,26 +852,27 @@ function StayDetailPageContent() {
                 className="absolute inset-0"
               />
             </div>
-            <div className="text-center mt-4">
+            <div className="mt-4 flex items-center justify-between gap-4 flex-wrap">
+              <span className="text-[0.9375rem] text-muted-foreground">{p.location}, {p.country}</span>
               <a
                 href="https://www.google.com/maps/place/H%C3%B4tel+Nahoui+Sp/@4.7239875,-6.6443927,17z/data=!4m9!3m8!1s0xf961312d9e1df9d:0x7ba51b79fb1fd8ea!5m2!4m1!1i2!8m2!3d4.7239875!4d-6.6418178!16s%2Fg%2F11c2pjqlkp?entry=ttu&g_ep=EgoyMDI2MDYwMS4wIKXMDSoASAFQAw%3D%3D"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+                className="link-underline text-brand-text"
               >
                 <MapPin className="h-4 w-4" />
-                Ouvrir dans Google Maps
+                Itinéraire Google Maps
               </a>
             </div>
           </div>
 
           {/* Reviews section - What guests say */}
-          <div ref={reviewSectionRef} className="py-6 border-b border-border">
+          <div ref={reviewSectionRef} className="py-10">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-display text-2xl">Ce que disent les voyageurs ({reviewStats.approved})</h2>
+              <h2 className="font-display text-3xl">Avis des clients <span className="text-muted-foreground tabular">({reviewStats.approved})</span></h2>
               <button
                 onClick={() => setShowReviewForm(!showReviewForm)}
-                className="text-sm border-b border-foreground pb-1 hover:border-primary hover:text-primary transition-colors"
+                className="link-underline hover:text-brand-text"
               >
                 {showReviewForm ? "Annuler" : "Écrire un avis"}
               </button>
@@ -870,7 +880,7 @@ function StayDetailPageContent() {
 
             {/* Review submission form */}
             {showReviewForm && (
-              <div className="mb-6 p-6 rounded-2xl border border-border bg-secondary/20">
+              <div className="mb-6 p-6 border border-border bg-secondary/20">
                 {!user ? (
                   <div className="text-center py-8">
                     <p className="text-muted-foreground mb-3">Connectez-vous pour laisser un avis</p>
@@ -879,7 +889,7 @@ function StayDetailPageContent() {
                         setAuthPurpose("review");
                         setAuthModalOpen(true);
                       }}
-                      className="px-6 py-2 bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors"
+                      className="btn-fill-editorial"
                     >
                       Se connecter
                     </button>
@@ -912,7 +922,7 @@ function StayDetailPageContent() {
                           value={reviewComment}
                           onChange={(e) => setReviewComment(e.target.value)}
                           placeholder="Partagez votre expérience..."
-                          className="w-full h-32 rounded-lg border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/40 resize-none"
+                          className="w-full h-32 border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/40 resize-none"
                           maxLength={1000}
                         />
                         <p className="text-xs text-muted-foreground mt-1">{reviewComment.length}/1000</p>
@@ -920,7 +930,7 @@ function StayDetailPageContent() {
                       <button
                         onClick={handleSubmitReview}
                         disabled={submittingReview || reviewRating === 0 || !reviewComment.trim()}
-                        className="px-6 py-2 bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        className="btn-fill-editorial disabled:opacity-30"
                       >
                         {submittingReview ? "Envoi..." : "Envoyer l'avis"}
                       </button>
@@ -939,9 +949,9 @@ function StayDetailPageContent() {
                     <div className="flex items-start justify-between mb-1">
                       <div className="flex items-center gap-3">
                         {review.user?.image ? (
-                          <img src={review.user.image} alt={review.user.name || "User"} className="h-10 w-10 rounded-full object-cover" />
+                          <img src={review.user.image} alt={review.user.name || "User"} className="h-10 w-10 object-cover" />
                         ) : (
-                          <div className="h-10 w-10 rounded-full bg-secondary grid place-items-center font-display text-sm">
+                          <div className="h-10 w-10 bg-secondary grid place-items-center font-display text-sm">
                             {(review.user?.name || "U")[0]}
                           </div>
                         )}
@@ -966,27 +976,24 @@ function StayDetailPageContent() {
         {/* Sticky booking card */}
         <aside className="lg:col-span-1">
           <div className="lg:sticky lg:top-28">
-            <div className="border border-border p-7 bg-card">
-              <div className="flex items-baseline justify-between">
+            <div className="border border-border bg-card">
+              <div className="frame-inset px-7 py-6 flex items-end justify-between gap-4">
                 <div>
-                  <span className="font-display text-3xl">
-                    {new Intl.NumberFormat("fr-FR", {
-                      style: "currency",
-                      currency: p.currency,
-                      maximumFractionDigits: 0,
-                    }).format(p.price)}
-                  </span>
-                  <span className="text-muted-foreground"> / nuit</span>
+                  <span className="text-[0.8125rem] font-semibold text-white/90">La nuit, à partir de</span>
+                  <div className="font-display text-4xl leading-none mt-1.5 tabular">{fcfa(p.price, p.currency)}</div>
                 </div>
-                <div className="flex items-center gap-1 text-sm"><Star className="h-3.5 w-3.5 fill-current"/>{p.rating.toFixed(2)}</div>
+                {p.reviews > 0 && (
+                  <div className="flex items-center gap-1 text-sm font-semibold"><Star className="h-3.5 w-3.5 fill-current"/>{p.rating.toFixed(1).replace(".", ",")}</div>
+                )}
               </div>
+              <div className="p-6 sm:p-7">
 
-              <div className="mt-4 border border-border rounded-xl overflow-hidden">
+              <div className="mt-4 border border-border overflow-hidden">
                 <div className="grid grid-cols-2">
                   <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                     <PopoverTrigger asChild>
                       <button className="p-3 border-r border-b border-border text-left hover:bg-secondary/50 transition-colors">
-                        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Arrivée</div>
+                        <div className="text-xs text-muted-foreground">Arrivée</div>
                         <div className="text-sm font-medium">{checkIn ? format(checkIn, 'dd MMM yyyy', { locale: fr }) : 'Ajouter date'}</div>
                       </button>
                     </PopoverTrigger>
@@ -1021,7 +1028,7 @@ function StayDetailPageContent() {
                   <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                     <PopoverTrigger asChild>
                       <button className="p-3 border-b border-border text-left hover:bg-secondary/50 transition-colors">
-                        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Départ</div>
+                        <div className="text-xs text-muted-foreground">Départ</div>
                         <div className="text-sm font-medium">{checkOut ? format(checkOut, 'dd MMM yyyy', { locale: fr }) : 'Ajouter date'}</div>
                       </button>
                     </PopoverTrigger>
@@ -1030,7 +1037,7 @@ function StayDetailPageContent() {
                 <Popover open={guestPickerOpen} onOpenChange={setGuestPickerOpen}>
                   <PopoverTrigger asChild>
                     <button className="p-3 text-left hover:bg-secondary/50 transition-colors">
-                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Voyageurs</div>
+                      <div className="text-xs text-muted-foreground">Voyageurs</div>
                       <div className="text-sm font-medium">{adults + children} voyageur{adults + children > 1 ? 's' : ''}</div>
                     </button>
                   </PopoverTrigger>
@@ -1042,9 +1049,9 @@ function StayDetailPageContent() {
                           <div className="text-xs text-muted-foreground">13 ans et plus</div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button onClick={() => setAdults(Math.max(1, adults - 1))} className="h-8 w-8 rounded-full border border-border flex items-center justify-center hover:border-foreground">−</button>
+                          <button onClick={() => setAdults(Math.max(1, adults - 1))} className="h-8 w-8 border border-border flex items-center justify-center hover:border-foreground">−</button>
                           <span className="w-6 text-center">{adults}</span>
-                          <button onClick={() => setAdults(Math.min(p.guests, adults + 1))} disabled={adults + children >= p.guests} className="h-8 w-8 rounded-full border border-border flex items-center justify-center hover:border-foreground disabled:opacity-30">+</button>
+                          <button onClick={() => setAdults(Math.min(p.guests, adults + 1))} disabled={adults + children >= p.guests} className="h-8 w-8 border border-border flex items-center justify-center hover:border-foreground disabled:opacity-30">+</button>
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
@@ -1053,9 +1060,9 @@ function StayDetailPageContent() {
                           <div className="text-xs text-muted-foreground">2–12 ans</div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button onClick={() => setChildren(Math.max(0, children - 1))} className="h-8 w-8 rounded-full border border-border flex items-center justify-center hover:border-foreground">−</button>
+                          <button onClick={() => setChildren(Math.max(0, children - 1))} className="h-8 w-8 border border-border flex items-center justify-center hover:border-foreground">−</button>
                           <span className="w-6 text-center">{children}</span>
-                          <button onClick={() => setChildren(Math.min(p.guests - adults, children + 1))} disabled={adults + children >= p.guests} className="h-8 w-8 rounded-full border border-border flex items-center justify-center hover:border-foreground disabled:opacity-30">+</button>
+                          <button onClick={() => setChildren(Math.min(p.guests - adults, children + 1))} disabled={adults + children >= p.guests} className="h-8 w-8 border border-border flex items-center justify-center hover:border-foreground disabled:opacity-30">+</button>
                         </div>
                       </div>
                     </div>
@@ -1076,8 +1083,8 @@ function StayDetailPageContent() {
                     Voir ma réservation
                   </button>
                 ) : (
-                  <div className="mt-4 h-12 w-full bg-destructive text-destructive-foreground font-medium grid place-items-center">
-                    Non disponible
+                  <div className="mt-4 h-12 w-full bg-muted text-foreground font-semibold grid place-items-center">
+                    Complet à ces dates
                   </div>
                 )
               ) : (
@@ -1095,7 +1102,7 @@ function StayDetailPageContent() {
                     {isOwnBooking ? "Vous avez déjà réservé cette chambre pour ces dates" : "Cette chambre est déjà réservée pour ces dates"}
                   </p>
                   {conflictingBookings.length > 0 && (
-                    <div className={`mt-2 p-3 rounded-lg ${isOwnBooking ? 'bg-primary/10' : 'bg-destructive/10'}`}>
+                    <div className={`mt-2 p-3 ${isOwnBooking ? 'bg-primary/10' : 'bg-destructive/10'}`}>
                       <p className={`text-xs font-medium mb-1 ${isOwnBooking ? 'text-primary' : 'text-destructive'}`}>Dates réservées :</p>
                       {conflictingBookings.map((booking, idx) => (
                         <div key={idx} className="text-xs text-muted-foreground">
@@ -1108,42 +1115,54 @@ function StayDetailPageContent() {
                 </>
               )}
               {availability === true && (
-                <p className="text-center text-xs text-green-600 dark:text-green-400 mt-3 flex items-center justify-center gap-1">
+                <p className="text-center text-xs text-emerald-700 mt-3 flex items-center justify-center gap-1">
                   <Check className="h-3 w-3" />
                   Disponible pour ces dates
                 </p>
               )}
+
+              {nights > 0 && (
+                <dl className="mt-6 pt-5 border-t border-border space-y-2 text-[0.9375rem]">
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">{fcfa(p.price, p.currency)} × {nights} nuit{nights > 1 ? "s" : ""}</dt>
+                    <dd className="tabular">{fcfa(p.price * nights, p.currency)}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4 pt-3 border-t border-border">
+                    <dt className="font-semibold">Total</dt>
+                    <dd className="font-display text-2xl leading-none tabular">{fcfa(p.price * nights, p.currency)}</dd>
+                  </div>
+                </dl>
+              )}
+              </div>
             </div>
           </div>
         </aside>
       </section>
 
       {/* Mobile sticky booking bar */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-md border-t border-border px-4 py-2 flex items-center justify-between gap-3">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border px-4 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex items-center justify-between gap-3">
         <div>
           <div className="flex items-baseline gap-1">
-            <span className="font-display text-sm">
-              {new Intl.NumberFormat("fr-FR", { style: "currency", currency: p.currency, maximumFractionDigits: 0 }).format(p.price)}
-            </span>
-            <span className="text-[10px] text-muted-foreground">/nuit</span>
+            <span className="font-display text-xl tabular">{fcfa(p.price, p.currency)}</span>
+            <span className="text-xs text-muted-foreground">/ nuit</span>
           </div>
-          {nights > 0 && <div className="text-[10px] text-muted-foreground">{nights} nuit{nights > 1 ? 's' : ''} · {new Intl.NumberFormat("fr-FR", { style: "currency", currency: p.currency, maximumFractionDigits: 0 }).format(p.price * nights)}</div>}
+          {nights > 0 && <div className="text-xs text-muted-foreground">{nights} nuit{nights > 1 ? 's' : ''} · total {fcfa(p.price * nights, p.currency)}</div>}
         </div>
         {checkingAvailability ? (
-          <div className="h-9 px-4 bg-muted text-muted-foreground text-xs font-medium grid place-items-center">Vérification…</div>
+          <div className="h-12 px-4 bg-muted text-muted-foreground text-sm font-medium grid place-items-center">Vérification…</div>
         ) : availability === false ? (
           isOwnBooking ? (
             <button
               onClick={() => window.location.href = '/bookings'}
-              className="h-9 px-4 bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-opacity shrink-0"
+              className="btn-fill-editorial !min-h-12 shrink-0"
             >
               Voir ma réservation
             </button>
           ) : (
-            <div className="h-9 px-4 bg-destructive text-destructive-foreground text-xs font-medium grid place-items-center">Non dispo.</div>
+            <div className="h-12 px-4 bg-muted text-foreground text-sm font-semibold grid place-items-center">Complet</div>
           )
         ) : (
-          <button onClick={() => setBookingFlowOpen(true)} className="h-9 px-4 bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-opacity shrink-0">
+          <button onClick={() => setBookingFlowOpen(true)} className="btn-fill-editorial !min-h-12 shrink-0">
             Réserver
           </button>
         )}
@@ -1500,12 +1519,12 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
 
   return (
     <div className="h-screen bg-background overflow-y-auto">
-      <div className="mx-auto max-w-6xl px-6 lg:px-10 pt-10 pb-24">
+      <div className="mx-auto max-w-6xl px-6 lg:px-10 pt-10 pb-6">
         <button onClick={onClose} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <X className="h-4 w-4" /> Quitter
         </button>
 
-        <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl mt-6">Confirmer et payer</h1>
+        <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl mt-6 leading-none">Confirmer et payer</h1>
 
         {/* Stepper */}
         <div className="mt-6 flex items-center gap-3 sm:gap-6 flex-wrap">
@@ -1514,9 +1533,9 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
             const done = i < stepIndex;
             return (
               <div key={s} className="flex items-center gap-2 sm:gap-3">
-                <div className={`h-8 w-8 rounded-full grid place-items-center text-xs font-medium border transition-all shrink-0 ${
-                  done ? "bg-primary text-primary-foreground border-primary"
-                  : active ? "bg-foreground text-background border-foreground"
+                <div className={`h-8 w-8 grid place-items-center text-xs font-medium border transition-all shrink-0 ${
+                  done ? "bg-ink text-white border-ink"
+                  : active ? "bg-primary text-white border-primary"
                   : "bg-background text-muted-foreground border-border"
                 }`}>
                   {done ? <Check className="h-4 w-4" /> : i + 1}
@@ -1531,7 +1550,7 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
 
         <div className="mt-8 grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8">
           {/* Step content */}
-          <div className="lg:col-span-3 order-2 lg:order-1">
+          <div className={`order-2 lg:order-1 ${step === "Récapitulatif" ? "lg:col-span-3" : "lg:col-span-5"}`}>
             <AnimatePresence mode="wait">
               <motion.div
                 key={step}
@@ -1541,9 +1560,9 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
                 transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
               >
                 {step === "Dates" && (
-                  <div className="border border-border rounded-3xl p-7 bg-card">
-                    <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground"><Calendar className="h-4 w-4" />Votre voyage</div>
-                    <div className="mt-4 space-y-4">
+                  <div className="border border-border p-5 bg-card">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground"><Calendar className="h-4 w-4" />Votre voyage</div>
+                    <div className="mt-3 space-y-3">
                       <HotelBookingCalendar
                         availability={overlayAvailabilityMap}
                         basePrice={room?.basePrice ?? 0}
@@ -1567,7 +1586,7 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
 
                       {checkIn && checkOut && checkOut > checkIn && (
                         !rangeFullyAvailable ? (
-                          <div className="p-3 rounded-lg bg-destructive/10">
+                          <div className="p-3 bg-destructive/10">
                             <p className="text-sm font-medium text-destructive flex items-center gap-1">
                               <AlertCircle className="h-4 w-4" />
                               Cette période contient des nuits déjà réservées. Choisissez une plage entièrement disponible.
@@ -1579,7 +1598,7 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
                             Vérification de la disponibilité…
                           </p>
                         ) : availability === false ? (
-                          <div className="p-3 rounded-lg bg-destructive/10">
+                          <div className="p-3 bg-destructive/10">
                             <p className="text-sm font-medium text-destructive flex items-center gap-1">
                               <AlertCircle className="h-4 w-4" />
                               {isOwnBooking ? "Vous avez déjà une réservation pour ces dates" : "Chambre indisponible pour ces dates"}
@@ -1594,22 +1613,25 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
                               </div>
                             )}
                           </div>
-                        ) : availability === true ? (
-                          <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
-                            <Check className="h-4 w-4" />
-                            Chambre disponible pour ces dates
-                          </p>
                         ) : null
                       )}
 
-                      <p className="mt-4 text-sm text-muted-foreground">{nights} nuit{nights > 1 ? "s" : ""} · {room?.location.city ? `${room.location.city}, ${room.location.name}` : room?.location.name}</p>
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                        <span className="text-muted-foreground">{nights} nuit{nights > 1 ? "s" : ""} · {room?.location.city ? `${room.location.city}, ${room.location.name}` : room?.location.name}</span>
+                        {checkIn && checkOut && checkOut > checkIn && rangeFullyAvailable && !checkingAvailability && availability === true && (
+                          <span className="text-emerald-700 flex items-center gap-1 text-xs font-medium">
+                            <Check className="h-3.5 w-3.5" />
+                            Disponible
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
 
                 {step === "Détails" && (
-                  <div className="border border-border rounded-3xl p-7 bg-card">
-                    <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                  <div className="border border-border p-7 bg-card">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       {user ? <Users className="h-4 w-4" /> : <Shield className="h-4 w-4" />}
                       {user ? "Vos coordonnées" : "Authentification"}
                     </div>
@@ -1618,14 +1640,14 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
                         <div className="space-y-4">
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <label className="block">
-                              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Prénom</span>
+                              <span className="text-xs font-medium text-muted-foreground">Prénom</span>
                               <div className="mt-1.5">
                                 <input value={guestInfo.firstName} onChange={(e) => setGuestInfo({...guestInfo, firstName: e.target.value})} placeholder="Jean" className={inputCls} />
                                 {errors.firstName && <p className="mt-1 text-xs text-destructive">{errors.firstName}</p>}
                               </div>
                             </label>
                             <label className="block">
-                              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Nom</span>
+                              <span className="text-xs font-medium text-muted-foreground">Nom</span>
                               <div className="mt-1.5">
                                 <input value={guestInfo.lastName} onChange={(e) => setGuestInfo({...guestInfo, lastName: e.target.value})} placeholder="Adje" className={inputCls} />
                                 {errors.lastName && <p className="mt-1 text-xs text-destructive">{errors.lastName}</p>}
@@ -1633,17 +1655,17 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
                             </label>
                           </div>
                           <label className="block">
-                            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Email</span>
+                            <span className="text-xs font-medium text-muted-foreground">Email</span>
                             <div className="mt-1.5">
                               <input value={guestInfo.email} onChange={(e) => setGuestInfo({...guestInfo, email: e.target.value})} placeholder="email@example.com" type="email" className={inputCls} />
                               {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email}</p>}
                             </div>
                           </label>
                           <label className="block">
-                            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Téléphone</span>
+                            <span className="text-xs font-medium text-muted-foreground">Téléphone</span>
                             <div className="mt-1.5">
                               <div className="flex">
-                                <span className="inline-flex items-center gap-2 px-3 h-12 border border-r-0 border-border bg-muted text-muted-foreground text-sm rounded-l-xl">
+                                <span className="inline-flex items-center gap-2 px-3 h-12 border border-r-0 border-border bg-muted text-muted-foreground text-sm">
                                   <img src="https://www.countryflags.com/wp-content/uploads/cote-d-ivoire-flag-png-large.png" alt="CI" className="h-5 w-auto" />
                                   225
                                 </span>
@@ -1661,7 +1683,7 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
                           {errors.contact && <p className="mt-2 text-sm text-destructive flex items-center gap-1"><AlertCircle className="h-4 w-4" />{errors.contact}</p>}
                         </div>
                       ) : (
-                        <div className="p-4 rounded-xl bg-secondary/50 text-center">
+                        <div className="p-4 bg-secondary/50 text-center">
                           <p className="text-sm text-muted-foreground mb-3">Veuillez vous connecter pour continuer</p>
                           <Button onClick={() => setAuthModalOpen(true)} className="w-full">Se connecter</Button>
                         </div>
@@ -1671,8 +1693,8 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
                 )}
 
                 {step === "Récapitulatif" && (
-                  <div className="border border-border rounded-3xl p-7 bg-card">
-                    <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground"><Shield className="h-4 w-4" />Récapitulatif</div>
+                  <div className="border border-border p-7 bg-card">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground"><Shield className="h-4 w-4" />Récapitulatif</div>
                     <div className="mt-5 space-y-3">
                       <div className="flex justify-between py-3 border-b border-border text-sm">
                         <span className="text-muted-foreground">Chambre</span>
@@ -1705,8 +1727,8 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
             </AnimatePresence>
 
             {confirmed && (
-              <div className="mt-8 border border-border rounded-3xl p-8 bg-card text-center">
-                <div className="mx-auto h-14 w-14 rounded-full bg-primary text-primary-foreground grid place-items-center">
+              <div className="mt-8 border border-border p-8 bg-card text-center">
+                <div className="mx-auto h-14 w-14 bg-primary text-primary-foreground grid place-items-center">
                   <Check className="h-6 w-6" />
                 </div>
                 <h2 className="font-display text-2xl mt-5">Réservation enregistrée</h2>
@@ -1716,70 +1738,72 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
                 </p>
               </div>
             )}
+          </div>
 
-            {!confirmed && (
-              <div className="mt-8 flex items-center justify-between gap-4">
-                <button onClick={prev} className="text-sm text-muted-foreground hover:text-foreground shrink-0">{step === "Dates" ? "Retour au détail" : "Étape précédente"}</button>
-                {step === "Récapitulatif" ? (
+          {/* Summary — uniquement au récapitulatif (étape 3) */}
+          {step === "Récapitulatif" && (
+            <aside className="lg:col-span-2 order-1 lg:order-2">
+              <div className="lg:sticky lg:top-28 border border-border p-4 sm:p-6 bg-card shadow-[var(--shadow-card)]">
+                <div className="flex gap-3 sm:gap-4">
+                  <img src={room?.coverImageUrl || '/placeholder.jpg'} alt={room?.name} className="h-16 w-16 sm:h-24 sm:w-24 object-cover shrink-0" />
+                  <div className="min-w-0">
+                    <div className="text-xs text-muted-foreground">{room?.roomType.name}</div>
+                    <div className="font-display text-base sm:text-lg truncate">{room?.name}</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground truncate">{room?.location.city ? `${room.location.city}, ${room.location.name}` : room?.location.name}</div>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-border space-y-3 text-sm">
+                  <div className="flex justify-between"><span className="text-muted-foreground">{fcfa(room?.basePrice || 0, room?.currency)} × {nights} nuit{nights > 1 ? 's' : ''}</span><span className="tabular">{fcfa(total, room?.currency)}</span></div>
+                  <div className="pt-3 border-t border-border flex justify-between font-display text-lg">
+                    <span>Total</span><span className="tabular">{fcfa(total, room?.currency)}</span>
+                  </div>
+                </div>
+
+                <div className="mt-4 p-4 bg-secondary/60 text-xs text-muted-foreground leading-relaxed">
+                  {room?.cancellationPolicy || "Votre chambre est bloquée 15 minutes le temps du paiement."}
+                </div>
+
+                {!confirmed && (
                   <button
                     onClick={handlePayNow}
                     disabled={processingPayment}
-                    className="h-12 px-6 sm:px-8 bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex flex-col items-center justify-center leading-tight"
+                    className="mt-3 w-full btn-fill-editorial !min-h-14 flex-col !gap-0 leading-tight disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    {processingPayment ? 'Traitement...' : (
-                      <><span>Confirmer la réservation</span><span className="text-xs opacity-80">{new Intl.NumberFormat('fr-FR').format(total)} {room?.currency}</span></>
+                    {processingPayment ? 'Traitement en cours...' : (
+                      <><span>Confirmer la réservation</span><span className="text-xs opacity-90 tabular">{fcfa(total, room?.currency)}</span></>
                     )}
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => next()}
-                    disabled={!canContinue}
-                    className="h-12 px-8 bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    Continuer
                   </button>
                 )}
               </div>
+            </aside>
+          )}
+        </div>
+
+        {!confirmed && (
+          <div className="sticky bottom-0 -mx-6 lg:-mx-10 mt-8 border-t border-border bg-background/95 backdrop-blur px-6 lg:px-10 py-4 flex items-center justify-between gap-4">
+            <button onClick={prev} className="text-sm text-muted-foreground hover:text-foreground shrink-0">{step === "Dates" ? "Retour au détail" : "Étape précédente"}</button>
+            {step === "Récapitulatif" ? (
+              <button
+                onClick={handlePayNow}
+                disabled={processingPayment}
+                className="btn-fill-editorial !min-h-14 !px-6 sm:!px-8 flex-col !gap-0 leading-tight disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {processingPayment ? 'Traitement...' : (
+                  <><span>Confirmer la réservation</span><span className="text-xs opacity-90 tabular">{fcfa(total, room?.currency)}</span></>
+                )}
+              </button>
+            ) : (
+              <button
+                onClick={() => next()}
+                disabled={!canContinue}
+                className="btn-fill-editorial !px-8 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Continuer
+              </button>
             )}
           </div>
-
-          {/* Summary */}
-          <aside className="lg:col-span-2 order-1 lg:order-2">
-            <div className="lg:sticky lg:top-28 border border-border rounded-3xl p-4 sm:p-6 bg-card shadow-[var(--shadow-card)]">
-              <div className="flex gap-3 sm:gap-4">
-                <img src={room?.coverImageUrl || '/placeholder.jpg'} alt={room?.name} className="h-16 w-16 sm:h-24 sm:w-24 rounded-xl object-cover shrink-0" />
-                <div className="min-w-0">
-                  <div className="text-xs uppercase tracking-wider text-muted-foreground">{room?.roomType.name}</div>
-                  <div className="font-display text-base sm:text-lg truncate">{room?.name}</div>
-                  <div className="text-xs sm:text-sm text-muted-foreground truncate">{room?.location.city ? `${room.location.city}, ${room.location.name}` : room?.location.name}</div>
-                </div>
-              </div>
-
-              <div className="mt-4 pt-4 border-t border-border space-y-3 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">{new Intl.NumberFormat('fr-FR').format(room?.basePrice || 0)} {room?.currency} × {nights} nuits</span><span>{new Intl.NumberFormat('fr-FR').format(total)} {room?.currency}</span></div>
-                <div className="pt-3 border-t border-border flex justify-between font-display text-lg">
-                  <span>Total ({room?.currency})</span><span>{new Intl.NumberFormat('fr-FR').format(total)}</span>
-                </div>
-              </div>
-
-              <div className="mt-4 p-4 rounded-2xl bg-secondary/50 text-xs text-muted-foreground">
-                Annulation gratuite avant {checkIn ? format(addDays(checkIn, -7), 'dd MMM yyyy') : '-'}.
-              </div>
-
-              {step === "Récapitulatif" && !confirmed && (
-                <button
-                  onClick={handlePayNow}
-                  disabled={processingPayment}
-                  className="mt-3 w-full h-12 bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex flex-col items-center justify-center leading-tight"
-                >
-                  {processingPayment ? 'Traitement en cours...' : (
-                    <><span>Confirmer la réservation</span><span className="text-xs opacity-80">{new Intl.NumberFormat('fr-FR').format(total)} {room?.currency}</span></>
-                  )}
-                </button>
-              )}
-            </div>
-          </aside>
-        </div>
+        )}
       </div>
 
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} purpose="booking" />
@@ -1793,7 +1817,7 @@ export function StayDetailPage() {
         <Nav />
         <section className="mx-auto max-w-7xl px-6 lg:px-10 pt-10">
           <Skeleton className="h-12 w-96 mb-6" />
-          <Skeleton className="h-[60vh] min-h-[420px] w-full rounded-3xl" />
+          <Skeleton className="h-[60vh] min-h-[420px] w-full" />
         </section>
       </div>
     }>

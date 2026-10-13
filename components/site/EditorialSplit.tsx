@@ -14,14 +14,14 @@ type EditorialSplitProps = {
 
 export function EditorialSplit({ eyebrow, title, text, cta, image, imageAlt, reverse }: EditorialSplitProps) {
   return (
-    <section className="mx-auto max-w-[1440px] px-6 lg:px-10 py-16 lg:py-24">
+    <section className="mx-auto max-w-[1440px] px-5 lg:px-10 py-16 lg:py-24">
       <div className={`grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-0 items-stretch ${reverse ? "lg:[&>*:first-child]:order-2" : ""}`}>
         <motion.div
           initial={{ opacity: 0, scale: 1.04 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-          className="relative aspect-[4/3] lg:aspect-auto overflow-hidden"
+          className="relative aspect-[4/3] lg:aspect-auto lg:min-h-[560px] overflow-hidden bg-ink"
         >
           <img src={image} alt={imageAlt} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
         </motion.div>
@@ -43,7 +43,7 @@ export function EditorialSplit({ eyebrow, title, text, cta, image, imageAlt, rev
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-100px" }}
               transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
-              className="font-display mt-5 text-3xl sm:text-4xl lg:text-5xl font-light leading-[1.1] text-balance"
+              className="font-display mt-5 text-4xl sm:text-5xl lg:text-[3.5rem] leading-[1.02] text-balance"
             >
               {title}
             </motion.h2>

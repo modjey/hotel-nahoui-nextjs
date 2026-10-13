@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { ArrowRight } from "lucide-react";
 
 export function NewsletterSection() {
   const [email, setEmail] = useState("");
@@ -19,47 +20,44 @@ export function NewsletterSection() {
   };
 
   return (
-    <section className="border-y border-border bg-red-700 text-white">
-      <div className="mx-auto max-w-[520px] px-6 py-12 lg:py-16 text-center">
-        <motion.span
-          initial={{ opacity: 0, y: 12 }}
+    <section className="bg-primary p-2 sm:p-3">
+      <div className="border border-white/80 text-white">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          className="eyebrow text-white"
+          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+          className="mx-auto max-w-[1440px] px-5 lg:px-10 py-14 lg:py-20 grid gap-10 lg:grid-cols-2 lg:items-end"
         >
-          Restons en contact
-        </motion.span>
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
-          className="font-display mt-3 text-2xl sm:text-3xl font-light"
-        >
-          Recevez nos actualités et offres.
-        </motion.h2>
+          <div>
+            <span className="eyebrow text-white/90">Restons en contact</span>
+            <h2 className="font-display mt-4 text-4xl sm:text-5xl leading-[1.04] text-balance">
+              Recevez nos actualités et offres.
+            </h2>
+          </div>
 
-        <motion.form
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
-          onSubmit={handleSubmit}
-          className="mt-6 flex flex-col sm:flex-row items-stretch gap-3 sm:gap-0"
-        >
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Votre adresse email"
-            className="flex-1 bg-transparent border-b border-white/40 sm:border-b sm:border-r-0 py-3 px-1 text-sm text-white placeholder:text-white/70 focus:outline-none focus:border-white transition-colors"
-          />
-          <button type="submit" disabled={submitting} className="btn-fill-editorial sm:ml-6 bg-white text-red-700 disabled:opacity-60">
-            S&rsquo;inscrire
-          </button>
-        </motion.form>
+          <form onSubmit={handleSubmit} className="w-full">
+            <label htmlFor="newsletter-email" className="eyebrow block text-white/90">
+              Votre adresse e-mail
+            </label>
+            <div className="mt-3 flex flex-col sm:flex-row gap-3 sm:gap-0">
+              <input
+                id="newsletter-email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="nom@exemple.com"
+                className="flex-1 min-w-0 h-14 bg-transparent border border-white/60 sm:border-r-0 px-4 text-base text-white placeholder:text-white/65 focus:outline-none focus:border-white focus:bg-white/10 transition-colors"
+              />
+              <button type="submit" disabled={submitting} className="btn-on-brand h-14 disabled:opacity-60">
+                {submitting ? "Inscription…" : "S’inscrire"}
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="mt-3 text-xs text-white/80">Un e-mail de temps en temps, jamais de spam. Désinscription en un clic.</p>
+          </form>
+        </motion.div>
       </div>
     </section>
   );

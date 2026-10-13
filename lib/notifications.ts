@@ -1,5 +1,10 @@
 import { prisma } from "@/lib/prisma";
-import { sendAdminBookingNotification, type BookingNotificationData } from "@/lib/email";
+import {
+  sendAdminBookingNotification,
+  sendGuestBookingStatusEmail,
+  type BookingNotificationData,
+  type GuestBookingStatusData,
+} from "@/lib/email";
 
 export type AdminNotificationType =
   | "BOOKING_CREATED"
@@ -69,4 +74,16 @@ export async function notifyAdminNewBooking(booking: BookingNotificationData) {
       link: "/admin/bookings",
     }),
   ]);
+}
+
+/**
+ * Notifie le client par email transactionnel quand l'admin confirme,
+ * annule ou termine sa réservation. Ne lève jamais d'exception.
+ */
+export async function notifyGuestBookingStatus(booking: GuestBookingStatusData) {
+  try {
+    await sendGuestBookingStatusEmail(booking);
+  } catch (e) {
+    console.error("[notifications] notifyGuestBookingStatus failed:", e);
+  }
 }

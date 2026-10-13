@@ -97,13 +97,13 @@ export function EventsPage() {
           alt="Littoral ivoirien"
           className="absolute inset-0 h-full w-full object-cover"
         />
-        <div className="absolute inset-0 bg-black/35" />
-        <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center text-white">
+        <div className="absolute inset-0 photo-scrim" />
+        <div className="relative z-10 mx-auto flex h-full max-w-[1440px] flex-col justify-end px-5 lg:px-10 pb-14 lg:pb-20 text-white">
           <motion.span
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-            className="eyebrow"
+            className="eyebrow inline-flex items-center gap-3 before:content-[''] before:h-2.5 before:w-2.5 before:bg-primary before:outline before:outline-1 before:outline-offset-2 before:outline-white"
           >
             Découvrez le littoral
           </motion.span>
@@ -111,7 +111,7 @@ export function EventsPage() {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
-            className="font-display mt-6 text-5xl sm:text-6xl lg:text-7xl font-light"
+            className="font-display mt-5 text-[3.25rem] leading-[0.95] sm:text-7xl lg:text-8xl tracking-[-0.02em] text-balance"
           >
             Littoral Ivoirien
           </motion.h1>
@@ -119,7 +119,7 @@ export function EventsPage() {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
-            className="mt-6 max-w-lg text-sm sm:text-base text-white/85"
+            className="mt-5 max-w-xl text-base sm:text-lg text-white/90 text-pretty"
           >
             Circuit de la petite côte — à la découverte du littoral sud, entre plages, lagunes et villages de pêcheurs.
           </motion.p>
@@ -185,14 +185,14 @@ export function EventsPage() {
       </section>
 
       {/* CTA */}
-      <section className="bg-ink text-white text-center py-20 lg:py-28">
-        <MapPin className="h-6 w-6 mx-auto mb-6 text-white/70" />
-        <span className="eyebrow text-white/70">Réservation</span>
-        <h2 className="font-display mt-5 text-3xl sm:text-4xl font-light">
+      <section className="bg-primary text-white text-center px-5 shadow-[inset_0_0_0_12px_var(--brand),inset_0_0_0_13px_rgb(255_255_255/0.8)] py-20 lg:py-28">
+        <MapPin className="h-6 w-6 mx-auto mb-6 text-white/90" />
+        <span className="eyebrow text-white/90">Réservation</span>
+        <h2 className="font-display mt-5 text-4xl sm:text-5xl leading-[1.02] text-balance">
           Réservez votre circuit sur le littoral.
         </h2>
         <div className="mt-9">
-          <Link href="/contact" className="link-underline text-white">
+          <Link href="/contact" className="btn-on-brand">
             Nous contacter
           </Link>
         </div>

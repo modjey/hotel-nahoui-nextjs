@@ -20,8 +20,11 @@ export function IndexPage() {
       <main>
         <Hero />
 
-        <div className="relative z-20 flex justify-center px-6 -mt-64 sm:-mt-32 lg:-mt-40">
-          <SearchBar />
+        {/* Barre de réservation à cheval sur le hero */}
+        <div className="relative z-20 -mt-24 sm:-mt-[4.25rem] lg:-mt-[4.75rem]">
+          <div className="mx-auto max-w-[1440px] px-5 lg:px-10">
+            <SearchBar />
+          </div>
         </div>
 
         <IntroSection />

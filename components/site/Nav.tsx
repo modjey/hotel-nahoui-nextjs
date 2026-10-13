@@ -2,11 +2,14 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Globe, Menu, User, ChevronDown, LogOut, X, Settings } from "lucide-react";
+import { Menu, User, ChevronDown, LogOut, X, Settings, Phone } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { WhatsAppIcon } from "@/components/site/social-icons";
+
+const WHATSAPP_URL = "https://api.whatsapp.com/send?phone=%2B2250788494979";
 
 export function Nav() {
   const pathname = usePathname() ?? "/";
@@ -20,6 +23,12 @@ export function Nav() {
   const isMobile = useIsMobile();
   const isHome = pathname === "/";
   const transparent = isHome && !isScrolled && !isSidebarOpen;
+  const showMobileBar = !(
+    pathname.startsWith("/stays/") ||
+    pathname.startsWith("/rooms/") ||
+    pathname.startsWith("/book") ||
+    pathname.startsWith("/photobook/submit")
+  );
 
   const languages = [
     { code: "fr", name: "Français", flag: "FR" },
@@ -44,109 +53,111 @@ export function Nav() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Lock body scroll when sidebar is open
+  // Bloque le scroll du body quand le menu latéral est ouvert
   useEffect(() => {
-    if (isSidebarOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    document.body.style.overflow = isSidebarOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [isSidebarOpen]);
 
   const navLinks = [
-    { href: "/",           label: "L'Hôtel" },
-    { href: "/stays",      label: "Chambres & Suites" },
+    { href: "/stays",      label: "Chambres" },
     { href: "/restaurant", label: "Restaurant" },
+    { href: "/bien-etre",  label: "Bien-être" },
     { href: "/services",   label: "Expériences" },
     { href: "/evenements", label: "Événements" },
     { href: "/contact",    label: "Contact" },
   ];
 
-  // Onglets secondaires affichés uniquement dans le drawer mobile
-  const drawerExtraLinks = [
-    { href: "/photobook", label: "Photobook" },
-    { href: "/blog",      label: "Blog" },
+  // Liens complets du menu latéral
+  const drawerLinks = [
+    { href: "/",           label: "L'Hôtel" },
+    { href: "/stays",      label: "Chambres & suites" },
+    { href: "/restaurant", label: "Restaurant" },
+    { href: "/bien-etre",  label: "Bien-être" },
+    { href: "/services",   label: "Expériences" },
+    { href: "/evenements", label: "Événements" },
+    { href: "/photobook",  label: "Photobook" },
+    { href: "/blog",       label: "Journal" },
+    { href: "/contact",    label: "Contact" },
   ];
 
+  const isStaff = user && (user.role === "ADMIN" || user.role === "SUPER_ADMIN" || user.role === "MODERATOR");
+
   const handleUserClick = () => {
-    if (user) {
-      setIsUserMenuOpen((v) => !v);
-    } else {
-      setIsAuthModalOpen(true);
-    }
+    if (user) setIsUserMenuOpen((v) => !v);
+    else setIsAuthModalOpen(true);
   };
+
+  const fg = transparent ? "text-white" : "text-foreground";
 
   return (
     <>
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-500 ${
+        className={`fixed top-0 left-0 right-0 z-50 transition-[background-color,border-color] duration-500 border-b ${
           transparent
-            ? "bg-transparent"
-            : "bg-background/95 backdrop-blur-md border-b border-border/70"
+            ? "bg-transparent border-transparent"
+            : "bg-background/95 backdrop-blur-md border-border"
         }`}
       >
         <div
-          className={`mx-auto max-w-[1440px] px-6 lg:px-10 flex items-center justify-between gap-8 transition-all duration-500 ${
-            transparent ? "h-24 lg:h-28" : "h-20"
+          className={`mx-auto max-w-[1440px] px-5 lg:px-10 flex items-center justify-between gap-6 transition-[height] duration-500 ${
+            transparent ? "h-20 lg:h-24" : "h-[72px]"
           }`}
         >
-          <div className="flex items-center gap-6 shrink-0">
-            <Link href="/" className="flex items-center gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo.png" alt="Hôtel Nahoui Balmer" className="h-8 w-8 lg:h-9 lg:w-9" />
-              <span
-                className={`font-display text-xl lg:text-2xl tracking-[0.14em] uppercase transition-colors duration-500 ${
-                  transparent ? "text-white" : "text-foreground"
-                }`}
-              >
-              </span>
-            </Link>
-
-            {/* Menu button — opens sidebar */}
+          {/* Marque */}
+          <div className="flex items-center gap-5 shrink-0">
             <button
               onClick={() => setIsSidebarOpen(true)}
               aria-label="Ouvrir le menu"
-              className={`flex items-center gap-2 eyebrow transition-colors duration-500 ${transparent ? "text-white" : "text-foreground"}`}
+              className={`h-11 w-11 grid place-items-center border transition-colors duration-500 ${
+                transparent ? "border-white/60 text-white hover:bg-white/10" : "border-border text-foreground hover:border-foreground"
+              }`}
             >
-              <Menu className="h-5 w-5" />
-              <span>Menu</span>
+              <Menu className="h-5 w-5" strokeWidth={1.6} />
             </button>
+            <Link href="/" className="flex items-center gap-3" aria-label="Hôtel Nahoui Balmer — accueil">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.png" alt="" className="h-10 w-10" />
+              <span className={`hidden sm:flex flex-col leading-none transition-colors duration-500 ${fg}`}>
+                <span className="font-display text-[1.35rem]">Nahoui Balmer</span>
+                <span className="text-[0.75rem] font-medium opacity-80 mt-1">Hôtel · San Pedro</span>
+              </span>
+            </Link>
           </div>
 
-          {/* Inline nav — visible only when scrolled (not at top) */}
-          <nav
-            className={`hidden lg:flex items-center gap-9 eyebrow transition-colors duration-500 ${
-              transparent ? "text-white/85 opacity-0 pointer-events-none" : "text-foreground/75 opacity-100"
-            }`}
-          >
+          {/* Navigation principale — toujours visible sur grand écran */}
+          <nav aria-label="Navigation principale" className={`hidden xl:flex items-center gap-8 text-[0.9375rem] font-medium transition-colors duration-500 ${fg}`}>
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`hover:opacity-100 transition-opacity duration-300 pb-1 ${
-                  isActive(link.href)
-                    ? `opacity-100 border-b border-foreground`
-                    : "opacity-70"
+                aria-current={isActive(link.href) ? "page" : undefined}
+                className={`relative py-2 transition-opacity hover:opacity-100 ${
+                  isActive(link.href) ? "opacity-100" : "opacity-80"
                 }`}
               >
                 {link.label}
+                {isActive(link.href) && (
+                  <span className="absolute left-0 right-0 -bottom-0.5 h-[2px] bg-primary" />
+                )}
               </Link>
             ))}
           </nav>
 
-          <div className={`flex items-center gap-5 transition-colors duration-500 ${transparent ? "text-white" : "text-foreground"}`}>
+          {/* Actions */}
+          <div className={`flex items-center gap-4 lg:gap-5 transition-colors duration-500 ${fg}`}>
             <div className="relative hidden sm:block">
               <button
                 onClick={() => setIsLanguageMenuOpen(!isLanguageMenuOpen)}
-                className="flex items-center gap-1.5 eyebrow opacity-80 hover:opacity-100 transition-opacity"
+                aria-label="Changer de langue"
+                aria-expanded={isLanguageMenuOpen}
+                className="flex items-center gap-1 text-[0.9375rem] font-medium opacity-90 hover:opacity-100 h-11"
               >
-                <Globe className="h-3.5 w-3.5" />
                 {languages.find((l) => l.code === language)?.flag}
-                <ChevronDown className="h-3 w-3" />
+                <ChevronDown className="h-3.5 w-3.5" />
               </button>
               {isLanguageMenuOpen && (
-                <div className="absolute right-0 mt-3 w-40 bg-background border border-border py-2 z-50 shadow-[var(--shadow-elevated)]">
+                <div className="absolute right-0 mt-1 w-44 bg-card border border-border py-1 z-50 shadow-[var(--shadow-elevated)]">
                   {languages.map((lang) => (
                     <button
                       key={lang.code}
@@ -154,9 +165,11 @@ export function Nav() {
                         setLanguage(lang.code);
                         setIsLanguageMenuOpen(false);
                       }}
-                      className="w-full px-4 py-2 text-left hover:bg-secondary flex items-center gap-3 text-sm text-foreground"
+                      className={`w-full px-4 py-2.5 text-left hover:bg-secondary flex items-center gap-3 text-sm text-foreground ${
+                        language === lang.code ? "font-semibold" : ""
+                      }`}
                     >
-                      <span className="eyebrow">{lang.flag}</span>
+                      <span className="eyebrow w-6">{lang.flag}</span>
                       <span>{lang.name}</span>
                     </button>
                   ))}
@@ -164,59 +177,41 @@ export function Nav() {
               )}
             </div>
 
-            <Link
-              href="/stays"
-              className={`hidden sm:inline-flex btn-fill-editorial ${transparent ? "" : ""}`}
-            >
-              Réserver
-            </Link>
-
-            {/* User avatar — opens auth modal or user menu */}
             <button
               onClick={handleUserClick}
-              aria-label="Compte"
-              className="flex items-center gap-2"
+              aria-label={user ? "Mon compte" : "Se connecter"}
+              className="h-11 w-9 grid place-items-center"
             >
               {user ? (
-                <span className={`h-7 w-7 rounded-full grid place-items-center overflow-hidden border ${transparent ? "border-white/50" : "border-border"}`}>
+                <span className={`h-8 w-8 rounded-full grid place-items-center overflow-hidden border ${transparent ? "border-white/60" : "border-border"}`}>
                   {user.image ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={user.image} alt="" className="h-full w-full object-cover" />
                   ) : (
-                    <User className="h-3.5 w-3.5" />
+                    <User className="h-4 w-4" />
                   )}
                 </span>
               ) : (
-                <User className="h-5 w-5" />
+                <User className="h-5 w-5" strokeWidth={1.6} />
               )}
             </button>
 
+            <Link href="/stays" className="hidden sm:inline-flex btn-fill-editorial">
+              Réserver
+            </Link>
+
             {user && isUserMenuOpen && !isMobile && (
-              <div className="absolute right-6 top-full mt-1 w-64 bg-background border border-border shadow-[var(--shadow-elevated)] py-2 z-50 text-foreground">
+              <div className="absolute right-6 top-full mt-1 w-64 bg-card border border-border shadow-[var(--shadow-elevated)] py-1 z-50 text-foreground">
                 <div className="px-4 py-3 border-b border-border">
-                  <div className="text-sm font-medium truncate">
-                    {user.name || user.email || user.phone}
-                  </div>
-                  {user.email && (
-                    <div className="text-xs text-muted-foreground truncate">{user.email}</div>
-                  )}
+                  <div className="text-sm font-semibold truncate">{user.name || user.email || user.phone}</div>
+                  {user.email && <div className="text-xs text-muted-foreground truncate">{user.email}</div>}
                 </div>
-                {(user.role === "ADMIN" ||
-                  user.role === "SUPER_ADMIN" ||
-                  user.role === "MODERATOR") && (
-                  <Link
-                    href="/admin"
-                    onClick={() => setIsUserMenuOpen(false)}
-                    className="block px-4 py-2 text-sm hover:bg-secondary"
-                  >
-                    Espace administrateur
+                {isStaff && (
+                  <Link href="/admin" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-secondary">
+                    <Settings className="h-4 w-4" /> Espace administrateur
                   </Link>
                 )}
-                <Link
-                  href="/bookings"
-                  onClick={() => setIsUserMenuOpen(false)}
-                  className="block px-4 py-2 text-sm hover:bg-secondary"
-                >
+                <Link href="/bookings" onClick={() => setIsUserMenuOpen(false)} className="block px-4 py-2.5 text-sm hover:bg-secondary">
                   Mes réservations
                 </Link>
                 <button
@@ -224,7 +219,7 @@ export function Nav() {
                     setIsUserMenuOpen(false);
                     await logout();
                   }}
-                  className="w-full text-left px-4 py-2 text-sm hover:bg-secondary flex items-center gap-2"
+                  className="w-full text-left px-4 py-2.5 text-sm hover:bg-secondary flex items-center gap-2"
                 >
                   <LogOut className="h-4 w-4" /> Se déconnecter
                 </button>
@@ -234,114 +229,116 @@ export function Nav() {
         </div>
       </header>
 
-      {!isHome && <div aria-hidden className="h-20" />}
+      {!isHome && <div aria-hidden className="h-[72px]" />}
 
-      {/* Sidebar menu */}
+      {/* Barre d'action mobile : Réserver toujours accessible
+          (masquée dans le tunnel de réservation, qui a sa propre barre) */}
+      {showMobileBar && (
+      <div className="sm:hidden fixed inset-x-0 bottom-0 z-40 bg-card border-t border-border px-3 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex gap-2">
+        <Link href="/stays" className="flex-1 btn-fill-editorial !min-h-12 !py-0">
+          Réserver
+        </Link>
+      </div>
+      )}
+
+      {/* Menu latéral */}
       <AnimatePresence>
         {isSidebarOpen && (
           <>
-            {/* Overlay */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
               onClick={() => setIsSidebarOpen(false)}
-              className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm"
+              className="fixed inset-0 z-[60] bg-[rgb(26_12_9/0.55)]"
             />
 
-            {/* Sidebar panel */}
             <motion.aside
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="fixed top-0 left-0 bottom-0 z-[70] w-full sm:w-[420px] bg-background flex flex-col"
+              className="fixed top-0 left-0 bottom-0 z-[70] w-full sm:w-[460px] bg-ink text-white flex flex-col"
+              aria-label="Menu"
             >
-              {/* Sidebar header */}
-              <div className="flex items-center justify-between px-8 h-16 border-b border-border">
-                <span className="eyebrow text-primary">Menu</span>
+              <div className="flex items-center justify-between px-6 sm:px-10 h-20 border-b border-white/15">
+                <Link href="/" onClick={() => setIsSidebarOpen(false)} className="flex items-center gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/logo.png" alt="" className="h-9 w-9" />
+                  <span className="font-display text-xl">Nahoui Balmer</span>
+                </Link>
                 <button
                   onClick={() => setIsSidebarOpen(false)}
                   aria-label="Fermer le menu"
-                  className="p-2 -mr-2 text-foreground hover:text-primary transition-colors"
+                  className="h-11 w-11 grid place-items-center border border-white/30 hover:bg-white/10 transition-colors"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-5 w-5" strokeWidth={1.6} />
                 </button>
               </div>
 
-              {/* Sidebar content */}
-              <div className="flex-1 overflow-y-auto px-8 py-6 flex flex-col">
-                <nav className="flex flex-col">
-                  {[...navLinks, ...drawerExtraLinks].map((link, i) => (
+              <div className="flex-1 overflow-y-auto px-6 sm:px-10 py-8 flex flex-col">
+                <nav className="flex flex-col" aria-label="Menu principal">
+                  {drawerLinks.map((link, i) => (
                     <motion.div
                       key={link.href}
-                      initial={{ opacity: 0, x: 20 }}
+                      initial={{ opacity: 0, x: -12 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: 0.1 + i * 0.06 }}
+                      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1], delay: 0.08 + i * 0.04 }}
                     >
                       <Link
                         href={link.href}
                         onClick={() => setIsSidebarOpen(false)}
-                        className={`block py-2.5 font-display text-lg lg:text-xl font-light border-b border-border transition-colors hover:text-primary ${
-                          isActive(link.href) ? "text-primary" : "text-foreground"
+                        aria-current={isActive(link.href) ? "page" : undefined}
+                        className={`group flex items-center gap-4 py-3 font-display text-[1.75rem] leading-tight transition-colors ${
+                          isActive(link.href) ? "text-white" : "text-white/75 hover:text-white"
                         }`}
                       >
+                        <span
+                          className={`h-2 w-2 shrink-0 transition-colors ${
+                            isActive(link.href) ? "bg-primary outline outline-1 outline-offset-2 outline-white" : "bg-white/0 group-hover:bg-primary"
+                          }`}
+                        />
                         {link.label}
                       </Link>
                     </motion.div>
                   ))}
                 </nav>
 
-                {/* Reserve CTA */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: 0.5 }}
-                  className="mt-6"
-                >
-                  <Link
-                    href="/stays"
-                    onClick={() => setIsSidebarOpen(false)}
-                    className="btn-fill-editorial w-full"
-                  >
-                    Réserver
+                <div className="mt-8">
+                  <Link href="/stays" onClick={() => setIsSidebarOpen(false)} className="btn-fill-editorial w-full">
+                    Réserver un séjour
                   </Link>
-                </motion.div>
+                </div>
 
-                {/* Language switcher */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: 0.6 }}
-                  className="mt-5 flex gap-3"
-                >
+                <div className="mt-8 pt-6 border-t border-white/15 grid gap-3 text-[0.9375rem] text-white/80">
+                  <a href="tel:+2252734712233" className="inline-flex items-center gap-3 hover:text-white">
+                    <Phone className="h-4 w-4" /> +225 27 34 71 22 33
+                  </a>
+                  <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 hover:text-white">
+                    <WhatsAppIcon className="h-4 w-4" /> Écrire sur WhatsApp
+                  </a>
+                </div>
+
+                <div className="mt-6 flex gap-2">
                   {languages.map((lang) => (
                     <button
                       key={lang.code}
                       onClick={() => setLanguage(lang.code)}
-                      className={`eyebrow px-3.5 py-1.5 border transition-colors ${
-                        language === lang.code
-                          ? "border-primary text-primary"
-                          : "border-border text-muted-foreground hover:border-foreground"
+                      className={`h-10 px-4 text-sm font-semibold border transition-colors ${
+                        language === lang.code ? "border-white bg-white text-ink" : "border-white/30 text-white/80 hover:border-white"
                       }`}
                     >
                       {lang.name}
                     </button>
                   ))}
-                </motion.div>
+                </div>
 
-                {/* Auth section */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: 0.7 }}
-                  className="mt-6 pt-5 border-t border-border"
-                >
+                <div className="mt-8 pt-6 border-t border-white/15">
                   {user ? (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       <div className="flex items-center gap-3">
-                        <span className="h-10 w-10 rounded-full border border-border grid place-items-center overflow-hidden shrink-0">
+                        <span className="h-10 w-10 rounded-full border border-white/30 grid place-items-center overflow-hidden shrink-0">
                           {user.image ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={user.image} alt="" className="h-full w-full object-cover" />
@@ -350,21 +347,21 @@ export function Nav() {
                           )}
                         </span>
                         <div className="min-w-0">
-                          <div className="text-sm font-medium truncate">{user.name || user.email || user.phone}</div>
-                          {user.email && <div className="text-xs text-muted-foreground truncate">{user.email}</div>}
+                          <div className="text-sm font-semibold truncate">{user.name || user.email || user.phone}</div>
+                          {user.email && <div className="text-xs text-white/60 truncate">{user.email}</div>}
                         </div>
                       </div>
-                      {(user.role === "ADMIN" || user.role === "SUPER_ADMIN" || user.role === "MODERATOR") && (
-                        <Link href="/admin" onClick={() => setIsSidebarOpen(false)} className="flex items-center gap-2 py-2 text-sm text-foreground/80 hover:text-primary transition-colors">
+                      {isStaff && (
+                        <Link href="/admin" onClick={() => setIsSidebarOpen(false)} className="flex items-center gap-2 py-1.5 text-sm text-white/80 hover:text-white">
                           <Settings className="h-4 w-4" /> Espace administrateur
                         </Link>
                       )}
-                      <Link href="/bookings" onClick={() => setIsSidebarOpen(false)} className="flex items-center gap-2 py-2 text-sm text-foreground/80 hover:text-primary transition-colors">
+                      <Link href="/bookings" onClick={() => setIsSidebarOpen(false)} className="flex items-center gap-2 py-1.5 text-sm text-white/80 hover:text-white">
                         Mes réservations
                       </Link>
                       <button
                         onClick={async () => { setIsSidebarOpen(false); await logout(); }}
-                        className="flex items-center gap-2 py-2 text-sm text-foreground/80 hover:text-primary transition-colors"
+                        className="flex items-center gap-2 py-1.5 text-sm text-white/80 hover:text-white"
                       >
                         <LogOut className="h-4 w-4" /> Se déconnecter
                       </button>
@@ -372,12 +369,12 @@ export function Nav() {
                   ) : (
                     <button
                       onClick={() => { setIsSidebarOpen(false); setIsAuthModalOpen(true); }}
-                      className="btn-outline-editorial w-full"
+                      className="w-full h-12 inline-flex items-center justify-center gap-2 border border-white/40 text-[0.9375rem] font-semibold hover:bg-white hover:text-ink transition-colors"
                     >
                       <User className="h-4 w-4" /> Se connecter
                     </button>
                   )}
-                </motion.div>
+                </div>
               </div>
             </motion.aside>
           </>

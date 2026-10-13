@@ -1,87 +1,54 @@
 "use client";
 import { motion } from "framer-motion";
-import { Facebook, Instagram } from "lucide-react";
+import { Facebook, Instagram, ArrowUpRight } from "lucide-react";
 import { TikTokIcon, WhatsAppIcon } from "@/components/site/social-icons";
 
 const networks = [
-  {
-    name: "Instagram",
-    handle: "@hotel_nahoui",
-    href: "https://www.instagram.com/hotel_nahoui/",
-    icon: Instagram,
-    bg: "bg-gradient-to-br from-[#feda75] via-[#d62976] to-[#4f5bd5]",
-  },
-  {
-    name: "Facebook",
-    handle: "Hôtel Nahoui Balmer",
-    href: "https://www.facebook.com/hotelnahouibalmer",
-    icon: Facebook,
-    bg: "bg-[#1877F2]",
-  },
-  {
-    name: "TikTok",
-    handle: "@nahouihotel",
-    href: "https://www.tiktok.com/@nahouihotel?is_from_webapp=1&sender_device=pc",
-    icon: TikTokIcon,
-    bg: "bg-black",
-  },
-  {
-    name: "WhatsApp",
-    handle: "Nous écrire",
-    href: "https://api.whatsapp.com/send?phone=%2B2250788494979",
-    icon: WhatsAppIcon,
-    bg: "bg-[#25D366]",
-  },
+  { name: "Instagram", handle: "@hotel_nahoui", href: "https://www.instagram.com/hotel_nahoui/", icon: Instagram },
+  { name: "Facebook", handle: "Hôtel Nahoui Balmer", href: "https://www.facebook.com/hotelnahouibalmer", icon: Facebook },
+  { name: "TikTok", handle: "@nahouihotel", href: "https://www.tiktok.com/@nahouihotel?is_from_webapp=1&sender_device=pc", icon: TikTokIcon },
+  { name: "WhatsApp", handle: "Nous écrire", href: "https://api.whatsapp.com/send?phone=%2B2250788494979", icon: WhatsAppIcon },
 ];
 
 export function SocialSection() {
   return (
-    <section className="border-y border-border py-20 lg:py-28">
-      <div className="mx-auto max-w-[1440px] px-6 lg:px-10 text-center">
-        <motion.span
-          initial={{ opacity: 0, y: 12 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          className="eyebrow text-primary"
-        >
-          Réseaux sociaux
-        </motion.span>
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
-          className="font-display mt-5 text-3xl sm:text-4xl font-light"
-        >
-          Restons connectés.
-        </motion.h2>
+    <section className="border-t border-border bg-card py-20 lg:py-24">
+      <div className="mx-auto max-w-[1440px] px-5 lg:px-10">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <span className="eyebrow text-primary">Réseaux sociaux</span>
+            <h2 className="font-display mt-5 text-4xl sm:text-5xl leading-none">Restons connectés.</h2>
+          </div>
+        </div>
 
-        <div className="mt-14 flex flex-wrap items-center justify-center gap-6 sm:gap-10">
+        <ul className="mt-12 grid grid-cols-2 lg:grid-cols-4 border-t border-l border-border">
           {networks.map((network, i) => (
-            <motion.a
+            <motion.li
               key={network.name}
-              href={network.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              initial={{ opacity: 0, y: 24 }}
+              initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: i * 0.08 }}
-              className="group flex w-32 flex-col items-center gap-4 text-foreground"
+              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: i * 0.06 }}
+              className="border-r border-b border-border"
             >
-              <span
-                className={`flex h-16 w-16 items-center justify-center rounded-full text-white shadow-md transition-transform duration-300 group-hover:scale-110 ${network.bg}`}
+              <a
+                href={network.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex h-full flex-col justify-between gap-10 p-6 lg:p-8 transition-colors hover:bg-primary hover:text-white"
               >
-                <network.icon className="h-7 w-7" />
-              </span>
-              <span>
-                <span className="eyebrow block transition-colors group-hover:text-primary">{network.name}</span>
-                <span className="mt-1 block text-xs text-muted-foreground">{network.handle}</span>
-              </span>
-            </motion.a>
+                <div className="flex items-start justify-between">
+                  <network.icon className="h-7 w-7" />
+                  <ArrowUpRight className="h-5 w-5 opacity-40 transition-opacity group-hover:opacity-100" />
+                </div>
+                <div>
+                  <span className="font-display block text-2xl lg:text-[1.75rem] leading-none">{network.name}</span>
+                  <span className="mt-2 block text-sm text-muted-foreground group-hover:text-white/85 truncate">{network.handle}</span>
+                </div>
+              </a>
+            </motion.li>
           ))}
-        </div>
+        </ul>
       </div>
     </section>
   );

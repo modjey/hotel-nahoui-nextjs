@@ -169,7 +169,10 @@ export default function HotelBookingCalendar({
   className = "",
 }: HotelBookingCalendarProps) {
   const today = useMemo(() => startOfDay(new Date()), []);
-  const [viewDate, setViewDate] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+  const [viewDate, setViewDate] = useState(() => {
+    const base = initialCheckIn ?? today;
+    return new Date(base.getFullYear(), base.getMonth(), 1);
+  });
   const [checkIn, setCheckIn] = useState<Date | null>(initialCheckIn);
   const [checkOut, setCheckOut] = useState<Date | null>(initialCheckOut);
 
@@ -353,19 +356,19 @@ export default function HotelBookingCalendar({
 
   return (
     <div
-      className={`w-full bg-[#FBFAF7] text-[#1C1B19] ${className}`}
-      style={{ fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif" }}
+      className={`w-full bg-[var(--card)] text-[var(--mahogany)] ${className}`}
+      
     >
-      <div className="mx-auto max-w-5xl border border-[#DDD8CD]">
+      <div className="mx-auto max-w-5xl border border-[rgb(42_23_18/0.14)]">
         {/* En-tête */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#DDD8CD] px-6 py-5">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[rgb(42_23_18/0.14)] px-5 py-3">
           <div>
             {hotelName && (
-              <p className="font-display text-lg text-[#1C1B19]">
+              <p className="font-display text-lg text-[var(--mahogany)]">
                 {hotelName}
               </p>
             )}
-            <p className="text-sm text-[#6B655A]">Sélectionnez vos dates d&apos;arrivée et de départ</p>
+            <p className="text-sm text-[#5e4c44]">Sélectionnez vos dates d&apos;arrivée et de départ</p>
           </div>
 
           {/* Sélecteur voyageurs */}
@@ -373,16 +376,16 @@ export default function HotelBookingCalendar({
             <button
               type="button"
               onClick={() => setGuestPopoverOpen((v) => !v)}
-              className="flex items-center gap-2 border border-[#DDD8CD] px-4 py-2 text-sm hover:border-[#2F4538] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2F4538]"
+              className="flex items-center gap-2 border border-[rgb(42_23_18/0.14)] px-4 py-2 text-sm hover:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               aria-expanded={guestPopoverOpen}
             >
               <span>
                 {guests.adults + guests.children} pers.
               </span>
-              <span aria-hidden className="text-[#6B655A]">⌄</span>
+              <span aria-hidden className="text-[#5e4c44]">⌄</span>
             </button>
             {guestPopoverOpen && (
-              <div className="absolute right-0 z-20 mt-2 w-64 border border-[#DDD8CD] bg-white p-4 shadow-[0_8px_24px_rgba(28,27,25,0.08)]">
+              <div className="absolute right-0 z-20 mt-2 w-64 border border-[rgb(42_23_18/0.14)] bg-white p-4 shadow-[0_8px_24px_rgba(28,27,25,0.08)]">
                 <GuestStepper
                   label="Adultes"
                   value={guests.adults}
@@ -395,7 +398,7 @@ export default function HotelBookingCalendar({
                   min={0}
                   onChange={(v) => updateGuests({ children: v })}
                 />
-                <p className="mt-2 text-xs text-[#6B655A]">
+                <p className="mt-2 text-xs text-[#5e4c44]">
                   Jusqu&apos;à {maxGuestsPerRoom} personnes
                 </p>
               </div>
@@ -405,14 +408,14 @@ export default function HotelBookingCalendar({
 
         <div className="flex flex-col lg:flex-row">
           {/* Calendrier */}
-          <div className="flex-1 px-6 py-5">
-            <div className="mb-4 flex items-center justify-between">
+          <div className="flex-1 px-5 py-4">
+            <div className="mb-3 flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => goToMonth(-1)}
                 disabled={!canGoPrev}
                 aria-label="Mois précédent"
-                className="grid h-8 w-8 place-items-center border border-[#DDD8CD] text-[#1C1B19] hover:border-[#2F4538] disabled:cursor-not-allowed disabled:opacity-30"
+                className="grid h-8 w-8 place-items-center border border-[rgb(42_23_18/0.14)] text-[var(--mahogany)] hover:border-primary disabled:cursor-not-allowed disabled:opacity-30"
               >
                 ‹
               </button>
@@ -427,16 +430,16 @@ export default function HotelBookingCalendar({
                 type="button"
                 onClick={() => goToMonth(1)}
                 aria-label="Mois suivant"
-                className="grid h-8 w-8 place-items-center border border-[#DDD8CD] text-[#1C1B19] hover:border-[#2F4538]"
+                className="grid h-8 w-8 place-items-center border border-[rgb(42_23_18/0.14)] text-[var(--mahogany)] hover:border-primary"
               >
                 ›
               </button>
             </div>
 
-            <div className={`grid gap-8 ${effectiveMonths === 1 ? "grid-cols-1" : "sm:grid-cols-2"}`}>
+            <div className={`grid gap-6 ${effectiveMonths === 1 ? "grid-cols-1" : "sm:grid-cols-2"}`}>
               {monthsData.map((m, mi) => (
                 <div key={mi}>
-                  <div className="mb-2 grid grid-cols-7 gap-1 text-center text-xs text-[#6B655A]">
+                  <div className="mb-2 grid grid-cols-7 gap-1 text-center text-xs text-[#5e4c44]">
                     {WEEKDAYS_FR.map((w) => (
                       <div key={w}>{w}</div>
                     ))}
@@ -460,21 +463,26 @@ export default function HotelBookingCalendar({
                             unavailable ? ", complet" : inMonth && !disabled ? `, ${formatPrice(info.price, currencyLabel)}` : ""
                           }`}
                           className={[
-                            "relative flex h-12 flex-col items-center justify-center text-xs transition-colors",
-                            !inMonth ? "invisible" : "",
-                            unavailable ? "cursor-not-allowed bg-[#E4E2DE] text-[#9A948A] line-through opacity-70" : "",
-                            disabled && !unavailable && inMonth ? "cursor-not-allowed text-[#C9C3B6]" : "",
-                            !disabled && inMonth ? "text-[#1C1B19] hover:bg-[#EFEBE2]" : "",
-                            selected ? "!bg-[#2F4538] !text-white" : "",
-                            inRange && !selected ? "bg-[#E7EEE7]" : "",
-                            !disabled && inMonth && !selected && isCheckoutCandidate ? "focus-visible:ring-2 focus-visible:ring-[#2F4538]" : "",
+                            "relative flex h-10 flex-col items-center justify-center text-xs transition-colors",
+                            !inMonth
+                              ? "invisible"
+                              : selected
+                              ? "bg-primary text-primary-foreground"
+                              : unavailable
+                              ? "cursor-not-allowed bg-[#ebe4da] text-[#8a7a72] line-through opacity-70"
+                              : disabled
+                              ? "cursor-not-allowed text-[#c4b8ae]"
+                              : inRange
+                              ? "bg-[#FBE3E5] text-[var(--mahogany)]"
+                              : "text-[var(--mahogany)] hover:bg-[var(--linen)]",
+                            !disabled && inMonth && !selected && isCheckoutCandidate ? "focus-visible:ring-2 focus-visible:ring-primary" : "",
                           ].join(" ")}
                         >
                           <span className="leading-none">{date.getDate()}</span>
                           {inMonth && !disabled && (
                             <span
-                              className={`mt-1 text-[10px] leading-none ${
-                                selected ? "text-white/85" : "text-[#8A8372]"
+                              className={`mt-1 text-xs leading-none ${
+                                selected ? "text-white/85" : "text-[#5e4c44]"
                               }`}
                             >
                               {new Intl.NumberFormat("fr-FR", { notation: "compact" }).format(info.price)}
@@ -488,35 +496,35 @@ export default function HotelBookingCalendar({
               ))}
             </div>
 
-            <div className="mt-5 flex flex-wrap gap-4 text-xs text-[#6B655A]">
-              <LegendDot className="bg-white border border-[#DDD8CD]" label="Disponible" />
-              <LegendDot className="bg-[#2F4538]" label="Sélectionné" />
-              <LegendDot className="bg-[#E4E2DE]" label="Complet" muted />
+            <div className="mt-2 flex flex-wrap gap-3 text-xs text-[#5e4c44]">
+              <LegendDot className="bg-white border border-[rgb(42_23_18/0.14)]" label="Disponible" />
+              <LegendDot className="bg-primary" label="Sélectionné" />
+              <LegendDot className="bg-[#ebe4da]" label="Complet" muted />
             </div>
           </div>
 
           {/* Résumé */}
-          <div className="w-full border-t border-[#DDD8CD] bg-white px-6 py-6 lg:w-80 lg:border-l lg:border-t-0">
-            <p className="text-xs uppercase tracking-wide text-[#6B655A]">Votre séjour</p>
+          <div className="w-full border-t border-[rgb(42_23_18/0.14)] bg-white px-5 py-4 lg:w-80 lg:border-l lg:border-t-0">
+            <p className="text-xs text-[#5e4c44]">Votre séjour</p>
 
-            <div className="mt-3 flex border border-[#DDD8CD]">
-              <div className="flex-1 border-r border-[#DDD8CD] px-3 py-3">
-                <p className="text-[11px] text-[#6B655A]">Arrivée</p>
+            <div className="mt-2 flex border border-[rgb(42_23_18/0.14)]">
+              <div className="flex-1 border-r border-[rgb(42_23_18/0.14)] px-3 py-2">
+                <p className="text-xs text-[#5e4c44]">Arrivée</p>
                 <p className="text-sm">{checkIn ? formatShortDate(checkIn) : "—"}</p>
               </div>
-              <div className="flex-1 px-3 py-3">
-                <p className="text-[11px] text-[#6B655A]">Départ</p>
+              <div className="flex-1 px-3 py-2">
+                <p className="text-xs text-[#5e4c44]">Départ</p>
                 <p className="text-sm">{checkOut ? formatShortDate(checkOut) : "—"}</p>
               </div>
             </div>
 
             {checkIn && !checkOut && (
-              <p className="mt-3 text-xs text-[#8A8372]">
+              <p className="mt-2 text-xs text-[#5e4c44]">
                 Séjour minimum : {getInfo(checkIn).minStay} nuit{getInfo(checkIn).minStay > 1 ? "s" : ""} — choisissez une date de départ
               </p>
             )}
 
-            <div className="mt-4 border-t border-[#DDD8CD] pt-2">
+            <div className="mt-3 border-t border-[rgb(42_23_18/0.14)] pt-2">
               <GuestStepper
                 label="Adultes"
                 value={guests.adults}
@@ -529,19 +537,19 @@ export default function HotelBookingCalendar({
                 min={0}
                 onChange={(v) => updateGuests({ children: v })}
               />
-              <p className="pt-1 text-xs text-[#6B655A]">
+              <p className="pt-1 text-xs text-[#5e4c44]">
                 Jusqu&apos;à {maxGuestsPerRoom} personnes
               </p>
             </div>
 
             {checkIn && checkOut && nights > 0 && (
-              <div className="mt-4 space-y-1 border-t border-[#DDD8CD] pt-3 text-sm">
+              <div className="mt-3 space-y-1 border-t border-[rgb(42_23_18/0.14)] pt-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-[#6B655A]">Nuits</span>
+                  <span className="text-[#5e4c44]">Nuits</span>
                   <span>{nights}</span>
                 </div>
                 <div className="flex justify-between font-medium">
-                  <span className="text-[#6B655A]">Total estimé</span>
+                  <span className="text-[#5e4c44]">Total estimé</span>
                   <span>{formatPrice(subtotal, currencyLabel)}</span>
                 </div>
               </div>
@@ -551,7 +559,7 @@ export default function HotelBookingCalendar({
               <button
                 type="button"
                 onClick={clearSelection}
-                className="mt-2 w-full py-2 text-xs text-[#6B655A] underline-offset-2 hover:underline"
+                className="mt-1 w-full py-1.5 text-xs text-[#5e4c44] underline-offset-2 hover:underline"
               >
                 Effacer les dates
               </button>
@@ -577,15 +585,15 @@ function GuestStepper({
   onChange: (v: number) => void;
 }) {
   return (
-    <div className="flex items-center justify-between py-1.5">
-      <span className="text-sm text-[#1C1B19]">{label}</span>
+    <div className="flex items-center justify-between py-1">
+      <span className="text-sm text-[var(--mahogany)]">{label}</span>
       <div className="flex items-center gap-3">
         <button
           type="button"
           onClick={() => onChange(value - 1)}
           disabled={value <= min}
           aria-label={`Diminuer ${label}`}
-          className="grid h-6 w-6 place-items-center border border-[#DDD8CD] text-sm disabled:opacity-30"
+          className="grid h-6 w-6 place-items-center border border-[rgb(42_23_18/0.14)] text-sm disabled:opacity-30"
         >
           −
         </button>
@@ -594,7 +602,7 @@ function GuestStepper({
           type="button"
           onClick={() => onChange(value + 1)}
           aria-label={`Augmenter ${label}`}
-          className="grid h-6 w-6 place-items-center border border-[#DDD8CD] text-sm"
+          className="grid h-6 w-6 place-items-center border border-[rgb(42_23_18/0.14)] text-sm"
         >
           +
         </button>

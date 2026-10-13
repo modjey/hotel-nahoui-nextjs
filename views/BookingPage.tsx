@@ -198,7 +198,7 @@ export function BookingPage() {
     <div className="min-h-screen bg-background">
       <Nav />
 
-      <div className="mx-auto max-w-6xl px-6 lg:px-10 pt-10 pb-24">
+      <div className="mx-auto max-w-6xl px-5 lg:px-10 pt-10 pb-24">
         <button onClick={prev} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <ChevronLeft className="h-4 w-4" /> {step === "Dates" ? "Retour à l&apos;annonce" : "Étape précédente"}
         </button>
@@ -212,7 +212,7 @@ export function BookingPage() {
             const done = i < stepIndex;
             return (
               <div key={s} className="flex items-center gap-3">
-                <div className={`h-8 w-8 rounded-full grid place-items-center text-xs font-medium border transition-all ${
+                <div className={`h-8 w-8 grid place-items-center text-xs font-medium border transition-all ${
                   done ? "bg-primary text-primary-foreground border-primary"
                   : active ? "bg-foreground text-background border-foreground"
                   : "bg-background text-muted-foreground border-border"
@@ -264,11 +264,11 @@ export function BookingPage() {
                 {step === "Auth" && (
                   <Section title="Authentification" icon={<Shield className="h-4 w-4" />}>
                     {user ? (
-                      <div className="p-4 rounded-xl bg-secondary/50 text-center">
+                      <div className="p-4 bg-secondary/50 text-center">
                         <p className="text-sm text-muted-foreground">Connecté en tant que {user.name || user.email}</p>
                       </div>
                     ) : (
-                      <div className="p-4 rounded-xl bg-secondary/50 text-center">
+                      <div className="p-4 bg-secondary/50 text-center">
                         <p className="text-sm text-muted-foreground mb-4">Veuillez vous connecter pour continuer</p>
                         <Button onClick={() => setAuthModalOpen(true)} className="w-full">Se connecter</Button>
                       </div>
@@ -313,15 +313,15 @@ export function BookingPage() {
                 {step === "Payment" && !confirmed && (
                   <Section title="Détails du paiement" icon={<CreditCard className="h-4 w-4" />}>
                     <div className="flex gap-3 mb-6">
-                      <button onClick={() => setPaymentMethod('card')} className={`flex-1 p-4 rounded-xl border-2 transition-all ${paymentMethod === 'card' ? 'border-primary bg-primary/5' : 'border-border hover:border-foreground/50'}`}>
+                      <button onClick={() => setPaymentMethod('card')} className={`flex-1 p-4 border-2 transition-all ${paymentMethod === 'card' ? 'border-primary bg-primary/5' : 'border-border hover:border-foreground/50'}`}>
                         <CardIcon className="h-6 w-6 mx-auto mb-2" />
                         <div className="text-sm font-medium">Carte bancaire</div>
                       </button>
-                      <button onClick={() => setPaymentMethod('apple')} className={`flex-1 p-4 rounded-xl border-2 transition-all ${paymentMethod === 'apple' ? 'border-primary bg-primary/5' : 'border-border hover:border-foreground/50'}`}>
+                      <button onClick={() => setPaymentMethod('apple')} className={`flex-1 p-4 border-2 transition-all ${paymentMethod === 'apple' ? 'border-primary bg-primary/5' : 'border-border hover:border-foreground/50'}`}>
                         <Apple className="h-6 w-6 mx-auto mb-2" />
                         <div className="text-sm font-medium">Apple Pay</div>
                       </button>
-                      <button onClick={() => setPaymentMethod('google')} className={`flex-1 p-4 rounded-xl border-2 transition-all ${paymentMethod === 'google' ? 'border-primary bg-primary/5' : 'border-border hover:border-foreground/50'}`}>
+                      <button onClick={() => setPaymentMethod('google')} className={`flex-1 p-4 border-2 transition-all ${paymentMethod === 'google' ? 'border-primary bg-primary/5' : 'border-border hover:border-foreground/50'}`}>
                         <Wallet className="h-6 w-6 mx-auto mb-2" />
                         <div className="text-sm font-medium">Google Pay</div>
                       </button>
@@ -356,7 +356,7 @@ export function BookingPage() {
                     )}
 
                     {paymentMethod !== 'card' && (
-                      <div className="p-6 rounded-xl bg-secondary/50 text-center">
+                      <div className="p-6 bg-secondary/50 text-center">
                         <p className="text-sm text-muted-foreground">You will be redirected to {paymentMethod === 'apple' ? 'Apple Pay' : 'Google Pay'} to complete your payment securely.</p>
                       </div>
                     )}
@@ -370,9 +370,9 @@ export function BookingPage() {
                     initial={{ opacity: 0, scale: 0.96 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                    className="border border-border rounded-3xl p-10 text-center bg-card"
+                    className="border border-border p-10 text-center bg-card"
                   >
-                    <div className="mx-auto h-14 w-14 rounded-full bg-primary text-primary-foreground grid place-items-center">
+                    <div className="mx-auto h-14 w-14 bg-primary text-primary-foreground grid place-items-center">
                       <Sparkles className="h-6 w-6" />
                     </div>
                     <h2 className="font-display text-3xl mt-6">Traitement de votre réservation...</h2>
@@ -393,7 +393,7 @@ export function BookingPage() {
                     else next();
                   }}
                   disabled={!canContinue}
-                  className="h-12 px-8 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="h-12 px-8 bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {step === "Payment" ? `Confirmer et payer ${new Intl.NumberFormat('fr-FR').format(total)} ${room.currency}` : "Continuer"}
                 </button>
@@ -403,11 +403,11 @@ export function BookingPage() {
 
           {/* Summary */}
           <aside className="lg:col-span-2">
-            <div className="lg:sticky lg:top-28 border border-border rounded-3xl p-6 bg-card shadow-[var(--shadow-card)]">
+            <div className="lg:sticky lg:top-28 border border-border p-6 bg-card shadow-[var(--shadow-card)]">
               <div className="flex gap-4">
-                <img src={room.coverImageUrl || '/placeholder.jpg'} alt={room.name} className="h-24 w-24 rounded-xl object-cover" />
+                <img src={room.coverImageUrl || '/placeholder.jpg'} alt={room.name} className="h-24 w-24 object-cover" />
                 <div className="min-w-0">
-                  <div className="text-xs uppercase tracking-wider text-muted-foreground">{room.roomType.name}</div>
+                  <div className="text-xs text-muted-foreground">{room.roomType.name}</div>
                   <div className="font-display text-lg truncate">{room.name}</div>
                   <div className="text-sm text-muted-foreground truncate">{room.location.city ? `${room.location.city}, ${room.location.name}` : room.location.name}</div>
                 </div>
@@ -420,7 +420,7 @@ export function BookingPage() {
                 </div>
               </div>
 
-              <div className="mt-6 p-4 rounded-2xl bg-secondary/50 text-xs text-muted-foreground">
+              <div className="mt-6 p-4 bg-secondary/50 text-xs text-muted-foreground">
                 Annulation gratuite avant {checkIn ? format(addDays(checkIn, -7), 'dd MMM yyyy') : '-'}.
               </div>
             </div>
@@ -437,8 +437,8 @@ const inputCls = "h-12 w-full rounded-xl border border-border bg-background px-4
 
 function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="border border-border rounded-3xl p-7 bg-card">
-      <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">{icon}{title}</div>
+    <div className="border border-border p-7 bg-card">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">{icon}{title}</div>
       <div className="mt-5 space-y-4">{children}</div>
     </div>
   );
@@ -446,7 +446,7 @@ function Section({ title, icon, children }: { title: string; icon: React.ReactNo
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
       <div className="mt-1.5">{children}</div>
     </label>
   );
@@ -459,9 +459,9 @@ function Counter({ label, sub, value, setValue, min, max }: { label: string; sub
         <div className="text-xs text-muted-foreground">{sub}</div>
       </div>
       <div className="flex items-center gap-3">
-        <button onClick={() => setValue(Math.max(min, value - 1))} disabled={value <= min} className="h-9 w-9 rounded-full border border-border grid place-items-center hover:border-foreground disabled:opacity-30">−</button>
+        <button onClick={() => setValue(Math.max(min, value - 1))} disabled={value <= min} className="h-9 w-9 border border-border grid place-items-center hover:border-foreground disabled:opacity-30">−</button>
         <span className="w-6 text-center">{value}</span>
-        <button onClick={() => setValue(Math.min(max, value + 1))} disabled={value >= max} className="h-9 w-9 rounded-full border border-border grid place-items-center hover:border-foreground disabled:opacity-30">+</button>
+        <button onClick={() => setValue(Math.min(max, value + 1))} disabled={value >= max} className="h-9 w-9 border border-border grid place-items-center hover:border-foreground disabled:opacity-30">+</button>
       </div>
     </div>
   );

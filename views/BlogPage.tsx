@@ -66,14 +66,14 @@ export function BlogPage() {
     <div className="min-h-screen bg-background">
       <Nav />
 
-      <section className="border-b border-border">
-        <div className="mx-auto max-w-[1440px] px-6 lg:px-10 pt-16 pb-16 text-center">
-          <span className="eyebrow text-primary">Journal</span>
-          <h1 className="font-display mt-5 text-4xl sm:text-5xl lg:text-6xl font-light">Le Blog</h1>
+      <section className="bg-ink text-white">
+        <div className="mx-auto max-w-[1440px] px-5 lg:px-10 pt-14 pb-16 lg:pt-20 lg:pb-24">
+          <span className="eyebrow text-primary !text-[#ff8a92]">Journal</span>
+          <h1 className="font-display mt-5 text-5xl sm:text-6xl lg:text-7xl leading-[0.98] max-w-4xl text-balance">Le Blog</h1>
         </div>
       </section>
 
-      <div className="mx-auto max-w-[1440px] px-6 lg:px-10 py-16">
+      <div className="mx-auto max-w-[1440px] px-5 lg:px-10 py-16">
         {/* Search & filters */}
         <div className="flex flex-col lg:flex-row gap-6 mb-16 border-b border-border pb-8">
           <div className="relative flex-1 max-w-md">

@@ -1,88 +1,64 @@
 "use client";
 import Link from "next/link";
-import { Facebook, Instagram } from "lucide-react";
-import { TikTokIcon, WhatsAppIcon } from "@/components/site/social-icons";
 
 const socialLinks = [
-  {
-    name: "Facebook",
-    href: "https://www.facebook.com/hotelnahouibalmer",
-    icon: Facebook,
-    bg: "bg-[#1877F2]",
-  },
-  {
-    name: "Instagram",
-    href: "https://www.instagram.com/hotel_nahoui/",
-    icon: Instagram,
-    bg: "bg-gradient-to-br from-[#feda75] via-[#d62976] to-[#4f5bd5]",
-  },
-  {
-    name: "TikTok",
-    href: "https://www.tiktok.com/@nahouihotel?is_from_webapp=1&sender_device=pc",
-    icon: TikTokIcon,
-    bg: "bg-black",
-  },
-  {
-    name: "WhatsApp",
-    href: "https://api.whatsapp.com/send?phone=%2B2250788494979",
-    icon: WhatsAppIcon,
-    bg: "bg-[#25D366]",
-  },
+  { name: "Instagram", href: "https://www.instagram.com/hotel_nahoui/" },
+  { name: "Facebook", href: "https://www.facebook.com/hotelnahouibalmer" },
+  { name: "TikTok", href: "https://www.tiktok.com/@nahouihotel?is_from_webapp=1&sender_device=pc" },
+  { name: "WhatsApp", href: "https://api.whatsapp.com/send?phone=%2B2250788494979" },
 ];
 
 const footerSections = [
   {
-    title: "Navigation",
+    title: "Séjourner",
     links: [
-      { label: "L'Hôtel", href: "/" },
       { label: "Chambres & Suites", href: "/stays" },
-      { label: "Restaurant", href: "/restaurant" },
-      { label: "Expériences", href: "/services" },
-      { label: "Événements", href: "/evenements" },
+      { label: "Mes réservations", href: "/bookings" },
+      { label: "Avis clients", href: "/avis" },
     ],
   },
   {
-    title: "Informations",
+    title: "Découvrir",
     links: [
-      { label: "Blog", href: "/blog" },
-      { label: "Avis clients", href: "/avis" },
+      { label: "Restaurant", href: "/restaurant" },
+      { label: "Bien-être", href: "/bien-etre" },
+      { label: "Expériences", href: "/services" },
+      { label: "Événements", href: "/evenements" },
       { label: "Photobook", href: "/photobook" },
-      { label: "Contact", href: "/contact" },
+      { label: "Journal", href: "/blog" },
     ],
   },
 ];
 
-const phoneNumbers = [
-  "+225 27 34 71 22 33",
-  "+225 07 87 94 34 49",
-];
+const phoneNumbers = ["+225 27 34 71 22 33", "+225 07 87 94 34 49"];
 
 export function Footer() {
   return (
-    <footer className="bg-[var(--footer-bg)] text-foreground border-t border-[var(--footer-border)]">
-      <div className="mx-auto max-w-[1440px] px-6 lg:px-10 py-20 lg:py-28">
-        <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr_1fr_1fr] gap-14 lg:gap-10">
-          <div>
-            <Link href="/" className="flex items-center gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo.png" alt="Hôtel Nahoui Balmer" className="h-9 w-9" />
-              <span className="font-display text-2xl tracking-[0.14em] uppercase">
-                Nahoui Balmer
-              </span>
-            </Link>
-            <p className="mt-6 text-sm leading-relaxed text-muted-foreground max-w-xs">
-              Établissement de caractère à San Pedro, où raffinement et sens de
-              l&rsquo;hospitalité se conjuguent depuis 1998.
-            </p>
+    <footer className="bg-ink text-white pb-24 sm:pb-0">
+      <div className="mx-auto max-w-[1440px] px-5 lg:px-10 pt-20 lg:pt-24 pb-10">
+        {/* Bandeau marque + réservation */}
+        <div className="flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between pb-14 border-b border-white/15">
+          <div className="flex items-center gap-5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="" className="h-16 w-16" />
+            <div>
+              <p className="font-display text-3xl sm:text-4xl leading-none">Hôtel Nahoui Balmer</p>
+              <p className="mt-2 text-[0.9375rem] text-white/70">San Pedro, Côte d&rsquo;Ivoire · depuis 1998</p>
+            </div>
           </div>
+          <Link href="/stays" className="btn-fill-editorial w-fit">
+            Réserver un séjour
+          </Link>
+        </div>
 
+        <div className="grid grid-cols-2 gap-x-8 gap-y-12 py-14 lg:grid-cols-[1fr_1fr_1.2fr_1fr]">
           {footerSections.map((section) => (
             <div key={section.title}>
-              <h2 className="eyebrow text-primary">{section.title}</h2>
-              <ul className="mt-6 space-y-3.5 text-sm">
+              <h2 className="text-[0.8125rem] font-semibold text-white/55">{section.title}</h2>
+              <ul className="mt-5 space-y-3 text-[0.9375rem]">
                 {section.links.map((link) => (
                   <li key={link.href}>
-                    <Link href={link.href} className="text-foreground/80 hover:text-primary transition-colors">
+                    <Link href={link.href} className="text-white/85 hover:text-white transition-colors">
                       {link.label}
                     </Link>
                   </li>
@@ -92,40 +68,39 @@ export function Footer() {
           ))}
 
           <div>
-            <h2 className="eyebrow text-primary">Contact</h2>
-            <div className="mt-6 space-y-3.5 text-sm text-foreground/80">
+            <h2 className="text-[0.8125rem] font-semibold text-white/55">Contact</h2>
+            <div className="mt-5 space-y-3 text-[0.9375rem] text-white/85">
               <p>San Pedro, Côte d&rsquo;Ivoire</p>
-              <a href="mailto:hotelnahoui@yahoo.com" className="block hover:text-primary transition-colors">
-                hotelnahoui@yahoo.com
-              </a>
               {phoneNumbers.map((phone) => (
-                <a key={phone} href={`tel:${phone.replace(/\s/g, "")}`} className="block hover:text-primary transition-colors">
+                <a key={phone} href={`tel:${phone.replace(/\s/g, "")}`} className="block hover:text-white tabular">
                   {phone}
                 </a>
               ))}
+              <a href="mailto:hotelnahoui@yahoo.com" className="block hover:text-white break-all">
+                hotelnahoui@yahoo.com
+              </a>
             </div>
-            <div className="mt-6 flex flex-wrap gap-3">
+          </div>
+
+          <div>
+            <h2 className="text-[0.8125rem] font-semibold text-white/55">Suivre l&rsquo;hôtel</h2>
+            <ul className="mt-5 space-y-3 text-[0.9375rem]">
               {socialLinks.map((social) => (
-                <a
-                  key={social.name}
-                  href={social.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={social.name}
-                  className={`flex h-10 w-10 items-center justify-center rounded-full text-white shadow-sm transition-transform hover:scale-110 ${social.bg}`}
-                >
-                  <social.icon className="h-4 w-4" />
-                </a>
+                <li key={social.name}>
+                  <a href={social.href} target="_blank" rel="noopener noreferrer" className="text-white/85 hover:text-white">
+                    {social.name}
+                  </a>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
         </div>
 
-        <div className="mt-16 lg:mt-24 pt-8 border-t border-[var(--footer-border)] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
+        <div className="pt-8 border-t border-white/15 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-[0.8125rem] text-white/60">
           <p>© {new Date().getFullYear()} Hôtel Nahoui Balmer. Tous droits réservés.</p>
-          <div className="flex flex-wrap justify-center gap-x-6 gap-y-2">
-            <Link href="/contact" className="hover:text-primary transition-colors">Mentions légales</Link>
-            <Link href="/contact" className="hover:text-primary transition-colors">Confidentialité</Link>
+          <div className="flex flex-wrap gap-x-6 gap-y-2">
+            <Link href="/contact" className="hover:text-white">Mentions légales</Link>
+            <Link href="/contact" className="hover:text-white">Confidentialité</Link>
           </div>
         </div>
       </div>

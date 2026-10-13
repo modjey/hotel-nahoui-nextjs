@@ -101,36 +101,36 @@ export function AuthModal({ isOpen, onClose, purpose = "booking" }: AuthModalPro
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden relative">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[rgb(26_12_9/0.6)]">
+      <div className="bg-card w-full max-w-md overflow-hidden relative border-t-4 border-primary">
         <div className="flex items-center justify-between p-6 border-b">
           <div className="flex items-center gap-2">
             {step === "otp" && (
               <button
                 onClick={() => setStep("identifier")}
-                className="h-9 w-9 flex items-center justify-center rounded-full hover:bg-gray-100"
+                className="h-9 w-9 flex items-center justify-center hover:bg-secondary"
                 aria-label="Retour"
               >
-                <ArrowLeft className="h-4 w-4 text-gray-600" />
+                <ArrowLeft className="h-4 w-4 text-muted-foreground" />
               </button>
             )}
-            <h2 className="text-xl font-display font-bold text-gray-900">
+            <h2 className="text-2xl font-display text-foreground">
               {step === "identifier" ? "Connexion ou inscription" : "Vérification"}
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+            className="h-10 w-10 flex items-center justify-center hover:bg-secondary transition-colors"
             aria-label="Fermer"
           >
-            <X className="h-5 w-5 text-gray-500" />
+            <X className="h-5 w-5 text-muted-foreground" />
           </button>
         </div>
 
         {step === "identifier" ? (
           <form onSubmit={requestOtp} className="p-6 space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
+              <label className="text-sm font-medium text-foreground">
                 Numéro de téléphone ou adresse e-mail
               </label>
               <input
@@ -139,21 +139,21 @@ export function AuthModal({ isOpen, onClose, purpose = "booking" }: AuthModalPro
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 placeholder="+225 07 00 00 00 00 ou email@exemple.com"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                className="w-full h-12 px-4 border border-input bg-background focus:outline-none focus:border-foreground"
                 disabled={submitting}
                 autoComplete="email"
                 required
               />
             </div>
 
-            <p className="text-xs text-gray-500 text-center leading-relaxed">
+            <p className="text-xs text-muted-foreground text-center leading-relaxed">
               Nous vous enverrons un code de confirmation par SMS ou par e-mail.
             </p>
 
             <button
               type="submit"
               disabled={submitting || !identifier.trim()}
-              className="w-full py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+              className="btn-fill-editorial w-full disabled:opacity-60"
             >
               {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
               Continuer
@@ -161,10 +161,10 @@ export function AuthModal({ isOpen, onClose, purpose = "booking" }: AuthModalPro
 
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
+                <div className="w-full border-t border-input" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-gray-500">ou</span>
+                <span className="px-4 bg-card text-muted-foreground">ou</span>
               </div>
             </div>
 
@@ -172,29 +172,29 @@ export function AuthModal({ isOpen, onClose, purpose = "booking" }: AuthModalPro
               <button
                 type="button"
                 onClick={() => oauthRedirect("google")}
-                className="flex items-center justify-center gap-2 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-center gap-2 py-3 border border-input hover:bg-secondary transition-colors"
               >
                 <GoogleIcon />
-                <span className="text-sm font-medium text-gray-700">Google</span>
+                <span className="text-sm font-medium text-foreground">Google</span>
               </button>
               <button
                 type="button"
                 onClick={() => oauthRedirect("facebook")}
-                className="flex items-center justify-center gap-2 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-center gap-2 py-3 border border-input hover:bg-secondary transition-colors"
               >
                 <FacebookIcon />
-                <span className="text-sm font-medium text-gray-700">Facebook</span>
+                <span className="text-sm font-medium text-foreground">Facebook</span>
               </button>
             </div>
           </form>
         ) : (
           <form onSubmit={verifyOtp} className="p-6 space-y-4">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Code envoyé{channel === "EMAIL" ? " à " : " au "}
-              <span className="font-medium text-gray-900">{normalizedIdentifier}</span>
+              <span className="font-medium text-foreground">{normalizedIdentifier}</span>
             </p>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Code de vérification</label>
+              <label className="text-sm font-medium text-foreground">Code de vérification</label>
               <input
                 type="text"
                 inputMode="numeric"
@@ -203,7 +203,7 @@ export function AuthModal({ isOpen, onClose, purpose = "booking" }: AuthModalPro
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
                 placeholder="••••••"
-                className="w-full px-4 py-3 text-center text-2xl tracking-[0.5em] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="w-full px-4 py-3 text-center text-2xl border border-input focus:outline-none focus:border-foreground"
                 disabled={submitting}
                 autoFocus
                 autoComplete="one-time-code"
@@ -211,15 +211,15 @@ export function AuthModal({ isOpen, onClose, purpose = "booking" }: AuthModalPro
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
-                Votre prénom <span className="text-gray-400 font-normal">(optionnel)</span>
+              <label className="text-sm font-medium text-foreground">
+                Votre prénom <span className="text-muted-foreground font-normal">(optionnel)</span>
               </label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Aïcha"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="w-full h-12 px-4 border border-input bg-background focus:outline-none focus:border-foreground"
                 disabled={submitting}
               />
             </div>
@@ -227,20 +227,20 @@ export function AuthModal({ isOpen, onClose, purpose = "booking" }: AuthModalPro
             <button
               type="submit"
               disabled={submitting || code.length < 4}
-              className="w-full py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+              className="btn-fill-editorial w-full disabled:opacity-60"
             >
               {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
               Vérifier et se connecter
             </button>
 
-            <div className="text-center text-sm text-gray-500">
+            <div className="text-center text-sm text-muted-foreground">
               {resendIn > 0 ? (
                 <span>Renvoyer le code dans {resendIn}s</span>
               ) : (
                 <button
                   type="button"
                   onClick={() => requestOtp()}
-                  className="text-red-600 hover:underline"
+                  className="text-brand-text hover:underline"
                   disabled={submitting}
                 >
                   Renvoyer le code

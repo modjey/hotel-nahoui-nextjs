@@ -17,17 +17,17 @@ export function BienEtrePage() {
       {/* Hero */}
       <section className="relative h-[65vh] min-h-[460px] w-full overflow-hidden">
         <img
-          src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?ixid=eyJhcHBfaWQiOjEyMDd9&ixlib=rb-1.2.1&q=80&w=1600"
+          src="/assets/spa.png"
           alt="Bien-être à l'Hôtel Nahoui Balmer"
           className="absolute inset-0 h-full w-full object-cover"
         />
-        <div className="absolute inset-0 bg-black/30" />
-        <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center text-white">
+        <div className="absolute inset-0 photo-scrim" />
+        <div className="relative z-10 mx-auto flex h-full max-w-[1440px] flex-col justify-end px-5 lg:px-10 pb-14 lg:pb-20 text-white">
           <motion.span
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-            className="eyebrow"
+            className="eyebrow inline-flex items-center gap-3 before:content-[''] before:h-2.5 before:w-2.5 before:bg-primary before:outline before:outline-1 before:outline-offset-2 before:outline-white"
           >
             Expérience sur mesure
           </motion.span>
@@ -35,7 +35,7 @@ export function BienEtrePage() {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
-            className="font-display mt-6 text-5xl sm:text-6xl lg:text-7xl font-light"
+            className="font-display mt-5 text-[3.25rem] leading-[0.95] sm:text-7xl lg:text-8xl tracking-[-0.02em] text-balance"
           >
             Bien-être
           </motion.h1>
@@ -43,7 +43,7 @@ export function BienEtrePage() {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
-            className="mt-6 max-w-md text-sm sm:text-base text-white/85"
+            className="mt-5 max-w-xl text-base sm:text-lg text-white/90 text-pretty"
           >
             Détendez-vous et revitalisez le corps et l&rsquo;esprit.
           </motion.p>
@@ -69,7 +69,7 @@ export function BienEtrePage() {
         reverse
       />
 
-      <section className="mx-auto max-w-[1440px] px-6 lg:px-10 pb-24 lg:pb-32">
+      <section className="mx-auto max-w-[1440px] px-5 lg:px-10 pb-24 lg:pb-32">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 border-t border-border pt-16">
           {[
             { icon: Waves, title: "Profondeur", desc: "De 0 à 2 mètres" },
@@ -92,13 +92,13 @@ export function BienEtrePage() {
         </div>
       </section>
 
-      <section className="bg-ink text-white text-center py-20 lg:py-28">
-        <span className="eyebrow text-white/70">Nos installations</span>
-        <h2 className="font-display mt-5 text-3xl sm:text-4xl font-light">
+      <section className="bg-primary text-white text-center px-5 shadow-[inset_0_0_0_12px_var(--brand),inset_0_0_0_13px_rgb(255_255_255/0.8)] py-20 lg:py-28">
+        <span className="eyebrow text-white/90">Nos installations</span>
+        <h2 className="font-display mt-5 text-4xl sm:text-5xl leading-[1.02] text-balance">
           Profitez de nos espaces bien-être.
         </h2>
         <div className="mt-9">
-          <Link href="/stays" className="link-underline text-white">
+          <Link href="/stays" className="btn-on-brand">
             <Sparkles className="h-3.5 w-3.5" /> Réserver maintenant
           </Link>
         </div>

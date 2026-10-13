@@ -64,16 +64,16 @@ export function ContactPage() {
     <div className="min-h-screen bg-background">
       <Nav />
 
-      <section className="border-b border-border">
-        <div className="mx-auto max-w-[1440px] px-6 lg:px-10 pt-14 pb-10 text-center">
-          <span className="eyebrow text-primary">Contact</span>
-          <h1 className="font-display mt-3 text-3xl sm:text-4xl lg:text-5xl font-light">
+      <section className="bg-ink text-white">
+        <div className="mx-auto max-w-[1440px] px-5 lg:px-10 pt-14 pb-16 lg:pt-20 lg:pb-24">
+          <span className="eyebrow text-primary !text-[#ff8a92]">Contact</span>
+          <h1 className="font-display mt-5 text-5xl sm:text-6xl lg:text-7xl leading-[0.98] max-w-4xl text-balance">
             Nous sommes à votre écoute.
           </h1>
         </div>
       </section>
 
-      <section className="mx-auto max-w-[1440px] px-6 lg:px-10 py-14 lg:py-16">
+      <section className="mx-auto max-w-[1440px] px-5 lg:px-10 py-14 lg:py-16">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-10 items-start">
           {/* Left column: info + map */}
           <motion.div
@@ -83,12 +83,12 @@ export function ContactPage() {
             transition={{ duration: 0.7 }}
             className="lg:col-span-2 flex flex-col gap-6"
           >
-            <div className="rounded-sm bg-white shadow-[var(--shadow-elevated)] p-7 lg:p-8">
+            <div className="bg-card border border-border p-7 lg:p-8">
               <h2 className="font-display text-xl lg:text-2xl font-light mb-6">Informations</h2>
               <div className="space-y-5">
                 {contactInfo.map((info) => (
                   <div key={info.title} className="flex items-start gap-4">
-                    <span className="shrink-0 h-10 w-10 rounded-full bg-primary/10 text-primary grid place-items-center">
+                    <span className="shrink-0 h-10 w-10 bg-primary/10 text-primary grid place-items-center">
                       <info.icon className="h-4 w-4" />
                     </span>
                     <div className="min-w-0">
@@ -116,7 +116,7 @@ export function ContactPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Facebook"
-                  className="h-10 w-10 rounded-full bg-[#1877F2] text-white grid place-items-center transition-transform hover:scale-110"
+                  className="h-10 w-10 bg-[#1877F2] text-white grid place-items-center transition-transform hover:scale-110"
                 >
                   <Facebook className="h-4 w-4" />
                 </a>
@@ -125,14 +125,14 @@ export function ContactPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Instagram"
-                  className="h-10 w-10 rounded-full bg-gradient-to-br from-[#feda75] via-[#d62976] to-[#4f5bd5] text-white grid place-items-center transition-transform hover:scale-110"
+                  className="h-10 w-10 bg-gradient-to-br from-[#feda75] via-[#d62976] to-[#4f5bd5] text-white grid place-items-center transition-transform hover:scale-110"
                 >
                   <Instagram className="h-4 w-4" />
                 </a>
               </div>
             </div>
 
-            <div className="rounded-sm overflow-hidden shadow-[var(--shadow-elevated)] h-[280px] lg:h-[320px]">
+            <div className="overflow-hidden border border-border h-[280px] lg:h-[320px]">
               <iframe
                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3981.7777777777778!2d-6.6443927!3d4.7239875!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xf961312d9e1df9d:0x7ba51b79fb1fd8ea!2sH%C3%B4tel+Nahoui+Sp!5e0!3m2!1sfr!2sci!4v1620000000000!5m2!1sfr!2sci"
                 width="100%"
@@ -161,7 +161,7 @@ export function ContactPage() {
             transition={{ duration: 0.7, delay: 0.1 }}
             className="lg:col-span-3"
           >
-            <div className="rounded-sm bg-white shadow-[var(--shadow-elevated)] p-7 lg:p-10">
+            <div className="bg-card border border-border p-7 lg:p-10">
               <span className="eyebrow text-primary">Message</span>
               <h2 className="font-display mt-2 text-2xl lg:text-3xl font-light">Envoyez-nous un message</h2>
 

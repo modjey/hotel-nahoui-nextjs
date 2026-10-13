@@ -1,13 +1,56 @@
 "use client";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Search, Calendar, Users } from "lucide-react";
+import { ArrowRight, Minus, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format, addDays } from "date-fns";
+import { format, addDays, differenceInCalendarDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useIsMobile } from "@/hooks/use-mobile";
+
+function Stepper({
+  label,
+  hint,
+  value,
+  min,
+  onChange,
+}: {
+  label: string;
+  hint: string;
+  value: number;
+  min: number;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between py-3">
+      <div>
+        <div className="text-[0.9375rem] font-semibold">{label}</div>
+        <div className="text-xs text-muted-foreground">{hint}</div>
+      </div>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          aria-label={`Retirer ${label.toLowerCase()}`}
+          disabled={value <= min}
+          onClick={() => onChange(Math.max(min, value - 1))}
+          className="h-10 w-10 border border-border grid place-items-center hover:border-foreground disabled:opacity-30 disabled:hover:border-border"
+        >
+          <Minus className="h-4 w-4" />
+        </button>
+        <span className="w-6 text-center tabular font-semibold">{value}</span>
+        <button
+          type="button"
+          aria-label={`Ajouter ${label.toLowerCase()}`}
+          onClick={() => onChange(value + 1)}
+          className="h-10 w-10 border border-border grid place-items-center hover:border-foreground"
+        >
+          <Plus className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export function SearchBar() {
   const router = useRouter();
@@ -28,112 +71,93 @@ export function SearchBar() {
     router.push(`/stays?${params.toString()}`);
   };
 
-  const totalGuests = adults + children;
+  const nights = checkIn && checkOut ? differenceInCalendarDays(checkOut, checkIn) : 0;
+  const fmt = (d: Date) => format(d, isMobile ? "d MMM" : "EEE d MMM", { locale: fr });
 
-  const dateLabel = checkIn && checkOut
-    ? isMobile
-      ? `${format(checkIn, "dd MMM", { locale: fr })} → ${format(checkOut, "dd MMM", { locale: fr })}`
-      : `${format(checkIn, "dd MMM yyyy", { locale: fr })} → ${format(checkOut, "dd MMM yyyy", { locale: fr })}`
-    : checkIn
-      ? `Arrivée ${format(checkIn, "dd MMM", { locale: fr })}`
-      : "Arrivée → Départ";
+  const fieldClass =
+    "group text-left px-5 py-3.5 lg:px-6 lg:py-4 border-b sm:border-b-0 sm:border-r border-white/35 hover:bg-white/10 transition-colors focus-visible:outline-white";
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}
-      className="w-full max-w-4xl"
+      transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.45 }}
+      className="w-full max-w-5xl bg-primary p-1.5 shadow-[var(--shadow-elevated)]"
     >
-      <div className="bg-background border border-border shadow-[var(--shadow-elevated)] flex flex-col sm:flex-row items-stretch sm:items-center gap-0">
+      <div className="border border-white/80 text-white flex flex-col sm:flex-row items-stretch">
+        <div className="hidden lg:flex flex-col justify-center px-6 border-r border-white/35">
+          <span className="font-display text-2xl leading-none whitespace-nowrap">Votre séjour</span>
+        </div>
 
         {/* Dates */}
         <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
           <PopoverTrigger asChild>
-            <button className="flex items-center sm:flex-[2] px-5 py-3.5 sm:px-6 sm:py-5 hover:bg-secondary/50 transition-colors text-left border-b sm:border-b-0 sm:border-r border-border">
-              <Calendar className="h-4 w-4 text-muted-foreground mr-3 shrink-0" />
-              <div className="min-w-0">
-                <div className="eyebrow text-muted-foreground">Dates du séjour</div>
-                <div className="text-sm font-medium truncate mt-1">{dateLabel}</div>
-              </div>
+            <button type="button" className={`${fieldClass} sm:flex-[1.6]`}>
+              <span className="eyebrow block text-white/85">Arrivée — Départ</span>
+              <span className="mt-1 block text-[1.0625rem] font-medium truncate first-letter:uppercase">
+                {checkIn && checkOut
+                  ? `${fmt(checkIn)} → ${fmt(checkOut)}`
+                  : checkIn
+                    ? `${fmt(checkIn)} → ?`
+                    : "Choisir les dates"}
+              </span>
             </button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <div className="space-y-3">
-              <CalendarPicker
-                mode="range"
-                selected={{ from: checkIn, to: checkOut }}
-                onSelect={(range) => {
-                  setCheckIn(range?.from);
-                  setCheckOut(range?.to);
-                }}
-                disabled={(date) => date < new Date()}
-                numberOfMonths={isMobile ? 1 : 2}
-              />
-              <div className="flex justify-end p-3 border-t border-border">
-                <button
-                  onClick={() => setDatePickerOpen(false)}
-                  className="btn-fill-editorial"
-                >
-                  Confirmer
-                </button>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
-
-        {/* Guests */}
-        <Popover open={guestPickerOpen} onOpenChange={setGuestPickerOpen}>
-          <PopoverTrigger asChild>
-            <button className="flex items-center sm:flex-1 px-5 py-3.5 sm:px-6 sm:py-5 hover:bg-secondary/50 transition-colors text-left border-b sm:border-b-0 border-border">
-              <Users className="h-4 w-4 text-muted-foreground mr-3 shrink-0" />
-              <div>
-                <div className="eyebrow text-muted-foreground">Voyageurs</div>
-                <div className="text-sm font-medium mt-1">
-                  {totalGuests} voyageur{totalGuests > 1 ? "s" : ""}
-                </div>
-              </div>
-            </button>
-          </PopoverTrigger>
-          <PopoverContent className="w-80 p-4" align="start">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-medium">Adultes</div>
-                  <div className="text-xs text-muted-foreground">13 ans et plus</div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <button onClick={() => setAdults(Math.max(1, adults - 1))} className="h-8 w-8 border border-border flex items-center justify-center hover:border-foreground">−</button>
-                  <span className="w-6 text-center">{adults}</span>
-                  <button onClick={() => setAdults(adults + 1)} className="h-8 w-8 border border-border flex items-center justify-center hover:border-foreground">+</button>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-medium">Enfants</div>
-                  <div className="text-xs text-muted-foreground">2–12 ans</div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <button onClick={() => setChildren(Math.max(0, children - 1))} className="h-8 w-8 border border-border flex items-center justify-center hover:border-foreground">−</button>
-                  <span className="w-6 text-center">{children}</span>
-                  <button onClick={() => setChildren(children + 1)} className="h-8 w-8 border border-border flex items-center justify-center hover:border-foreground">+</button>
-                </div>
-              </div>
-              <button onClick={() => setGuestPickerOpen(false)} className="btn-fill-editorial w-full">
-                Confirmer
+          <PopoverContent className="w-auto p-0 rounded-none" align="start">
+            <CalendarPicker
+              mode="range"
+              selected={{ from: checkIn, to: checkOut }}
+              onSelect={(range) => {
+                setCheckIn(range?.from);
+                setCheckOut(range?.to);
+              }}
+              disabled={(date) => date < new Date()}
+              numberOfMonths={isMobile ? 1 : 2}
+            />
+            <div className="flex items-center justify-between gap-4 p-3 border-t border-border">
+              <span className="text-sm text-muted-foreground">
+                {nights > 0 ? `${nights} nuit${nights > 1 ? "s" : ""}` : "Sélectionnez vos dates"}
+              </span>
+              <button type="button" onClick={() => setDatePickerOpen(false)} className="btn-fill-editorial !min-h-10 !py-2">
+                Valider
               </button>
             </div>
           </PopoverContent>
         </Popover>
 
-        {/* Search button */}
-        <button
-          onClick={handleSearch}
-          className="btn-fill-editorial sm:!px-10 w-full sm:w-auto shrink-0"
-        >
-          <Search className="h-3.5 w-3.5" />
-          Rechercher
-        </button>
+        {/* Voyageurs */}
+        <Popover open={guestPickerOpen} onOpenChange={setGuestPickerOpen}>
+          <PopoverTrigger asChild>
+            <button type="button" className={`${fieldClass} sm:flex-1`}>
+              <span className="eyebrow block text-white/85">Voyageurs</span>
+              <span className="mt-1 block text-[1.0625rem] font-medium">
+                {adults} adulte{adults > 1 ? "s" : ""}
+                {children > 0 ? ` · ${children} enfant${children > 1 ? "s" : ""}` : ""}
+              </span>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80 p-4 rounded-none" align="start">
+            <div className="divide-y divide-border">
+              <Stepper label="Adultes" hint="13 ans et plus" value={adults} min={1} onChange={setAdults} />
+              <Stepper label="Enfants" hint="2 à 12 ans" value={children} min={0} onChange={setChildren} />
+            </div>
+            <button type="button" onClick={() => setGuestPickerOpen(false)} className="btn-fill-editorial w-full mt-3">
+              Valider
+            </button>
+          </PopoverContent>
+        </Popover>
+
+        {/* Recherche */}
+        <div className="p-2 sm:p-2.5 flex">
+          <button
+            type="button"
+            onClick={handleSearch}
+            className="btn-on-brand w-full sm:w-auto sm:px-7 whitespace-nowrap"
+          >
+            Voir les disponibilités
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
       </div>
     </motion.div>
   );

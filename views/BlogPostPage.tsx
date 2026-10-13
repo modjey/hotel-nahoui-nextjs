@@ -80,7 +80,7 @@ export function BlogPostPage({ slug }: { slug: string }) {
       <div className="relative h-[65vh] min-h-[440px] flex items-end text-white overflow-hidden">
         <img src={post.coverImage || "https://hotelnahoui.net/wp-content/uploads/2024/06/piscine-1.jpg"} alt={post.title} className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
-        <div className="relative z-10 mx-auto max-w-[900px] w-full px-6 lg:px-10 pb-14">
+        <div className="relative z-10 mx-auto max-w-[900px] w-full px-5 lg:px-10 pb-14">
           <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
             <Link href="/blog" className="inline-flex items-center gap-2 text-sm text-white/80 hover:text-white mb-6">
               <ArrowLeft className="h-4 w-4" /> Retour au blog
@@ -96,7 +96,7 @@ export function BlogPostPage({ slug }: { slug: string }) {
       </div>
 
       {/* Article body */}
-      <article className="mx-auto max-w-[760px] px-6 lg:px-10 py-20">
+      <article className="mx-auto max-w-[760px] px-5 lg:px-10 py-20">
         {post.excerpt && (
           <p className="font-display text-xl sm:text-2xl font-light italic text-muted-foreground leading-relaxed mb-12 border-l border-primary pl-6">
             {post.excerpt}
@@ -129,7 +129,7 @@ export function BlogPostPage({ slug }: { slug: string }) {
       {/* Related */}
       {related.length > 0 && (
         <section className="bg-warm py-24">
-          <div className="mx-auto max-w-[1440px] px-6 lg:px-10">
+          <div className="mx-auto max-w-[1440px] px-5 lg:px-10">
             <div className="flex items-end justify-between mb-14">
               <h2 className="font-display text-3xl sm:text-4xl font-light">Articles similaires</h2>
               <Link href="/blog" className="hidden sm:inline-block link-underline text-foreground">
@@ -158,11 +158,11 @@ export function BlogPostPage({ slug }: { slug: string }) {
       )}
 
       {/* CTA */}
-      <section className="bg-ink text-white text-center py-20 lg:py-28">
-        <span className="eyebrow text-white/70">Réservation</span>
-        <h3 className="font-display mt-5 text-3xl sm:text-4xl font-light">Envie de vivre l&apos;expérience ?</h3>
+      <section className="bg-primary text-white text-center px-5 shadow-[inset_0_0_0_12px_var(--brand),inset_0_0_0_13px_rgb(255_255_255/0.8)] py-20 lg:py-28">
+        <span className="eyebrow text-white/90">Réservation</span>
+        <h3 className="font-display mt-5 text-4xl sm:text-5xl leading-[1.02] text-balance">Envie de vivre l&apos;expérience ?</h3>
         <div className="mt-9">
-          <Link href="/stays" className="link-underline text-white">
+          <Link href="/stays" className="btn-on-brand">
             Réserver maintenant
           </Link>
         </div>

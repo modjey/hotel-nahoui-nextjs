@@ -112,13 +112,13 @@ export default function MyBookingsPage() {
       <Nav />
 
       <section className="border-b border-border">
-        <div className="mx-auto max-w-[1440px] px-6 lg:px-10 pt-16 pb-12">
+        <div className="mx-auto max-w-[1440px] px-5 lg:px-10 pt-16 pb-12">
           <span className="eyebrow text-primary">Votre compte</span>
           <h1 className="font-display mt-5 text-4xl sm:text-5xl font-light">Mes réservations</h1>
         </div>
       </section>
 
-      <main className="mx-auto max-w-[1440px] px-6 lg:px-10 py-16">
+      <main className="mx-auto max-w-[1440px] px-5 lg:px-10 py-16">
         {loading ? (
           <div className="space-y-6">
             {[1, 2, 3].map((i) => <Skeleton key={i} className="h-48 w-full" />)}

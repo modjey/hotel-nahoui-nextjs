@@ -97,13 +97,13 @@ export function RestaurantPage() {
       {/* Hero */}
       <section className="relative h-[85vh] min-h-[560px] w-full overflow-hidden">
         <img src={heroImg} alt="Restaurant de l'Hôtel Nahoui Balmer" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-black/30" />
-        <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center text-white">
+        <div className="absolute inset-0 photo-scrim" />
+        <div className="relative z-10 mx-auto flex h-full max-w-[1440px] flex-col justify-end px-5 lg:px-10 pb-14 lg:pb-20 text-white">
           <motion.span
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-            className="eyebrow"
+            className="eyebrow inline-flex items-center gap-3 before:content-[''] before:h-2.5 before:w-2.5 before:bg-primary before:outline before:outline-1 before:outline-offset-2 before:outline-white"
           >
             Cuisine ivoirienne authentique
           </motion.span>
@@ -111,7 +111,7 @@ export function RestaurantPage() {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
-            className="font-display mt-6 text-5xl sm:text-6xl lg:text-7xl font-light"
+            className="font-display mt-5 text-[3.25rem] leading-[0.95] sm:text-7xl lg:text-8xl tracking-[-0.02em] text-balance"
           >
             Notre Restaurant
           </motion.h1>
@@ -119,7 +119,7 @@ export function RestaurantPage() {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
-            className="mt-6 max-w-md text-sm sm:text-base text-white/85"
+            className="mt-5 max-w-xl text-base sm:text-lg text-white/90 text-pretty"
           >
             La cuisine ivoirienne, dans un cadre exceptionnel à San Pedro.
           </motion.p>
@@ -127,8 +127,8 @@ export function RestaurantPage() {
       </section>
 
       {/* Info */}
-      <section className="mx-auto max-w-[1440px] px-6 lg:px-10 py-14 lg:py-16">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-16">
+      <section className="mx-auto max-w-[1440px] px-5 lg:px-10 py-14 lg:py-16">
+        <div className="grid grid-cols-1 sm:grid-cols-3 border-y border-border mb-20 sm:divide-x divide-border">
           {[
             { icon: Clock, title: "Horaires", content: ["Petit-déjeuner : 6h – 10h", "Déjeuner : 12h – 15h", "Dîner : 19h – 23h"] },
             { icon: MapPin, title: "Emplacement", content: ["Restaurant principal", "Hôtel Nahoui Balmer", "San Pedro, Côte d'Ivoire"] },
@@ -140,13 +140,12 @@ export function RestaurantPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.7, delay: index * 0.1 }}
-              className="rounded-sm bg-white shadow-[var(--shadow-card)] p-7"
+              className="py-7 sm:px-8 first:sm:pl-0 border-b sm:border-b-0 border-border last:border-b-0"
             >
-              <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary mb-4">
-                <item.icon className="h-4 w-4" />
-              </span>
-              <h3 className="eyebrow text-muted-foreground">{item.title}</h3>
-              <div className="mt-2 space-y-1 text-sm text-foreground">
+              <h3 className="flex items-center gap-2 text-[0.8125rem] font-semibold text-muted-foreground">
+                <item.icon className="h-4 w-4 text-primary" /> {item.title}
+              </h3>
+              <div className="mt-3 space-y-1 text-[1.0625rem] text-foreground">
                 {item.content.map((line) => <p key={line}>{line}</p>)}
               </div>
             </motion.div>
@@ -173,9 +172,18 @@ export function RestaurantPage() {
           </div>
         ) : (
           <>
-            <div className="text-center mb-16">
-              <span className="eyebrow text-primary">Notre carte</span>
-              <h2 className="font-display mt-5 text-4xl sm:text-5xl font-light">Le menu Nahoui</h2>
+            <div className="mb-14 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <span className="eyebrow text-primary">Notre carte</span>
+                <h2 className="section-title mt-5">Le menu Nahoui</h2>
+              </div>
+              <nav aria-label="Catégories du menu" className="flex flex-wrap gap-2">
+                {groupedDishes.map((section) => (
+                  <a key={section.category} href={`#menu-${section.category}`} className="h-10 px-4 inline-flex items-center border border-border text-sm font-medium hover:border-foreground transition-colors">
+                    {section.category}
+                  </a>
+                ))}
+              </nav>
             </div>
 
             {groupedDishes.length === 0 ? (
@@ -185,44 +193,47 @@ export function RestaurantPage() {
                 {groupedDishes.map((section, sectionIndex) => (
                   <motion.div
                     key={section.category}
+                    id={`menu-${section.category}`}
+                    className="scroll-mt-28"
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "-80px" }}
                     transition={{ duration: 0.8, delay: sectionIndex * 0.05 }}
                   >
-                    <h3 className="eyebrow text-muted-foreground mb-8 pb-4 border-b border-border">{section.category}</h3>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-10">
-                      {section.items.map((item, itemIndex) => (
-                        <motion.div
-                          key={item.id}
-                          initial={{ opacity: 0, y: 20 }}
-                          whileInView={{ opacity: 1, y: 0 }}
-                          viewport={{ once: true, margin: "-60px" }}
-                          transition={{ duration: 0.6, delay: itemIndex * 0.05 }}
-                          className="group cursor-pointer"
-                          onClick={() => openLightbox(item.id)}
-                        >
-                          <div className="relative overflow-hidden aspect-[4/5]">
-                            {item.imageUrl ? (
-                              <img src={item.imageUrl} alt={item.name} loading="lazy" className="absolute inset-0 h-full w-full object-cover img-zoom" />
-                            ) : (
-                              <div className="absolute inset-0 bg-muted grid place-items-center text-sm text-muted-foreground">
-                                Image non disponible
-                              </div>
-                            )}
-                          </div>
-                          <div className="mt-4 flex items-baseline justify-between gap-2">
-                            <h4 className="font-display text-base sm:text-lg font-light">{item.name}</h4>
-                            <span className="font-display text-primary text-sm shrink-0">
-                              {item.price.toLocaleString()} {item.currency}
-                            </span>
-                          </div>
-                          {item.description && (
-                            <p className="mt-1 text-xs text-muted-foreground leading-relaxed line-clamp-2">{item.description}</p>
-                          )}
-                        </motion.div>
-                      ))}
+                    <div className="flex items-end justify-between gap-6 pb-4 border-b-2 border-foreground">
+                      <h3 className="font-display text-3xl sm:text-4xl leading-none">{section.category}</h3>
+                      <span className="text-sm text-muted-foreground tabular">{section.items.length} plat{section.items.length > 1 ? "s" : ""}</span>
                     </div>
+                    <ul className="grid grid-cols-1 lg:grid-cols-2 gap-x-14">
+                      {section.items.map((item) => (
+                        <li key={item.id} className="border-b border-border">
+                          <button
+                            type="button"
+                            onClick={() => openLightbox(item.id)}
+                            className="group w-full text-left flex items-center gap-4 py-4"
+                          >
+                            <span className="relative h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden bg-muted">
+                              {item.imageUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={item.imageUrl} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover img-zoom" />
+                              ) : null}
+                            </span>
+                            <span className="flex-1 min-w-0">
+                              <span className="flex items-baseline gap-3">
+                                <span className="font-display text-lg sm:text-xl leading-snug group-hover:text-brand-text transition-colors">{item.name}</span>
+                                <span className="leader hidden sm:block" aria-hidden="true" />
+                                <span className="ml-auto sm:ml-0 shrink-0 font-semibold tabular text-[0.9375rem]">
+                                  {item.price.toLocaleString("fr-FR").replace(/\u202f|\u00a0/g, " ")} {item.currency === "XOF" ? "F" : item.currency}
+                                </span>
+                              </span>
+                              {item.description && (
+                                <span className="mt-1 block text-sm text-muted-foreground leading-relaxed line-clamp-2">{item.description}</span>
+                              )}
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
                   </motion.div>
                 ))}
               </div>
@@ -232,10 +243,10 @@ export function RestaurantPage() {
       </section>
 
       {/* Reservation CTA */}
-      <section className="bg-ink text-white text-center py-20 lg:py-28">
-        <span className="eyebrow text-white/70">Réservation</span>
-        <h2 className="font-display mt-5 text-3xl sm:text-4xl font-light">Réservez votre table</h2>
-        <div className="mt-6 flex flex-col sm:flex-row gap-4 sm:gap-10 justify-center items-center text-sm text-white/80">
+      <section className="bg-primary text-white text-center px-5 shadow-[inset_0_0_0_12px_var(--brand),inset_0_0_0_13px_rgb(255_255_255/0.8)] py-20 lg:py-28">
+        <span className="eyebrow text-white/90">Réservation</span>
+        <h2 className="font-display mt-5 text-4xl sm:text-5xl leading-[1.02] text-balance">Réservez votre table</h2>
+        <div className="mt-6 flex flex-col sm:flex-row gap-4 sm:gap-10 justify-center items-center text-sm text-white/90">
           <span className="flex items-center gap-2">
             <Phone className="h-4 w-4" /> 27 34 71 22 33 · 07 88 49 49 79
           </span>
@@ -244,7 +255,7 @@ export function RestaurantPage() {
           </span>
         </div>
         <div className="mt-9">
-          <Link href="/contact" className="link-underline text-white">
+          <Link href="/contact" className="btn-on-brand">
             Réserver votre table
           </Link>
         </div>
@@ -252,7 +263,7 @@ export function RestaurantPage() {
 
       {/* Lightbox */}
       {lightboxOpen && currentDish && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xl flex items-center justify-center">
+        <div className="fixed inset-0 z-50 bg-[rgb(26_12_9/0.85)] flex items-center justify-center">
           <button onClick={closeLightbox} aria-label="Fermer" className="absolute top-6 right-6 text-white/80 hover:text-white z-10">
             <X className="h-6 w-6" />
           </button>

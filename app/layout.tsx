@@ -1,35 +1,29 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Raleway, Italianno } from "next/font/google";
+import { Bodoni_Moda, Schibsted_Grotesk } from "next/font/google";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import "./globals.css";
 
-const playfair = Playfair_Display({
-  variable: "--font-display",
+// Titres — Bodoni Moda (contraste élevé, écho au « N » calligraphié du monogramme)
+const bodoni = Bodoni_Moda({
+  variable: "--font-bodoni",
   subsets: ["latin"],
   display: "swap",
-  weight: ["400", "500", "600", "700"],
   style: ["normal", "italic"],
+  axes: ["opsz"],
 });
 
-const raleway = Raleway({
-  variable: "--font-sans",
+// Texte & interface — Schibsted Grotesk
+const schibsted = Schibsted_Grotesk({
+  variable: "--font-schibsted",
   subsets: ["latin"],
   display: "swap",
-  weight: ["400", "500", "600"],
-});
-
-const italianno = Italianno({
-  variable: "--font-script",
-  subsets: ["latin"],
-  display: "swap",
-  weight: ["400"],
 });
 
 export const metadata: Metadata = {
-  title: "Hôtel Nahoui - Hôtel 3 étoiles à San Pedro",
+  title: "Hôtel Nahoui Balmer — Hôtel à San Pedro, Côte d'Ivoire",
   description:
-    "Découvrez l'Hôtel Nahoui, établissement 3 étoiles à San Pedro avec 28 chambres élégantes pour vos séjours d'affaires, vacances en famille ou escapades entre amis.",
+    "L'Hôtel Nahoui Balmer, à San Pedro depuis 1998 : 28 chambres et suites, piscine, restaurant de cuisine ivoirienne et italienne, salles de réunion. Réservation en ligne en FCFA.",
 };
 
 export default function RootLayout({
@@ -40,11 +34,11 @@ export default function RootLayout({
   return (
     <html
       lang="fr"
-      className={`${playfair.variable} ${raleway.variable} ${italianno.variable} h-full antialiased`}
+      className={`${bodoni.variable} ${schibsted.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <AuthProvider>{children}</AuthProvider>
-        <Toaster richColors position="top-center" />
+        <Toaster richColors position="top-center" toastOptions={{ style: { borderRadius: 0 } }} />
       </body>
     </html>
   );

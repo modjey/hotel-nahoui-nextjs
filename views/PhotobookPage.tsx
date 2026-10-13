@@ -224,14 +224,14 @@ export function PhotobookPage() {
     <div className="min-h-screen bg-background">
       <Nav />
 
-      <section className="border-b border-border">
-        <div className="mx-auto max-w-[1440px] px-6 lg:px-10 pt-16 pb-16 text-center">
-          <span className="eyebrow text-primary">Galerie</span>
-          <h1 className="font-display mt-5 text-4xl sm:text-5xl lg:text-6xl font-light">Photobook</h1>
+      <section className="bg-ink text-white">
+        <div className="mx-auto max-w-[1440px] px-5 lg:px-10 pt-14 pb-16 lg:pt-20 lg:pb-24">
+          <span className="eyebrow text-primary !text-[#ff8a92]">Galerie</span>
+          <h1 className="font-display mt-5 text-5xl sm:text-6xl lg:text-7xl leading-[0.98] max-w-4xl text-balance">Photobook</h1>
         </div>
       </section>
 
-      <div className="mx-auto max-w-[1440px] px-6 lg:px-10 py-16">
+      <div className="mx-auto max-w-[1440px] px-5 lg:px-10 py-16">
         {loading ? (
           <div>
             <div className="flex flex-wrap justify-center gap-6 mb-16">
@@ -370,7 +370,7 @@ export function PhotobookPage() {
 
       {/* Lightbox */}
       {lightboxOpen && photos.length > 0 && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xl flex items-center justify-center">
+        <div className="fixed inset-0 z-50 bg-[rgb(26_12_9/0.85)] flex items-center justify-center">
           <button onClick={closeLightbox} className="absolute top-6 right-6 text-white/80 hover:text-white z-10">
             <X className="h-6 w-6" />
           </button>

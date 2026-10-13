@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { notifyAdminNewBooking, createAdminNotification } from "@/lib/notifications";
+import { notifyAdminNewBooking, createAdminNotification, notifyGuestBookingStatus } from "@/lib/notifications";
 import { ok, fail, withAuth } from "@/lib/auth/api";
 import {
   BookingConflictError,
@@ -42,7 +42,7 @@ const handler = withAuth(async (req) => {
 
       const existingBooking = await prisma.booking.findUnique({
         where: { id },
-        include: { payment: true },
+        include: { payment: true, user: { select: { email: true } } },
       });
 
       if (!existingBooking) {
@@ -82,15 +82,18 @@ const handler = withAuth(async (req) => {
         },
         include: {
           payment: true,
+          room: { select: { name: true } },
         },
       });
 
       // If the booking is cancelled and its payment was successful, mark it as refunded
+      let refunded = false;
       if (parsed.status === "CANCELLED" && booking.payment && booking.payment.status === "SUCCESS") {
         await prisma.payment.update({
           where: { id: booking.payment.id },
           data: { status: "REFUNDED" },
         });
+        refunded = true;
       }
 
       if (parsed.status === "CONFIRMED" || parsed.status === "CANCELLED") {
@@ -99,6 +102,21 @@ const handler = withAuth(async (req) => {
           title: parsed.status === "CONFIRMED" ? "Réservation confirmée" : "Réservation annulée",
           message: `${existingBooking.guestFirstName || ""} ${existingBooking.guestLastName || ""} — réf ${existingBooking.reference || existingBooking.id}`.trim(),
           link: "/admin/bookings",
+        });
+      }
+
+      // Notification transactionnelle au client (email) : confirmation, annulation ou fin de séjour.
+      if (parsed.status === "CONFIRMED" || parsed.status === "CANCELLED" || parsed.status === "COMPLETED") {
+        await notifyGuestBookingStatus({
+          status: parsed.status,
+          reference: existingBooking.reference,
+          roomName: booking.room?.name,
+          checkIn: existingBooking.checkIn,
+          checkOut: existingBooking.checkOut,
+          guestFirstName: existingBooking.guestFirstName,
+          guestLastName: existingBooking.guestLastName,
+          guestEmail: existingBooking.guestEmail || existingBooking.user?.email,
+          refunded,
         });
       }
 

@@ -1,6 +1,7 @@
 "use client";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const slides = [
@@ -12,6 +13,7 @@ const slides = [
 ];
 
 const SLIDE_DURATION = 5500;
+const ease = [0.22, 1, 0.36, 1] as const;
 
 function HistorySlideshow() {
   const [index, setIndex] = useState(0);
@@ -21,22 +23,23 @@ function HistorySlideshow() {
       setIndex((prev) => (prev + 1) % slides.length);
     }, SLIDE_DURATION);
     return () => clearInterval(timer);
-  }, []);
+  }, [index]);
 
   return (
-    <div className="relative h-[70vh] min-h-[520px] w-full overflow-hidden bg-ink">
+    <div className="relative h-[62vh] min-h-[460px] lg:h-[78vh] lg:min-h-[560px] w-full overflow-hidden bg-ink">
       <AnimatePresence initial={false}>
         <motion.div
           key={index}
           initial={{ opacity: 0, scale: 1 }}
-          animate={{ opacity: 1, scale: 1.12 }}
+          animate={{ opacity: 1, scale: 1.08 }}
           exit={{ opacity: 0 }}
           transition={{
-            opacity: { duration: 1.4, ease: [0.22, 1, 0.36, 1] },
+            opacity: { duration: 1.4, ease },
             scale: { duration: SLIDE_DURATION / 1000 + 1.4, ease: "linear" },
           }}
           className="absolute inset-0"
         >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={slides[index]}
             alt="Hôtel Nahoui Balmer"
@@ -45,28 +48,34 @@ function HistorySlideshow() {
         </motion.div>
       </AnimatePresence>
 
-      <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/10 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[rgb(26_12_9/0.45)] via-transparent to-transparent pointer-events-none" />
 
-      {/* Slide indicators */}
-      <div className="absolute bottom-7 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2">
-        {slides.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setIndex(i)}
-            aria-label={`Aller à l'image ${i + 1}`}
-            className="group relative h-1.5 w-8 overflow-hidden rounded-full bg-white/30"
-          >
-            {i === index && (
-              <motion.span
-                key={index}
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ duration: SLIDE_DURATION / 1000, ease: "linear" }}
-                className="absolute inset-0 origin-left rounded-full bg-white"
-              />
-            )}
-          </button>
-        ))}
+      {/* Indicateurs */}
+      <div className="absolute top-6 right-5 lg:right-10 z-10 flex items-center gap-4 text-white">
+        <span className="text-sm font-semibold tabular">
+          {String(index + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}
+        </span>
+        <div className="flex items-center gap-1.5">
+          {slides.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setIndex(i)}
+              aria-label={`Afficher l'image ${i + 1}`}
+              aria-current={i === index}
+              className="relative h-[3px] w-7 overflow-hidden bg-white/35 before:absolute before:-inset-3 before:content-['']"
+            >
+              {i === index && (
+                <motion.span
+                  key={index}
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ duration: SLIDE_DURATION / 1000, ease: "linear" }}
+                  className="absolute inset-0 origin-left bg-white"
+                />
+              )}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -74,67 +83,41 @@ function HistorySlideshow() {
 
 export function HotelHistorySection() {
   return (
-    <section className="relative">
+    <section className="relative pt-1">
       <HistorySlideshow />
 
-      <div className="mx-auto max-w-[900px] px-6 -mt-24 lg:-mt-32 relative z-10 pb-24 lg:pb-32 text-center">
-        <div className="bg-background px-8 py-14 lg:px-20 lg:py-20 shadow-[var(--shadow-elevated)]">
-          <motion.span
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-            className="eyebrow text-primary"
-          >
-            Une maison d&rsquo;exception
-          </motion.span>
+      <div className="mx-auto max-w-[1440px] px-5 lg:px-10 -mt-28 lg:-mt-40 relative z-10 pb-24 lg:pb-32">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.9, ease }}
+          className="bg-card max-w-[980px] grid gap-8 p-8 sm:p-12 lg:p-16 md:grid-cols-[auto_1fr] md:gap-14 border border-border"
+        >
+          <div className="md:border-r md:border-border md:pr-14">
+            <span className="eyebrow text-primary">Une maison d&rsquo;exception</span>
+            <p className="font-display mt-5 leading-[0.9] text-primary">
+              <span className="block text-2xl italic text-foreground">Depuis</span>
+              <span className="block text-7xl sm:text-8xl tabular">1998</span>
+            </p>
+          </div>
 
-          <motion.p
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
-            className="font-display mt-4 text-6xl sm:text-7xl font-light"
-          >
-            Depuis 1998
-          </motion.p>
-
-          <div className="mx-auto mt-6 h-px w-16 bg-border" />
-
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
-            className="font-display mt-6 text-3xl sm:text-4xl font-light leading-[1.15] text-balance"
-          >
-            Une histoire, un lieu,<br className="hidden sm:block" /> une identité.
-          </motion.h2>
-
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}
-            className="mt-6 text-base leading-relaxed text-muted-foreground max-w-lg mx-auto text-pretty"
-          >
-            Née à San Pedro d&rsquo;une passion familiale pour l&rsquo;accueil, la maison
-            Nahoui Balmer a grandi sans jamais perdre son caractère intime et son
-            attachement à l&rsquo;excellence du service.
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.4 }}
-            className="mt-9"
-          >
-            <Link href="/services" className="link-underline text-foreground">
-              Découvrir
-            </Link>
-          </motion.div>
-        </div>
+          <div className="flex flex-col justify-end">
+            <h2 className="font-display text-3xl sm:text-[2.6rem] leading-[1.08] text-balance">
+              Une histoire, un lieu, une identité.
+            </h2>
+            <p className="mt-5 text-[1.0625rem] leading-relaxed text-muted-foreground text-pretty">
+              Née à San Pedro d&rsquo;une passion familiale pour l&rsquo;accueil, la maison
+              Nahoui Balmer a grandi sans jamais perdre son caractère intime et son
+              attachement à l&rsquo;excellence du service.
+            </p>
+            <div className="mt-8">
+              <Link href="/services" className="link-underline">
+                Découvrir notre histoire <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        </motion.div>
       </div>
     </section>
   );

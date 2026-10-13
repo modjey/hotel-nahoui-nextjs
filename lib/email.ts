@@ -127,6 +127,97 @@ export async function sendAdminBookingNotification(booking: BookingNotificationD
   });
 }
 
+export interface GuestBookingStatusData {
+  status: "CONFIRMED" | "CANCELLED" | "COMPLETED";
+  reference?: string | null;
+  roomName?: string | null;
+  checkIn: Date | string;
+  checkOut: Date | string;
+  guestFirstName?: string | null;
+  guestLastName?: string | null;
+  guestEmail?: string | null;
+  /** Le paiement a-t-il été remboursé suite à l'annulation ? */
+  refunded?: boolean;
+}
+
+const GUEST_STATUS_CONTENT: Record<
+  GuestBookingStatusData["status"],
+  { subject: string; heading: string; intro: (refunded?: boolean) => string }
+> = {
+  CONFIRMED: {
+    subject: "Votre réservation est confirmée",
+    heading: "Réservation confirmée",
+    intro: () => "Bonne nouvelle : votre réservation est confirmée. Nous avons hâte de vous accueillir.",
+  },
+  CANCELLED: {
+    subject: "Votre réservation a été annulée",
+    heading: "Réservation annulée",
+    intro: (refunded) =>
+      refunded
+        ? "Votre réservation a été annulée et votre paiement a été remboursé."
+        : "Votre réservation a été annulée.",
+  },
+  COMPLETED: {
+    subject: "Merci pour votre séjour",
+    heading: "Séjour terminé",
+    intro: () => "Votre séjour est maintenant terminé. Merci d'avoir choisi l'Hôtel Nahoui, à bientôt !",
+  },
+};
+
+/**
+ * Envoie au client un email transactionnel quand l'admin confirme, annule
+ * ou termine sa réservation. Ne lève jamais d'exception : un échec d'envoi
+ * ne doit jamais faire échouer le changement de statut côté admin.
+ */
+export async function sendGuestBookingStatusEmail(booking: GuestBookingStatusData) {
+  const to = booking.guestEmail;
+  if (!to) {
+    console.warn("[email] sendGuestBookingStatusEmail: pas d'email client — notification ignorée");
+    return { success: false };
+  }
+
+  const content = GUEST_STATUS_CONTENT[booking.status];
+  const guestName = [booking.guestFirstName, booking.guestLastName].filter(Boolean).join(" ") || "Cher client";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "";
+
+  const row = (label: string, value: string) => `
+    <tr>
+      <td style="padding:8px 12px;color:#6B655A;font-size:13px;white-space:nowrap;">${label}</td>
+      <td style="padding:8px 12px;font-size:14px;color:#1E1B16;">${value}</td>
+    </tr>`;
+
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#F8F6F0;">
+      <div style="background:#2F4538;padding:20px 24px;">
+        <h1 style="color:#F8F6F0;font-size:18px;margin:0;">${content.heading}</h1>
+        <p style="color:#C9C2B4;font-size:13px;margin:6px 0 0;">Hôtel Nahoui</p>
+      </div>
+      <div style="background:#ffffff;padding:20px 12px;">
+        <p style="font-size:14px;color:#1E1B16;margin:0 0 16px;">Bonjour ${guestName},</p>
+        <p style="font-size:14px;color:#1E1B16;margin:0 0 16px;">${content.intro(booking.refunded)}</p>
+        <table style="width:100%;border-collapse:collapse;">
+          ${row("Référence", booking.reference || "—")}
+          ${row("Chambre", booking.roomName || "—")}
+          ${row("Arrivée", formatDateFr(booking.checkIn))}
+          ${row("Départ", formatDateFr(booking.checkOut))}
+        </table>
+      </div>
+      ${
+        appUrl
+          ? `<div style="padding:16px 12px;text-align:center;">
+               <a href="${appUrl}/bookings" style="display:inline-block;background:#2F4538;color:#F8F6F0;text-decoration:none;padding:10px 24px;font-size:14px;">Voir mes réservations</a>
+             </div>`
+          : ""
+      }
+    </div>`;
+
+  return sendEmail({
+    to,
+    subject: `${content.subject}${booking.reference ? ` (${booking.reference})` : ""}`,
+    html,
+  });
+}
+
 export async function sendTemplateEmail({
   to,
   subject,

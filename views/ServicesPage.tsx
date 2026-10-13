@@ -54,13 +54,13 @@ type ServiceBlockProps = {
 
 function ServiceBlock({ eyebrow, title, text, cta, image, imageAlt, reverse, features, stats }: ServiceBlockProps) {
   return (
-    <div className="mx-auto max-w-[1440px] px-6 lg:px-10 py-6 lg:py-8">
+    <div className="mx-auto max-w-[1440px] px-5 lg:px-10 py-6 lg:py-8">
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-80px" }}
         transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-        className="grid grid-cols-1 lg:grid-cols-2 overflow-hidden rounded-sm bg-white shadow-[var(--shadow-elevated)]"
+        className="grid grid-cols-1 lg:grid-cols-2 overflow-hidden bg-card border border-border"
       >
         <div className={`relative h-64 sm:h-80 lg:h-auto overflow-hidden ${reverse ? "lg:order-2" : ""}`}>
           <img src={image} alt={imageAlt} loading="lazy" className="img-zoom absolute inset-0 h-full w-full object-cover" />
@@ -78,7 +78,7 @@ function ServiceBlock({ eyebrow, title, text, cta, image, imageAlt, reverse, fea
                   <div key={s.l}>
                     <s.icon className="h-4 w-4 text-primary mb-2" />
                     <div className="font-display text-xl font-light">{s.v}</div>
-                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">{s.l}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{s.l}</div>
                   </div>
                 ))}
               </div>
@@ -87,7 +87,7 @@ function ServiceBlock({ eyebrow, title, text, cta, image, imageAlt, reverse, fea
             {features && (
               <div className="mt-5 flex flex-wrap gap-2">
                 {features.map((f) => (
-                  <span key={f} className="inline-flex items-center gap-1.5 rounded-full bg-secondary/60 px-3 py-1.5 text-xs text-foreground">
+                  <span key={f} className="inline-flex items-center gap-1.5 bg-secondary/60 px-3 py-1.5 text-xs text-foreground">
                     <CheckCircle2 className="h-3 w-3 text-primary shrink-0" /> {f}
                   </span>
                 ))}
@@ -140,15 +140,15 @@ export function ServicesPage() {
       {/* Hero */}
       <section className="relative h-[70vh] min-h-[480px] w-full overflow-hidden">
         <img src="/assets/service.png" alt="Services de l'Hôtel Nahoui Balmer" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-black/30" />
-        <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center text-white">
-          <motion.span initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }} className="eyebrow">
+        <div className="absolute inset-0 photo-scrim" />
+        <div className="relative z-10 mx-auto flex h-full max-w-[1440px] flex-col justify-end px-5 lg:px-10 pb-14 lg:pb-20 text-white">
+          <motion.span initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }} className="eyebrow inline-flex items-center gap-3 before:content-[''] before:h-2.5 before:w-2.5 before:bg-primary before:outline before:outline-1 before:outline-offset-2 before:outline-white">
             Expériences
           </motion.span>
-          <motion.h1 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.1 }} className="font-display mt-6 text-5xl sm:text-6xl lg:text-7xl font-light">
+          <motion.h1 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.1 }} className="font-display mt-5 text-[3.25rem] leading-[0.95] sm:text-7xl lg:text-8xl tracking-[-0.02em] text-balance">
             Nos Services
           </motion.h1>
-          <motion.p initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.2 }} className="mt-6 max-w-md text-sm sm:text-base text-white/85">
+          <motion.p initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.2 }} className="mt-5 max-w-xl text-base sm:text-lg text-white/90 text-pretty">
             Tout le confort d&rsquo;une maison de caractère, à chaque instant du séjour.
           </motion.p>
         </div>
@@ -156,7 +156,7 @@ export function ServicesPage() {
 
       {/* Quick nav — pill segmented control with sliding active indicator */}
       <div className="border-b border-border bg-background/95 sticky top-20 z-30 backdrop-blur-xl">
-        <div className="mx-auto max-w-[1440px] px-6 lg:px-10 py-3.5">
+        <div className="mx-auto max-w-[1440px] px-5 lg:px-10 py-3.5">
           <div className="flex items-center justify-start lg:justify-center gap-1.5 overflow-x-auto no-scrollbar">
             {quickLinks.map((l) => {
               const active = activeId === l.id;
@@ -165,14 +165,14 @@ export function ServicesPage() {
                   key={l.id}
                   href={`#${l.id}`}
                   onClick={() => handleNavClick(l.id)}
-                  className={`relative flex items-center gap-2 shrink-0 rounded-full px-4 py-2.5 text-xs font-medium uppercase tracking-wider whitespace-nowrap transition-colors duration-300 ${
+                  className={`relative flex items-center gap-2 shrink-0 px-4 py-2.5 text-xs font-medium whitespace-nowrap transition-colors duration-300 ${
                     active ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {active && (
                     <motion.span
                       layoutId="services-nav-pill"
-                      className="absolute inset-0 rounded-full bg-primary"
+                      className="absolute inset-0 bg-primary"
                       transition={{ type: "spring", stiffness: 400, damping: 32 }}
                     />
                   )}
@@ -211,10 +211,10 @@ export function ServicesPage() {
       {/* Cocktails banner */}
       <section className="relative h-[42vh] min-h-[300px] w-full overflow-hidden">
         <img src="/assets/cocktail.jpg" alt="Cocktails de l'Hôtel Nahoui Balmer" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-black/40" />
-        <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center text-white">
+        <div className="absolute inset-0 photo-scrim" />
+        <div className="relative z-10 mx-auto flex h-full max-w-[1440px] flex-col justify-end px-5 lg:px-10 pb-14 lg:pb-20 text-white">
           <GlassWater className="h-6 w-6 mb-4 text-white/80" />
-          <span className="eyebrow">Focus cocktails</span>
+          <span className="eyebrow inline-flex items-center gap-3 before:content-[''] before:h-2.5 before:w-2.5 before:bg-primary before:outline before:outline-1 before:outline-offset-2 before:outline-white">Focus cocktails</span>
           <h2 className="font-display mt-4 text-3xl sm:text-4xl font-light max-w-lg">
             Grands classiques revisités, créations originales.
           </h2>
@@ -282,7 +282,7 @@ export function ServicesPage() {
       </div>
 
       {/* Expérience Nahoui */}
-      <section id="experience" className="scroll-mt-36 mx-auto max-w-[1440px] px-6 lg:px-10 py-16 lg:py-20 border-t border-border">
+      <section id="experience" className="scroll-mt-36 mx-auto max-w-[1440px] px-5 lg:px-10 py-16 lg:py-20 border-t border-border">
         <div className="text-center mb-12">
           <span className="eyebrow text-primary">Sur mesure</span>
           <h2 className="font-display mt-4 text-3xl sm:text-4xl font-light">L&rsquo;Expérience Nahoui</h2>
@@ -298,9 +298,9 @@ export function ServicesPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.6, delay: (i % 4) * 0.06 }}
-              className="hover-lift rounded-sm bg-white shadow-[var(--shadow-card)] p-5"
+              className="hover-lift bg-card border border-border p-5"
             >
-              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary mb-3">
+              <span className="inline-flex h-10 w-10 items-center justify-center bg-primary/10 text-primary mb-3">
                 <exp.icon className="h-4 w-4" />
               </span>
               <h3 className="font-display text-lg font-light">{exp.title}</h3>
@@ -311,8 +311,8 @@ export function ServicesPage() {
       </section>
 
       {/* Circuits teaser */}
-      <section className="mx-auto max-w-[1440px] px-6 lg:px-10 pb-16 lg:pb-20">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center rounded-sm overflow-hidden bg-warm p-8 lg:p-0">
+      <section className="mx-auto max-w-[1440px] px-5 lg:px-10 pb-16 lg:pb-20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center overflow-hidden bg-warm p-8 lg:p-0">
           <div className="lg:pl-14">
             <span className="eyebrow text-primary">Excursions</span>
             <h2 className="font-display mt-4 text-3xl sm:text-4xl font-light">Circuits & découverte du littoral</h2>
@@ -332,11 +332,11 @@ export function ServicesPage() {
       </section>
 
       {/* CTA */}
-      <section className="bg-ink text-white text-center py-16 lg:py-20">
-        <span className="eyebrow text-white/70">Réservation</span>
-        <h2 className="font-display mt-5 text-3xl sm:text-4xl font-light">Profitez de nos services.</h2>
+      <section className="bg-primary text-white text-center px-5 shadow-[inset_0_0_0_12px_var(--brand),inset_0_0_0_13px_rgb(255_255_255/0.8)] py-16 lg:py-20">
+        <span className="eyebrow text-white/90">Réservation</span>
+        <h2 className="font-display mt-5 text-4xl sm:text-5xl leading-[1.02] text-balance">Profitez de nos services.</h2>
         <div className="mt-9">
-          <Link href="/stays" className="link-underline text-white">
+          <Link href="/stays" className="btn-on-brand">
             <Calendar className="h-3.5 w-3.5" /> Réserver maintenant
           </Link>
         </div>

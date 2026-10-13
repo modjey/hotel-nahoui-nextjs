@@ -44,29 +44,29 @@ export function ReviewsPage() {
     <div className="min-h-screen bg-background">
       <Nav />
 
-      <section className="border-b border-border">
-        <div className="mx-auto max-w-[1440px] px-6 lg:px-10 pt-16 pb-16 text-center">
-          <span className="eyebrow text-primary">Avis clients</span>
-          <h1 className="font-display mt-5 text-4xl sm:text-5xl lg:text-6xl font-light">
+      <section className="bg-ink text-white">
+        <div className="mx-auto max-w-[1440px] px-5 lg:px-10 pt-14 pb-16 lg:pt-20 lg:pb-24">
+          <span className="eyebrow text-primary !text-[#ff8a92]">Avis clients</span>
+          <h1 className="font-display mt-5 text-5xl sm:text-6xl lg:text-7xl leading-[0.98] max-w-4xl text-balance">
             Ce que nos hôtes en disent.
           </h1>
           {!loading && stats.approved > 0 && (
-            <div className="mt-8 flex items-center justify-center gap-8">
+            <div className="mt-8 flex items-center gap-8">
               <div>
                 <div className="font-display text-3xl font-light">{stats.averageRating.toFixed(1)}</div>
-                <div className="eyebrow text-muted-foreground mt-1">Note moyenne</div>
+                <div className="eyebrow text-white/70 mt-1">Note moyenne</div>
               </div>
-              <div className="h-10 w-px bg-border" />
+              <div className="h-10 w-px bg-white/20" />
               <div>
                 <div className="font-display text-3xl font-light">{stats.approved}</div>
-                <div className="eyebrow text-muted-foreground mt-1">Avis publiés</div>
+                <div className="eyebrow text-white/70 mt-1">Avis publiés</div>
               </div>
             </div>
           )}
         </div>
       </section>
 
-      <section className="mx-auto max-w-[1440px] px-6 lg:px-10 py-24 lg:py-32">
+      <section className="mx-auto max-w-[1440px] px-5 lg:px-10 py-24 lg:py-32">
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -106,15 +106,15 @@ export function ReviewsPage() {
         )}
       </section>
 
-      <section className="bg-ink text-white text-center py-20 lg:py-28">
-        <Quote className="h-6 w-6 mx-auto mb-6 text-white/60" />
-        <span className="eyebrow text-white/70">Votre expérience</span>
-        <h2 className="font-display mt-5 text-3xl sm:text-4xl font-light">Partagez votre séjour.</h2>
-        <p className="mt-4 text-sm text-white/70 max-w-md mx-auto">
+      <section className="bg-primary text-white text-center px-5 shadow-[inset_0_0_0_12px_var(--brand),inset_0_0_0_13px_rgb(255_255_255/0.8)] py-20 lg:py-28">
+        <Quote className="h-6 w-6 mx-auto mb-6 text-white/85" />
+        <span className="eyebrow text-white/90">Votre expérience</span>
+        <h2 className="font-display mt-5 text-4xl sm:text-5xl leading-[1.02] text-balance">Partagez votre séjour.</h2>
+        <p className="mt-4 text-sm text-white/90 max-w-md mx-auto">
           Après votre séjour, laissez un avis directement depuis la page de votre chambre.
         </p>
         <div className="mt-9">
-          <Link href="/stays" className="link-underline text-white">
+          <Link href="/stays" className="btn-on-brand">
             Réserver un séjour
           </Link>
         </div>
