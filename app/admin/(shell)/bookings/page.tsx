@@ -111,6 +111,8 @@ export default function AdminBookingsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
   const [rooms, setRooms] = useState<AdminRoom[]>([]);
+  const [roomsLoading, setRoomsLoading] = useState(false);
+  const [roomsError, setRoomsError] = useState<string | null>(null);
 
   const fetchBookings = useCallback(async () => {
     try {
@@ -135,33 +137,40 @@ export default function AdminBookingsPage() {
     }
   }, [page, search, statusFilter]);
 
-  useEffect(() => {
-    setTimeout(() => {
-      fetchBookings();
-    }, 0);
-  }, [fetchBookings]);
-
-  const fetchRooms = async () => {
+  const fetchRooms = useCallback(async () => {
     try {
+      setRoomsLoading(true);
+      setRoomsError(null);
       const response = await api.get<{ rooms: AdminRoom[] }>("/api/admin/admin-rooms", {
         params: { limit: "100" },
       });
       setRooms(response.rooms);
     } catch (error) {
-      toast.error(error instanceof ApiError ? error.message : "Erreur lors du chargement des chambres");
+      const message = error instanceof ApiError ? error.message : "Erreur lors du chargement des chambres";
+      setRoomsError(message);
+      toast.error(message);
+    } finally {
+      setRoomsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    setTimeout(() => {
+      fetchBookings();
+      fetchRooms();
+    }, 0);
+  }, [fetchBookings, fetchRooms]);
 
   const openCreateModal = () => {
     setEditingBooking(null);
     setCreateOpen(true);
-    if (rooms.length === 0) fetchRooms();
+    if (rooms.length === 0 && !roomsLoading) fetchRooms();
   };
 
   const openEditModal = (booking: Booking) => {
     setEditingBooking(booking);
     setCreateOpen(true);
-    if (rooms.length === 0) fetchRooms();
+    if (rooms.length === 0 && !roomsLoading) fetchRooms();
   };
 
   const updateBookingStatus = async (bookingId: string, reference: string, newStatus: string) => {
@@ -196,6 +205,9 @@ export default function AdminBookingsPage() {
         open={createOpen}
         onOpenChange={setCreateOpen}
         rooms={rooms}
+        roomsLoading={roomsLoading}
+        roomsError={roomsError}
+        onRetryRooms={fetchRooms}
         editingBooking={editingBooking}
         onSaved={fetchBookings}
       />

@@ -1,10 +1,8 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
+import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { withAuth, ok, fail, parseBody, serializeUser } from "@/lib/auth/api";
-import { createHash } from "crypto";
-
-const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 
 // Empty strings from forms: "" -> null (clears field), or undefined for password (no change)
 const emptyToNull = (schema: z.ZodString) =>
@@ -129,7 +127,7 @@ export const PUT = withAuth(async (req, { session }) => {
   }
 
   // Hash password if provided
-  const passwordHash = password ? sha256(password) : undefined;
+  const passwordHash = password ? await bcrypt.hash(password, 12) : undefined;
 
   // Revoke all active sessions when deactivating the account
   if (isActive === false) {
@@ -204,11 +202,14 @@ export const DELETE = withAuth(async (req, { session }) => {
     return fail("Utilisateur non trouvé", 404, "NOT_FOUND");
   }
 
-  // Only super admins can delete other admins
-  if (user.role === "ADMIN" || user.role === "SUPER_ADMIN") {
-    if (session.role !== "SUPER_ADMIN") {
-      return fail("Seul un super admin peut supprimer un administrateur", 403, "FORBIDDEN");
-    }
+  // A super admin account can never be deleted
+  if (user.role === "SUPER_ADMIN") {
+    return fail("Un super admin ne peut pas être supprimé", 403, "FORBIDDEN");
+  }
+
+  // Only super admins can delete admins
+  if (user.role === "ADMIN" && session.role !== "SUPER_ADMIN") {
+    return fail("Seul un super admin peut supprimer un administrateur", 403, "FORBIDDEN");
   }
 
   await prisma.user.delete({ where: { id } });

@@ -1,10 +1,8 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
+import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { withAuth, ok, fail, parseBody, serializeUser } from "@/lib/auth/api";
-import { createHash } from "crypto";
-
-const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 
 // Empty strings from forms: "" -> null (clears field), or undefined for password (no change)
 const emptyToNull = (schema: z.ZodString) =>
@@ -134,7 +132,7 @@ export const POST = withAuth(async (req, { session }) => {
   }
 
   // Hash password if provided
-  const passwordHash = password ? sha256(password) : null;
+  const passwordHash = password ? await bcrypt.hash(password, 12) : null;
 
   const user = await prisma.user.create({
     data: {

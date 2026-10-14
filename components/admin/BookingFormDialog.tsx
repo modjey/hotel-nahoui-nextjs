@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +55,9 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   rooms: BookingFormRoom[];
+  roomsLoading?: boolean;
+  roomsError?: string | null;
+  onRetryRooms?: () => void;
   fixedRoomId?: string;
   editingBooking?: BookingFormEditing | null;
   onSaved: () => void;
@@ -80,7 +83,7 @@ const emptyForm = {
 const toDayKey = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-export function BookingFormDialog({ open, onOpenChange, rooms, fixedRoomId, editingBooking, onSaved }: Props) {
+export function BookingFormDialog({ open, onOpenChange, rooms, roomsLoading, roomsError, onRetryRooms, fixedRoomId, editingBooking, onSaved }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -92,6 +95,9 @@ export function BookingFormDialog({ open, onOpenChange, rooms, fixedRoomId, edit
         <BookingForm
           key={editingBooking?.id ?? "new"}
           rooms={rooms}
+          roomsLoading={roomsLoading}
+          roomsError={roomsError}
+          onRetryRooms={onRetryRooms}
           fixedRoomId={fixedRoomId}
           editingBooking={editingBooking}
           onClose={() => onOpenChange(false)}
@@ -104,6 +110,9 @@ export function BookingFormDialog({ open, onOpenChange, rooms, fixedRoomId, edit
 
 function BookingForm({
   rooms,
+  roomsLoading,
+  roomsError,
+  onRetryRooms,
   fixedRoomId,
   editingBooking,
   onClose,
@@ -134,6 +143,13 @@ function BookingForm({
   const [submitting, setSubmitting] = useState(false);
   const [userSearch, setUserSearch] = useState("");
   const [roomId, setRoomId] = useState(editingBooking?.roomId || fixedRoomId || "");
+
+  // Présélectionne la première chambre pour afficher le calendrier immédiatement
+  useEffect(() => {
+    if (!roomId && !fixedRoomId && rooms.length > 0) {
+      setRoomId(rooms[0].id);
+    }
+  }, [rooms, roomId, fixedRoomId]);
 
   const room = rooms.find((r) => r.id === roomId);
   const formAvailabilityMap = buildAvailabilityMap(
@@ -247,25 +263,40 @@ function BookingForm({
         {!fixedRoomId && (
           <div>
             <Label>Chambre *</Label>
-            <Select
-              value={roomId}
-              onValueChange={(value) => {
-                setRoomId(value);
-                // Les disponibilités diffèrent par chambre : on réinitialise les dates
-                setFormData((f) => ({ ...f, checkIn: "", checkOut: "" }));
-              }}
-            >
-              <SelectTrigger className="mt-1">
-                <SelectValue placeholder="Sélectionner une chambre" />
-              </SelectTrigger>
-              <SelectContent>
-                {rooms.map((r) => (
-                  <SelectItem key={r.id} value={r.id}>
-                    {r.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {roomsError ? (
+              <div className="mt-1 flex items-center justify-between gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+                <span>{roomsError}</span>
+                {onRetryRooms && (
+                  <Button type="button" variant="outline" size="sm" onClick={onRetryRooms}>
+                    Réessayer
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <Select
+                value={roomId}
+                disabled={roomsLoading}
+                onValueChange={(value) => {
+                  setRoomId(value);
+                  // Les disponibilités diffèrent par chambre : on réinitialise les dates
+                  setFormData((f) => ({ ...f, checkIn: "", checkOut: "" }));
+                }}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder={roomsLoading ? "Chargement des chambres..." : "Sélectionner une chambre"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {rooms.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {!roomsLoading && !roomsError && rooms.length === 0 && (
+              <p className="mt-1 text-xs text-muted-foreground">Aucune chambre disponible.</p>
+            )}
           </div>
         )}
 
