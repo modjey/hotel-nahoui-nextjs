@@ -15,7 +15,7 @@ import { usePathname, useSearchParams } from "next/navigation";
  * - trackEvent() disponible pour les événements personnalisés
  */
 
-const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "G-C2NZVR5F83";
 
 declare global {
   interface Window {
