@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Bodoni_Moda, Schibsted_Grotesk } from "next/font/google";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
 import "./globals.css";
 
 // Titres — Bodoni Moda (contraste élevé, écho au « N » calligraphié du monogramme)
@@ -38,6 +39,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <AuthProvider>{children}</AuthProvider>
+        <GoogleAnalytics />
         <Toaster richColors position="top-center" toastOptions={{ style: { borderRadius: 0 } }} />
       </body>
     </html>

@@ -23,13 +23,6 @@ export function Nav() {
   const isMobile = useIsMobile();
   const isHome = pathname === "/";
   const transparent = isHome && !isScrolled && !isSidebarOpen;
-  const showMobileBar = !(
-    pathname.startsWith("/stays/") ||
-    pathname.startsWith("/rooms/") ||
-    pathname.startsWith("/book") ||
-    pathname.startsWith("/photobook/submit")
-  );
-
   const languages = [
     { code: "fr", name: "Français", flag: "FR" },
     { code: "en", name: "English", flag: "EN" },
@@ -230,16 +223,6 @@ export function Nav() {
       </header>
 
       {!isHome && <div aria-hidden className="h-[72px]" />}
-
-      {/* Barre d'action mobile : Réserver toujours accessible
-          (masquée dans le tunnel de réservation, qui a sa propre barre) */}
-      {showMobileBar && (
-      <div className="sm:hidden fixed inset-x-0 bottom-0 z-40 bg-card border-t border-border px-3 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex gap-2">
-        <Link href="/stays" className="flex-1 btn-fill-editorial !min-h-12 !py-0">
-          Réserver
-        </Link>
-      </div>
-      )}
 
       {/* Menu latéral */}
       <AnimatePresence>

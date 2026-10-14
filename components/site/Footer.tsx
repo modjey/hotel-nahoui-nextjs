@@ -34,7 +34,7 @@ const phoneNumbers = ["+225 27 34 71 22 33", "+225 07 87 94 34 49"];
 
 export function Footer() {
   return (
-    <footer className="bg-ink text-white pb-24 sm:pb-0">
+    <footer className="bg-ink text-white">
       <div className="mx-auto max-w-[1440px] px-5 lg:px-10 pt-20 lg:pt-24 pb-10">
         {/* Bandeau marque + réservation */}
         <div className="flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between pb-14 border-b border-white/15">
