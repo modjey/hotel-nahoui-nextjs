@@ -12,6 +12,20 @@ export const runtime = "nodejs";
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const origin = req.nextUrl.origin;
+
+  // En prod, forcer l'hôte canonique (NEXT_PUBLIC_APP_URL) pour que le
+  // redirect_uri envoyé à Google, les cookies d'état et le callback
+  // utilisent tous le même domaine (évite les mismatches www/apex/proxy).
+  if (
+    authConfig.isProd &&
+    authConfig.appUrl.startsWith("https://") &&
+    origin !== authConfig.appUrl
+  ) {
+    const target = `${authConfig.appUrl}/api/auth/oauth/google`;
+    const qs = searchParams.toString();
+    return NextResponse.redirect(qs ? `${target}?${qs}` : target);
+  }
+
   const callbackUrl = searchParams.get("callbackUrl") || `${origin}/`;
   const state = randomBytes(16).toString("hex");
   const url = googleAuthUrl(state, `${origin}/api/auth/oauth/google/callback`);

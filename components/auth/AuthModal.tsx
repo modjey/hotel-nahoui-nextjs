@@ -45,6 +45,10 @@ export function AuthModal({ isOpen, onClose, purpose = "booking" }: AuthModalPro
   async function requestOtp(e?: React.FormEvent) {
     e?.preventDefault();
     if (!identifier.trim()) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier.trim())) {
+      toast.error("Adresse e-mail invalide");
+      return;
+    }
     setSubmitting(true);
     try {
       const data = await api.post<{
@@ -131,14 +135,14 @@ export function AuthModal({ isOpen, onClose, purpose = "booking" }: AuthModalPro
           <form onSubmit={requestOtp} className="p-6 space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">
-                Numéro de téléphone ou adresse e-mail
+                Adresse e-mail
               </label>
               <input
                 ref={idRef}
-                type="text"
+                type="email"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="+225 07 00 00 00 00 ou email@exemple.com"
+                placeholder="email@exemple.com"
                 className="w-full h-12 px-4 border border-input bg-background focus:outline-none focus:border-foreground"
                 disabled={submitting}
                 autoComplete="email"
@@ -147,7 +151,7 @@ export function AuthModal({ isOpen, onClose, purpose = "booking" }: AuthModalPro
             </div>
 
             <p className="text-xs text-muted-foreground text-center leading-relaxed">
-              Nous vous enverrons un code de confirmation par SMS ou par e-mail.
+              Nous vous enverrons un code de confirmation par e-mail.
             </p>
 
             <button

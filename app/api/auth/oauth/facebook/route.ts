@@ -11,6 +11,19 @@ export const runtime = "nodejs";
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const origin = req.nextUrl.origin;
+
+  // En prod, forcer l'hôte canonique (NEXT_PUBLIC_APP_URL) pour que le
+  // redirect_uri, les cookies d'état et le callback partagent le même domaine.
+  if (
+    authConfig.isProd &&
+    authConfig.appUrl.startsWith("https://") &&
+    origin !== authConfig.appUrl
+  ) {
+    const target = `${authConfig.appUrl}/api/auth/oauth/facebook`;
+    const qs = searchParams.toString();
+    return NextResponse.redirect(qs ? `${target}?${qs}` : target);
+  }
+
   const callbackUrl = searchParams.get("callbackUrl") || `${origin}/`;
   const state = randomBytes(16).toString("hex");
   const url = facebookAuthUrl(state, `${origin}/api/auth/oauth/facebook/callback`);
