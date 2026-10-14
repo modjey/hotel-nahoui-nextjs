@@ -135,6 +135,7 @@ export async function upsertUserFromOAuth(profile: OAuthProfile) {
         name: profile.name,
         image: profile.image,
         role: "USER",
+        isActive: true,
       },
     });
   }

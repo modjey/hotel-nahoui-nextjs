@@ -6,15 +6,21 @@ import { createHash } from "crypto";
 
 const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 
+// Empty strings from forms: "" -> null (clears field), or undefined for password (no change)
+const emptyToNull = (schema: z.ZodString) =>
+  z.preprocess((v) => (v === "" ? null : v), schema.nullish());
+const emptyToUndef = (schema: z.ZodString) =>
+  z.preprocess((v) => (v === "" ? undefined : v), schema.optional());
+
 // Schema for updating a user
 const updateUserSchema = z.object({
-  email: z.string().email().optional(),
-  phone: z.string().optional(),
-  name: z.string().min(1).optional(),
-  password: z.string().min(6).optional(),
+  email: emptyToNull(z.string().email()),
+  phone: emptyToNull(z.string()),
+  name: emptyToNull(z.string().min(1)),
+  password: emptyToUndef(z.string().min(6)),
   role: z.enum(["USER", "MODERATOR", "ADMIN", "SUPER_ADMIN"]).optional(),
   isActive: z.boolean().optional(),
-  locationIds: z.array(z.string()).default([]),
+  locationIds: z.array(z.string()).optional(),
 });
 
 // GET /api/admin/users/[id] - Get a single user (admin only)
@@ -74,6 +80,7 @@ export const GET = withAuth(async (req, { session }) => {
     accounts: user.accounts,
     sessions: user.sessions,
     bookings: user.bookings,
+    userLocations: user.userLocations,
   });
 }, { roles: ["ADMIN", "SUPER_ADMIN"] });
 
@@ -124,6 +131,14 @@ export const PUT = withAuth(async (req, { session }) => {
   // Hash password if provided
   const passwordHash = password ? sha256(password) : undefined;
 
+  // Revoke all active sessions when deactivating the account
+  if (isActive === false) {
+    await prisma.session.updateMany({
+      where: { userId: id, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  }
+
   // Handle location updates
   if (locationIds !== undefined) {
     // Delete existing user locations
@@ -168,7 +183,7 @@ export const PUT = withAuth(async (req, { session }) => {
     },
   });
 
-  return ok(serializeUser(user));
+  return ok({ ...serializeUser(user), userLocations: user.userLocations });
 }, { roles: ["ADMIN", "SUPER_ADMIN"] });
 
 // DELETE /api/admin/users/[id] - Delete a user (super admin only)
@@ -200,3 +215,6 @@ export const DELETE = withAuth(async (req, { session }) => {
 
   return ok({ message: "Utilisateur supprimé avec succès" });
 }, { roles: ["SUPER_ADMIN"] });
+
+// PATCH /api/admin/users/[id] - Partial update (e.g. toggle isActive)
+export { PUT as PATCH };

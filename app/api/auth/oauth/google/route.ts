@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
   try {
     const profile = await exchangeGoogleCode(parsed.data.code, redirectUri);
     const user = await upsertUserFromOAuth(profile);
+    if (!user.isActive) return fail("Compte désactivé", 403, "ACCOUNT_DISABLED");
     const tokens = await issueTokens(user, reqMeta(req));
     await setAuthCookies(tokens);
     return ok({

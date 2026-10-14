@@ -24,6 +24,9 @@ export async function GET(req: NextRequest) {
       `${origin}/api/auth/oauth/google/callback`,
     );
     const user = await upsertUserFromOAuth(profile);
+    if (!user.isActive) {
+      return NextResponse.redirect(`${origin}/?auth_error=account_disabled`);
+    }
     const tokens = await issueTokens(user, reqMeta(req));
     await setAuthCookies(tokens);
     const res = NextResponse.redirect(callbackUrl);

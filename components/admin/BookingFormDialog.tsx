@@ -45,8 +45,8 @@ export type BookingFormEditing = {
 
 type User = {
   id: string;
-  name: string;
-  email: string;
+  name: string | null;
+  email: string | null;
   phone: string | null;
   image: string | null;
 };
@@ -143,8 +143,9 @@ function BookingForm({
 
   const filteredUsers = users.filter(
     (u) =>
-      u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
-      u.email.toLowerCase().includes(userSearch.toLowerCase())
+      (u.name ?? "").toLowerCase().includes(userSearch.toLowerCase()) ||
+      (u.email ?? "").toLowerCase().includes(userSearch.toLowerCase()) ||
+      (u.phone ?? "").includes(userSearch)
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -308,19 +309,19 @@ function BookingForm({
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={u.image}
-                        alt={u.name}
+                        alt={u.name ?? ""}
                         className="w-10 h-10 rounded-full object-cover"
                       />
                     ) : (
                       <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
                         <span className="text-sm font-medium">
-                          {u.name.charAt(0).toUpperCase()}
+                          {u.name?.charAt(0).toUpperCase() ?? "?"}
                         </span>
                       </div>
                     )}
                     <div className="flex-1">
-                      <div className="font-medium text-sm">{u.name}</div>
-                      <div className="text-xs text-muted-foreground">{u.email}</div>
+                      <div className="font-medium text-sm">{u.name || "Sans nom"}</div>
+                      <div className="text-xs text-muted-foreground">{u.email || "-"}</div>
                       {u.phone && (
                         <div className="text-xs text-muted-foreground">{u.phone}</div>
                       )}

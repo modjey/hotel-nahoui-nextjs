@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
           : { phone: identifier, phoneVerified: new Date() }),
         name: parsed.data.name ?? null,
         role: "USER",
+        isActive: true,
       },
     });
     await createAdminNotification({

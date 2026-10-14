@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { ZodError, type ZodSchema } from "zod";
+import { ZodError, type ZodTypeAny } from "zod";
 import type { User } from "@prisma/client";
 import { getSession, hasRole, type AuthSession } from "./session";
 import type { Role } from "@prisma/client";
@@ -15,7 +15,7 @@ export const fail = (message: string, status = 400, code?: string) =>
   NextResponse.json({ success: false, error: { code: code ?? "ERROR", message } }, { status });
 
 /** Parse JSON body against a Zod schema. */
-export async function parseBody<T>(req: NextRequest, schema: ZodSchema<T>) {
+export async function parseBody<S extends ZodTypeAny>(req: NextRequest, schema: S) {
   let json: unknown;
   try {
     json = await req.json();
@@ -39,7 +39,7 @@ export async function parseBody<T>(req: NextRequest, schema: ZodSchema<T>) {
       ),
     };
   }
-  return { ok: true as const, data: r.data };
+  return { ok: true as const, data: r.data as S["_output"] };
 }
 
 /** Public-safe user payload returned to clients. */
@@ -51,6 +51,7 @@ export function serializeUser(u: User) {
     name: u.name,
     image: u.image,
     role: u.role,
+    isActive: u.isActive,
     emailVerified: u.emailVerified,
     phoneVerified: u.phoneVerified,
     createdAt: u.createdAt,

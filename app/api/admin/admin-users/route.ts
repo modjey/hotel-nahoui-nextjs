@@ -6,26 +6,35 @@ import { createHash } from "crypto";
 
 const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 
+// Empty strings from forms: "" -> null (clears field), or undefined for password (no change)
+const emptyToNull = (schema: z.ZodString) =>
+  z.preprocess((v) => (v === "" ? null : v), schema.nullish());
+const emptyToUndef = (schema: z.ZodString) =>
+  z.preprocess((v) => (v === "" ? undefined : v), schema.optional());
+
 // Schema for creating a user
 const createUserSchema = z.object({
-  email: z.string().email().optional(),
-  phone: z.string().optional(),
-  name: z.string().min(1).optional(),
-  password: z.string().min(6).optional(),
+  email: emptyToNull(z.string().email()),
+  phone: emptyToNull(z.string()),
+  name: emptyToNull(z.string().min(1)),
+  password: emptyToUndef(z.string().min(6)),
   role: z.enum(["USER", "MODERATOR", "ADMIN", "SUPER_ADMIN"]).default("USER"),
   isActive: z.boolean().default(true),
   locationIds: z.array(z.string()).default([]),
+}).refine((d) => d.email || d.phone, {
+  message: "Email ou téléphone requis",
+  path: ["email"],
 });
 
 // Schema for updating a user
 const updateUserSchema = z.object({
-  email: z.string().email().optional(),
-  phone: z.string().optional(),
-  name: z.string().min(1).optional(),
-  password: z.string().min(6).optional(),
+  email: emptyToNull(z.string().email()),
+  phone: emptyToNull(z.string()),
+  name: emptyToNull(z.string().min(1)),
+  password: emptyToUndef(z.string().min(6)),
   role: z.enum(["USER", "MODERATOR", "ADMIN", "SUPER_ADMIN"]).optional(),
   isActive: z.boolean().optional(),
-  locationIds: z.array(z.string()).default([]),
+  locationIds: z.array(z.string()).optional(),
 });
 
 // GET /api/admin/users - List all users (admin only)
@@ -81,7 +90,11 @@ export const GET = withAuth(async (req, { session }) => {
   ]);
 
   return ok({
-    users: users.map(serializeUser),
+    users: users.map((u) => ({
+      ...serializeUser(u),
+      _count: u._count,
+      userLocations: u.userLocations,
+    })),
     pagination: {
       page,
       limit,
@@ -112,10 +125,10 @@ export const POST = withAuth(async (req, { session }) => {
     : null;
 
   if (existing) {
-    if (existing.email === email) {
+    if (email && existing.email === email) {
       return fail("Un utilisateur avec cet email existe déjà", 409, "EMAIL_EXISTS");
     }
-    if (existing.phone === phone) {
+    if (phone && existing.phone === phone) {
       return fail("Un utilisateur avec ce téléphone existe déjà", 409, "PHONE_EXISTS");
     }
   }
