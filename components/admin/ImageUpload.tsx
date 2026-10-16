@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
+import { compressImage } from "@/lib/image-compress";
 
 interface ImageUploadProps {
   /** URL actuellement enregistrée. */
@@ -32,8 +33,9 @@ export function ImageUpload({
   const handleFile = async (file: File) => {
     setUploading(true);
     try {
+      const compressed = await compressImage(file);
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", compressed);
       fd.append("folder", folder);
       const res = await fetch("/api/admin/upload", {
         method: "POST",

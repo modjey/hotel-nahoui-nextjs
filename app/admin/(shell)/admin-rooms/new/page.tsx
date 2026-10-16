@@ -21,6 +21,7 @@ import { AmenitiesInput } from "@/components/admin/AmenitiesInput";
 import { api } from "@/lib/api-client";
 import { useApi, useMutation } from "@/hooks/use-api";
 import { roomCreateSchema, parseYoutubeId } from "@/lib/catalog/schemas";
+import { compressImage } from "@/lib/image-compress";
 import { z } from "zod";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, Plus, Trash2, Youtube } from "lucide-react";
@@ -60,8 +61,9 @@ export default function NewRoomPage() {
     const added: PendingMedia[] = [];
     try {
       for (const file of Array.from(files)) {
+        const compressed = await compressImage(file);
         const fd = new FormData();
-        fd.append("file", file);
+        fd.append("file", compressed);
         fd.append("folder", "rooms");
         const res = await fetch("/api/admin/upload", {
           method: "POST",

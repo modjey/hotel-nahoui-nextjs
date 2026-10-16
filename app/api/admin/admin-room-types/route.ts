@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 const handler = withAuth(async (req) => {
   if (req.method === "GET") {
     const types = await prisma.roomType.findMany({
-      orderBy: [{ isPublished: "desc" }, { order: "asc" }, { createdAt: "desc" }],
+      orderBy: [{ order: "asc" }, { createdAt: "desc" }],
       include: { _count: { select: { rooms: true } } },
     });
     return ok({ types });
@@ -21,7 +21,9 @@ const handler = withAuth(async (req) => {
     const existing = await prisma.roomType.findUnique({ where: { slug } });
     if (existing) return fail("Slug déjà utilisé", 409, "SLUG_TAKEN");
 
-    const type = await prisma.roomType.create({ data: { ...body, slug } });
+    const max = await prisma.roomType.aggregate({ _max: { order: true } });
+    const order = body.order ?? (max._max.order ?? -1) + 1;
+    const type = await prisma.roomType.create({ data: { ...body, slug, order } });
     return ok({ type }, { status: 201 });
   }
 

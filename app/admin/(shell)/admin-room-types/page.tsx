@@ -31,7 +31,7 @@ import { useApi, useMutation } from "@/hooks/use-api";
 import { roomTypeCreateSchema } from "@/lib/catalog/schemas";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, Tag } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Tag, ArrowUp, ArrowDown } from "lucide-react";
 
 type RoomType = {
   id: string;
@@ -49,6 +49,7 @@ export default function AdminRoomTypesPage() {
   );
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [reordering, setReordering] = useState(false);
   const router = useRouter();
 
   const create = useMutation<{ type: RoomType }, z.infer<typeof roomTypeCreateSchema>>(
@@ -70,7 +71,6 @@ export default function AdminRoomTypesPage() {
     const data = {
       ...raw,
       isPublished: raw.isPublished === "on",
-      order: raw.order ? Number(raw.order) : 0,
     };
 
     const result = roomTypeCreateSchema.safeParse(data);
@@ -83,6 +83,25 @@ export default function AdminRoomTypesPage() {
     }
 
     await create.mutate(result.data);
+  };
+
+  const move = async (index: number, dir: -1 | 1) => {
+    const types = data?.types ?? [];
+    const target = index + dir;
+    if (target < 0 || target >= types.length) return;
+
+    const ids = types.map((t) => t.id);
+    [ids[index], ids[target]] = [ids[target], ids[index]];
+
+    setReordering(true);
+    try {
+      await api.post("/api/admin/admin-room-types/reorder", { ids });
+      refetch();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Erreur");
+    } finally {
+      setReordering(false);
+    }
   };
 
   const deleteType = async (slug: string) => {
@@ -132,10 +151,6 @@ export default function AdminRoomTypesPage() {
                 <div className="grid gap-2">
                   <Label htmlFor="description">Description</Label>
                   <Textarea id="description" name="description" rows={3} />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="order">Ordre d'affichage</Label>
-                  <Input id="order" name="order" type="number" defaultValue={0} />
                 </div>
                 <div className="flex items-center gap-2">
                   <Switch id="isPublished" name="isPublished" defaultChecked />
@@ -199,7 +214,7 @@ export default function AdminRoomTypesPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((t) => (
+              filtered.map((t, i) => (
                 <TableRow key={t.id}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
@@ -213,7 +228,28 @@ export default function AdminRoomTypesPage() {
                     {t.description || "—"}
                   </TableCell>
                   <TableCell>{t._count.rooms}</TableCell>
-                  <TableCell className="text-muted-foreground">{t.order}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={reordering || search !== "" || i === 0}
+                        onClick={() => move(i, -1)}
+                        aria-label="Monter"
+                      >
+                        <ArrowUp className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={reordering || search !== "" || i === filtered.length - 1}
+                        onClick={() => move(i, 1)}
+                        aria-label="Descendre"
+                      >
+                        <ArrowDown className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <Badge variant={t.isPublished ? "default" : "secondary"}>
                       {t.isPublished ? "Publié" : "Brouillon"}

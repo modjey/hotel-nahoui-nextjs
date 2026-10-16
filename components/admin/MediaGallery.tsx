@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { api, ApiError } from "@/lib/api-client";
 import { Loader2, Plus, Trash2, Link as LinkIcon, Youtube, Pencil, Check, X } from "lucide-react";
 import { toast } from "sonner";
+import { compressImage } from "@/lib/image-compress";
 
 export type MediaItem = {
   id: string;
@@ -60,8 +61,9 @@ export function MediaGallery({
     try {
       for (const file of Array.from(files)) {
         // Étape 1 : upload binaire
+        const compressed = await compressImage(file);
         const fd = new FormData();
-        fd.append("file", file);
+        fd.append("file", compressed);
         fd.append("folder", folder);
         const res = await fetch("/api/admin/upload", {
           method: "POST",

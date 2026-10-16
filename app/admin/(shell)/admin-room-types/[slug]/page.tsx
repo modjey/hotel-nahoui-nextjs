@@ -56,7 +56,6 @@ export default function AdminRoomTypeEditPage() {
     const data = {
       ...raw,
       isPublished: raw.isPublished === "on",
-      order: raw.order ? Number(raw.order) : 0,
     };
 
     const result = roomTypeUpdateSchema.safeParse(data);
@@ -105,10 +104,6 @@ export default function AdminRoomTypeEditPage() {
         <div>
           <Label>Description</Label>
           <Textarea name="description" defaultValue={rt.description ?? ""} rows={3} />
-        </div>
-        <div>
-          <Label>Ordre</Label>
-          <Input name="order" type="number" defaultValue={rt.order} />
         </div>
         <div className="flex items-center gap-2">
           <Switch name="isPublished" defaultChecked={rt.isPublished} />
