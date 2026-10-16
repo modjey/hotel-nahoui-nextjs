@@ -2,6 +2,7 @@ import { ok, fail, withAuth } from "@/lib/auth/api";
 import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
+import { UPLOAD_DIR } from "@/lib/uploads";
 
 export const runtime = "nodejs";
 
@@ -40,7 +41,7 @@ const handler = withAuth(async (req) => {
   const ext = (file.name.split(".").pop() ?? "").toLowerCase().replace(/[^a-z0-9]/g, "") || "bin";
   const filename = `${randomUUID()}.${ext}`;
 
-  const uploadDir = join(process.cwd(), "public", "uploads", folder);
+  const uploadDir = join(UPLOAD_DIR, folder);
   await mkdir(uploadDir, { recursive: true });
 
   const buffer = Buffer.from(await file.arrayBuffer());
