@@ -11,6 +11,7 @@ import { api, ApiError } from "@/lib/api-client";
 import { useApi } from "@/hooks/use-api";
 import { toast } from "sonner";
 import { ArrowLeft, Edit, BedDouble, MapPin, Users, Calendar, CreditCard, Power } from "lucide-react";
+import { getDiscountedPrice } from "@/lib/pricing";
 
 type Room = {
   id: string;
@@ -21,6 +22,7 @@ type Room = {
   description: string | null;
   basePrice: number;
   currency: string;
+  discountPercent: number;
   maxGuests: number;
   beds: number;
   bathrooms: number;
@@ -48,7 +50,7 @@ type Room = {
     guestEmail: string | null;
     guestPhone: string | null;
     status: string;
-    payment: { status: string | null } | null;
+    payments: { status: string | null }[];
     userId: string | null;
     user?: {
       id: string;
@@ -183,9 +185,21 @@ export default function AdminRoomViewPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <div className="text-sm text-muted-foreground">Prix de base</div>
-                <div className="font-display text-xl">
-                  {new Intl.NumberFormat("fr-FR").format(room.basePrice)} {room.currency}
-                </div>
+                {room.discountPercent > 0 ? (
+                  <div>
+                    <div className="text-sm text-muted-foreground line-through">
+                      {new Intl.NumberFormat("fr-FR").format(room.basePrice)} {room.currency}
+                    </div>
+                    <div className="font-display text-xl flex items-center gap-2">
+                      {new Intl.NumberFormat("fr-FR").format(getDiscountedPrice(room.basePrice, room.discountPercent))} {room.currency}
+                      <Badge className="bg-red-600 text-white border-red-600">-{room.discountPercent}%</Badge>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="font-display text-xl">
+                    {new Intl.NumberFormat("fr-FR").format(room.basePrice)} {room.currency}
+                  </div>
+                )}
               </div>
               <div>
                 <div className="text-sm text-muted-foreground">Max personnes</div>
@@ -314,7 +328,7 @@ export default function AdminRoomViewPage() {
                           Réf: N/A
                         </Badge>
                       )}
-                      {b.payment?.status === "SUCCESS" && (
+                      {b.payments?.some((p) => p.status === "SUCCESS") && (
                         <Badge variant="outline" className="text-[10px] px-1 py-0 text-green-600 border-green-600">
                           Payé
                         </Badge>

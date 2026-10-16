@@ -16,6 +16,7 @@ import {
   validateBookingDates,
   withRoomLock,
 } from "@/lib/bookings";
+import { getDiscountedPrice } from "@/lib/pricing";
 
 export const runtime = "nodejs";
 
@@ -52,7 +53,7 @@ export const GET = withAuth(
               location: { select: { name: true, city: true } },
             },
           },
-          payment: true,
+          payments: { orderBy: [{ dueAt: "asc" }, { createdAt: "asc" }] },
         },
         orderBy: { createdAt: "desc" },
       });
@@ -92,7 +93,7 @@ export const POST = withAuth(async (req, ctx) => {
 
     const room = await prisma.room.findFirst({
       where: { id: body.roomId, isPublished: true },
-      select: { id: true, name: true, basePrice: true, currency: true, maxGuests: true },
+      select: { id: true, name: true, basePrice: true, currency: true, discountPercent: true, maxGuests: true },
     });
     if (!room) return fail("Chambre introuvable", 404, "NOT_FOUND");
 
@@ -106,7 +107,7 @@ export const POST = withAuth(async (req, ctx) => {
     }
 
     const nights = nightsBetween(checkInDate, checkOutDate);
-    const amount = room.basePrice * nights;
+    const amount = getDiscountedPrice(room.basePrice, room.discountPercent) * nights;
     const expiresAt = new Date(Date.now() + PENDING_BOOKING_TTL_MS);
 
     const booking = await withRoomLock(room.id, async (tx) => {
@@ -131,7 +132,7 @@ export const POST = withAuth(async (req, ctx) => {
           reference: generateBookingReference(),
           status: "PENDING",
           expiresAt,
-          payment: {
+          payments: {
             create: {
               reference: generatePaymentReference(),
               amount,
@@ -149,7 +150,7 @@ export const POST = withAuth(async (req, ctx) => {
           room: {
             select: { id: true, slug: true, name: true, basePrice: true, currency: true },
           },
-          payment: true,
+          payments: true,
         },
       });
     });

@@ -240,8 +240,10 @@ model Room {
   roomType   RoomType @relation(fields: [roomTypeId], references: [id], onDelete: Restrict)
 
   // Tarif & devise (en plus petite unité, ex: 50000 = 50 000 XOF)
-  basePrice  Int     @default(0)
-  currency   String  @default("XOF")
+  basePrice       Int     @default(0)
+  currency        String  @default("XOF")
+  // Pourcentage de réduction appliqué au prix de base (0-100), visible côté client.
+  discountPercent Int     @default(0)
 
   // Caractéristiques
   maxGuests  Int     @default(2)
@@ -302,7 +304,7 @@ model Booking {
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
-  payment   Payment?
+  payments  Payment[]
   reviews   Review[]
 
   @@index([roomId, checkIn, checkOut])
@@ -315,7 +317,7 @@ model Booking {
 // Paiement de réservation
 model Payment {
   id              String        @id @default(cuid())
-  bookingId       String        @unique
+  bookingId       String
   booking         Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
   reference       String        @unique
@@ -323,6 +325,7 @@ model Payment {
   currency        String        @default("XOF")
   status          PaymentStatus @default(PENDING)
   method          PaymentMethod @default(CARD)
+  dueAt           DateTime?     // Date d'échéance prévue pour cet acompte/versement
 
   // FineoPay details
   transactionId   String?       @unique

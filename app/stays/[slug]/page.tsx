@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { locationDetailSelect } from "@/lib/catalog/select";
+import { getDiscountedPrice } from "@/lib/pricing";
 
 type LocationWithRooms = {
   id: string;
@@ -28,6 +29,7 @@ type LocationWithRooms = {
     shortDescription: string | null;
     basePrice: number;
     currency: string;
+    discountPercent: number;
     maxGuests: number;
     beds: number;
     bathrooms: number;
@@ -184,7 +186,16 @@ export default async function LocationPage({ params }: { params: Promise<{ slug:
                         {room.maxGuests} pers. · {room.beds} lit{room.beds > 1 ? "s" : ""}
                       </span>
                       <span className="font-semibold text-primary">
-                        {room.basePrice.toLocaleString()} {room.currency}
+                        {room.discountPercent > 0 ? (
+                          <>
+                            <span className="text-xs text-muted-foreground line-through mr-1.5">
+                              {room.basePrice.toLocaleString()}
+                            </span>
+                            {getDiscountedPrice(room.basePrice, room.discountPercent).toLocaleString()} {room.currency}
+                          </>
+                        ) : (
+                          <>{room.basePrice.toLocaleString()} {room.currency}</>
+                        )}
                       </span>
                     </div>
                   </div>

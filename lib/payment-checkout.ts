@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { paymentProviderManager } from "@/lib/payment-provider";
 import { prisma } from "@/lib/prisma";
 import { getSession, isAdmin } from "@/lib/auth/session";
-import { generatePaymentReference } from "@/lib/bookings";
+import { generatePaymentReference, nightsBetween } from "@/lib/bookings";
+import { getDiscountedPrice } from "@/lib/pricing";
 
 /**
  * Initie le paiement d'une réservation existante (metadata.booking_id).
@@ -41,7 +42,10 @@ export async function handlePaymentCheckout(request: NextRequest): Promise<NextR
 
     const booking = await prisma.booking.findUnique({
       where: { id: bookingId },
-      include: { payment: true, room: { select: { name: true } } },
+      include: {
+        payments: { orderBy: [{ dueAt: "asc" }, { createdAt: "asc" }] },
+        room: { select: { name: true, basePrice: true, currency: true, discountPercent: true } },
+      },
     });
 
     if (!booking) {
@@ -59,42 +63,46 @@ export async function handlePaymentCheckout(request: NextRequest): Promise<NextR
       );
     }
 
-    if (booking.status === "CONFIRMED" || booking.status === "COMPLETED") {
+    if (booking.status === "COMPLETED") {
       return NextResponse.json(
-        { success: false, message: "Cette réservation est déjà confirmée" },
+        { success: false, message: "Cette réservation est déjà terminée" },
         { status: 409 },
       );
     }
 
-    const amount = booking.payment?.amount ?? 0;
-    if (!amount || amount <= 0) {
-      console.error("[payment-checkout] montant invalide", { bookingId, amount });
+    // Acomptes : on encaisse la plus ancienne échéance PENDING. Si aucune
+    // échéance n'existe, on en crée une pour le solde restant dû.
+    const nextDue = booking.payments.find((p) => p.status === "PENDING");
+    const paidTotal = booking.payments
+      .filter((p) => p.status === "SUCCESS")
+      .reduce((sum, p) => sum + p.amount, 0);
+    const nightlyRate = getDiscountedPrice(booking.room.basePrice, booking.room.discountPercent);
+    const stayTotal = nightlyRate * Math.max(1, nightsBetween(booking.checkIn, booking.checkOut));
+    const remaining = Math.max(0, stayTotal - paidTotal);
+
+    if (!nextDue && remaining <= 0) {
       return NextResponse.json(
-        { success: false, message: "Montant de réservation invalide" },
-        { status: 400 },
+        { success: false, message: "Cette réservation est déjà soldée" },
+        { status: 409 },
       );
     }
 
-    const reference = booking.payment?.reference ?? generatePaymentReference();
-
-    const payment = booking.payment
+    const payment = nextDue
       ? await prisma.payment.update({
-          where: { id: booking.payment.id },
+          where: { id: nextDue.id },
           data: {
-            status: "PENDING",
-            amount,
-            currency: booking.payment.currency,
-            customerName: customer?.name ?? booking.payment.customerName,
-            customerEmail: customer?.email ?? booking.payment.customerEmail,
-            customerPhone: customer?.phone ?? booking.payment.customerPhone,
+            provider: paymentProviderManager.getCurrentProvider(),
+            customerName: customer?.name ?? nextDue.customerName,
+            customerEmail: customer?.email ?? nextDue.customerEmail,
+            customerPhone: customer?.phone ?? nextDue.customerPhone,
           },
         })
       : await prisma.payment.create({
           data: {
             bookingId: booking.id,
-            reference,
-            amount,
-            currency: "XOF",
+            reference: generatePaymentReference(),
+            amount: remaining,
+            currency: booking.room.currency || "XOF",
             status: "PENDING",
             method: "MOBILE_MONEY",
             provider: paymentProviderManager.getCurrentProvider(),

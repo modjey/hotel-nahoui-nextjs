@@ -38,7 +38,7 @@ const handler = withAuth(async (req) => {
               guestPhone: true,
               status: true,
               expiresAt: true,
-              payment: { select: { status: true } },
+              payments: { select: { status: true } },
               userId: true,
             },
             orderBy: { checkIn: "desc" },

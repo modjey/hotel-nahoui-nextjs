@@ -11,6 +11,7 @@ const paymentSchema = z.object({
   method: z.enum(["CASH", "MOBILE_MONEY", "CARD", "BANK_TRANSFER", "ON_SITE"]),
   reference: z.string().min(1).optional(),
   transactionId: z.string().optional(),
+  dueAt: z.string().optional(),
 });
 
 export const runtime = "nodejs";
@@ -23,19 +24,19 @@ const handler = withAuth(async (req) => {
 
     const booking = await prisma.booking.findUnique({
       where: { id: body.bookingId },
-      include: { payment: true },
     });
 
     if (!booking) {
       return fail("Réservation introuvable", 400, "INVALID_BOOKING");
     }
 
-    const reference = body.reference || booking.payment?.reference || generatePaymentReference();
+    const reference = body.reference || generatePaymentReference();
+    const dueAt = body.dueAt ? new Date(body.dueAt) : null;
 
     const payment = await prisma.$transaction(async (tx) => {
-      const saved = await tx.payment.upsert({
-        where: { bookingId: body.bookingId },
-        create: {
+      // Chaque appel crée une échéance distincte (acompte/versement).
+      const saved = await tx.payment.create({
+        data: {
           bookingId: body.bookingId,
           amount: body.amount,
           currency: body.currency,
@@ -44,15 +45,11 @@ const handler = withAuth(async (req) => {
           reference,
           transactionId: body.transactionId,
           provider: "ADMIN",
+          dueAt: dueAt && !Number.isNaN(dueAt.getTime()) ? dueAt : null,
           paidAt: body.status === "SUCCESS" ? new Date() : null,
-        },
-        update: {
-          amount: body.amount,
-          currency: body.currency,
-          status: body.status,
-          method: body.method,
-          transactionId: body.transactionId,
-          paidAt: body.status === "SUCCESS" ? new Date() : null,
+          customerName: [booking.guestFirstName, booking.guestLastName].filter(Boolean).join(" ") || null,
+          customerEmail: booking.guestEmail,
+          customerPhone: booking.guestPhone,
         },
       });
 

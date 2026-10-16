@@ -31,12 +31,13 @@ const handler = withAuth(async (req) => {
             id: true,
             slug: true,
             name: true,
+            basePrice: true,
+            currency: true,
+            discountPercent: true,
           },
         },
-        payment: {
-          select: {
-            status: true,
-          },
+        payments: {
+          orderBy: [{ dueAt: "asc" }, { createdAt: "asc" }],
         },
       },
     });
@@ -108,12 +109,13 @@ const handler = withAuth(async (req) => {
             id: true,
             slug: true,
             name: true,
+            basePrice: true,
+            currency: true,
+            discountPercent: true,
           },
         },
-        payment: {
-          select: {
-            status: true,
-          },
+        payments: {
+          orderBy: [{ dueAt: "asc" }, { createdAt: "asc" }],
         },
       },
     });

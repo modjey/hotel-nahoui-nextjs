@@ -24,7 +24,7 @@ type Booking = {
   guestEmail: string | null;
   guestPhone: string | null;
   status: string;
-  payment: { status: string | null } | null;
+  payments: { status: string | null }[];
   room: {
     id: string;
     name: string;
@@ -201,7 +201,7 @@ export default function AdminUserDetailPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {b.payment?.status === "SUCCESS" && (
+                      {b.payments?.some((p) => p.status === "SUCCESS") && (
                         <Badge variant="outline" className="text-xs text-green-600 border-green-600">
                           Payé
                         </Badge>

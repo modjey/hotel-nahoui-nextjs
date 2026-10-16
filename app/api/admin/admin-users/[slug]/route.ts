@@ -58,7 +58,7 @@ export const GET = withAuth(async (req, { session }) => {
               coverImageUrl: true,
             },
           },
-          payment: {
+          payments: {
             select: {
               status: true,
             },

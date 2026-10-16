@@ -28,7 +28,7 @@ interface BookingShape {
   checkOut: string;
   adults: number;
   children: number;
-  payment: PaymentShape | null;
+  payments: PaymentShape[] | null;
   room?: { id: string; slug: string; name: string; basePrice: number; currency: string };
 }
 
@@ -145,10 +145,10 @@ describe("Cycle de vie d'une réservation", () => {
     const drift = Math.abs(new Date(booking.expiresAt!).getTime() - (Date.now() + PENDING_BOOKING_TTL_MS));
     assert.ok(drift <= TTL_TOLERANCE_MS, `expiration à ${drift}ms du TTL attendu`);
 
-    assert.ok(booking.payment, "un paiement PENDING doit être créé avec la réservation");
-    assert.equal(booking.payment!.status, "PENDING");
+    assert.ok(booking.payments?.length, "un paiement PENDING doit être créé avec la réservation");
+    assert.equal(booking.payments![0].status, "PENDING");
     assert.equal(
-      booking.payment!.amount,
+      booking.payments![0].amount,
       room.basePrice * 3,
       "le montant doit valoir prix de base × nuits",
     );
@@ -159,7 +159,7 @@ describe("Cycle de vie d'une réservation", () => {
     assert.equal(res.status, 200);
     const mine = (res.body.data.bookings as BookingShape[]).find((b) => b.id === booking.id);
     assert.ok(mine, "la réservation doit apparaître dans la liste du client");
-    assert.ok(mine!.payment, "le paiement doit être inclus (bouton « Payer maintenant »)");
+    assert.ok(mine!.payments?.length, "le paiement doit être inclus (bouton « Payer maintenant »)");
   });
 
   it("refuse une seconde réservation sur la même plage", async () => {
@@ -218,7 +218,7 @@ describe("Cycle de vie d'une réservation", () => {
     assert.equal(after?.status, "CANCELLED");
     assert.equal(after?.expiresAt, null, "expiresAt doit être libéré");
 
-    const payment = await prisma.payment.findUnique({ where: { bookingId: booking.id } });
+    const payment = await prisma.payment.findFirst({ where: { bookingId: booking.id } });
     assert.equal(payment?.status, "FAILED");
   });
 
@@ -287,7 +287,7 @@ describe("Cycle de vie d'une réservation", () => {
         status: "PENDING",
         reference: `BK-E2E-CONFLICT-${Date.now()}`,
         expiresAt: new Date(Date.now() + PENDING_BOOKING_TTL_MS),
-        payment: {
+        payments: {
           create: { reference: `PAY-E2E-CONFLICT-${Date.now()}`, amount: 1000, currency: "XOF", status: "SUCCESS" },
         },
       },
@@ -357,12 +357,12 @@ describe("Idempotence et cohérence des paiements", () => {
     const res = await createBooking(client, range, { guestEmail: "e2e-pay@example.com" });
     assert.equal(res.status, 201);
     booking = res.body.data.booking as BookingShape;
-    assert.ok(booking.payment, "paiement attendu");
+    assert.ok(booking.payments?.length, "paiement attendu");
 
-    const cb = await jsonPost(baseUrl, "/api/payments/callback", paymentCallback(booking.payment!.reference, "success"));
+    const cb = await jsonPost(baseUrl, "/api/payments/callback", paymentCallback(booking.payments![0].reference, "success"));
     assert.equal(cb.status, 200, `callback reçu ${cb.status} ${JSON.stringify(cb.body)}`);
 
-    const payment = await prisma.payment.findUnique({ where: { id: booking.payment!.id } });
+    const payment = await prisma.payment.findUnique({ where: { id: booking.payments![0].id } });
     assert.equal(payment?.status, "SUCCESS");
     assert.ok(payment?.paidAt, "paidAt doit être renseigné");
 
@@ -372,10 +372,10 @@ describe("Idempotence et cohérence des paiements", () => {
   });
 
   it("ne rétrograde ni ne dé-confirme sur un événement FAILED tardif", async () => {
-    const cb = await jsonPost(baseUrl, "/api/payments/callback", paymentCallback(booking.payment!.reference, "failed"));
+    const cb = await jsonPost(baseUrl, "/api/payments/callback", paymentCallback(booking.payments![0].reference, "failed"));
     assert.equal(cb.status, 200);
 
-    const payment = await prisma.payment.findUnique({ where: { id: booking.payment!.id } });
+    const payment = await prisma.payment.findUnique({ where: { id: booking.payments![0].id } });
     assert.equal(payment?.status, "SUCCESS", "un paiement réussi ne doit jamais être rétrogradé");
 
     const updated = await prisma.booking.findUnique({ where: { id: booking.id } });
@@ -383,12 +383,12 @@ describe("Idempotence et cohérence des paiements", () => {
   });
 
   it("reste neutre quand le même événement est rejoué", async () => {
-    const before = await prisma.payment.findUnique({ where: { id: booking.payment!.id } });
-    const cb = await jsonPost(baseUrl, "/api/payments/callback", paymentCallback(booking.payment!.reference, "success"));
+    const before = await prisma.payment.findUnique({ where: { id: booking.payments![0].id } });
+    const cb = await jsonPost(baseUrl, "/api/payments/callback", paymentCallback(booking.payments![0].reference, "success"));
     assert.equal(cb.status, 200);
     assert.equal(cb.body.success, true);
 
-    const after = await prisma.payment.findUnique({ where: { id: booking.payment!.id } });
+    const after = await prisma.payment.findUnique({ where: { id: booking.payments![0].id } });
     assert.equal(after?.status, "SUCCESS");
     assert.equal(after?.paidAt?.getTime(), before?.paidAt?.getTime(), "un rejeu ne doit pas modifier paidAt");
 
@@ -405,7 +405,7 @@ describe("Idempotence et cohérence des paiements", () => {
     // Simule une annulation (expiration) avant l'arrivée du paiement.
     await prisma.booking.update({ where: { id: late.id }, data: { status: "CANCELLED", expiresAt: null } });
 
-    const cb = await jsonPost(baseUrl, "/api/payments/callback", paymentCallback(late.payment!.reference, "success"));
+    const cb = await jsonPost(baseUrl, "/api/payments/callback", paymentCallback(late.payments![0].reference, "success"));
     assert.equal(cb.status, 200);
 
     const after = await prisma.booking.findUnique({ where: { id: late.id } });
@@ -419,7 +419,7 @@ describe("Idempotence et cohérence des paiements", () => {
   });
 
   it("expose le statut de paiement via /api/payments/status", async () => {
-    const res = await call(baseUrl, `/api/payments/status?reference=${booking.payment!.reference}`);
+    const res = await call(baseUrl, `/api/payments/status?reference=${booking.payments![0].reference}`);
     assert.equal(res.status, 200);
     assert.equal(res.body.success, true);
     assert.equal(res.body.data.status, "SUCCESS");

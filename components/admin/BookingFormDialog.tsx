@@ -18,12 +18,14 @@ import { api, ApiError } from "@/lib/api-client";
 import { useApi } from "@/hooks/use-api";
 import { toast } from "sonner";
 import { normalizeIvoryCoastPhone } from "@/lib/auth/schemas";
+import { getDiscountedPrice } from "@/lib/pricing";
 
 export type BookingFormRoom = {
   id: string;
   name: string;
   basePrice: number;
   currency: string;
+  discountPercent?: number;
   maxGuests: number;
   bookings?: { id: string; checkIn: string; checkOut: string; status: string }[];
 };
@@ -77,6 +79,7 @@ const emptyForm = {
   paymentCurrency: "XOF",
   paymentStatus: "SUCCESS",
   paymentMethod: "CASH",
+  paymentDueAt: "",
   transactionId: "",
 };
 
@@ -231,7 +234,7 @@ function BookingForm({
         const bookingResponse = await api.post("/api/admin/bookings", payload);
         toast.success("Réservation créée");
 
-        // Créer le paiement si un montant est spécifié
+        // Créer la première échéance (acompte) si un montant est spécifié
         if (formData.paymentAmount) {
           const paymentPayload: Record<string, unknown> = {
             bookingId: (bookingResponse as { booking: { id: string } }).booking.id,
@@ -243,8 +246,11 @@ function BookingForm({
           if (formData.transactionId) {
             paymentPayload.transactionId = formData.transactionId;
           }
+          if (formData.paymentDueAt) {
+            paymentPayload.dueAt = formData.paymentDueAt;
+          }
           await api.post("/api/admin/payments", paymentPayload);
-          toast.success("Paiement créé");
+          toast.success("Échéance créée");
         }
       }
 
@@ -402,7 +408,7 @@ function BookingForm({
             <HotelBookingCalendar
               className="mt-1"
               availability={formAvailabilityMap}
-              basePrice={room.basePrice}
+              basePrice={getDiscountedPrice(room.basePrice, room.discountPercent)}
               currencyLabel={room.currency === "XOF" ? "FCFA" : room.currency}
               monthsToShow={1}
               maxGuestsPerRoom={room.maxGuests}
@@ -443,15 +449,18 @@ function BookingForm({
 
         {!editingBooking && (
         <div className="border-t border-border pt-4">
-          <h4 className="font-medium mb-3">Paiement</h4>
+          <h4 className="font-medium mb-1">Acompte / premier versement</h4>
+          <p className="text-xs text-muted-foreground mb-3">
+            Optionnel — laissez vide pour un paiement intégral ultérieur. D&apos;autres échéances pourront être ajoutées depuis la fiche réservation.
+          </p>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Montant *</Label>
+              <Label>Montant</Label>
               <Input
                 type="number"
                 value={formData.paymentAmount}
                 onChange={(e) => setFormData({ ...formData, paymentAmount: e.target.value })}
-                required
+                placeholder="Ex: acompte 30%"
               />
             </div>
             <div>
@@ -495,14 +504,24 @@ function BookingForm({
               </select>
             </div>
           </div>
-          <div className="mt-3">
-            <Label>Transaction ID (optionnel)</Label>
-            <Input
-              type="text"
-              value={formData.transactionId}
-              onChange={(e) => setFormData({ ...formData, transactionId: e.target.value })}
-              placeholder="ID de transaction externe"
-            />
+          <div className="grid grid-cols-2 gap-3 mt-3">
+            <div>
+              <Label>Date d&apos;échéance (optionnel)</Label>
+              <Input
+                type="date"
+                value={formData.paymentDueAt}
+                onChange={(e) => setFormData({ ...formData, paymentDueAt: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Transaction ID (optionnel)</Label>
+              <Input
+                type="text"
+                value={formData.transactionId}
+                onChange={(e) => setFormData({ ...formData, transactionId: e.target.value })}
+                placeholder="ID de transaction externe"
+              />
+            </div>
           </div>
         </div>
         )}

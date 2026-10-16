@@ -42,7 +42,7 @@ const handler = withAuth(async (req) => {
 
       const existingBooking = await prisma.booking.findUnique({
         where: { id },
-        include: { payment: true, user: { select: { email: true } } },
+        include: { payments: true, user: { select: { email: true } } },
       });
 
       if (!existingBooking) {
@@ -50,7 +50,7 @@ const handler = withAuth(async (req) => {
       }
 
       if (parsed.status === "CONFIRMED") {
-        if (existingBooking.payment?.status !== "SUCCESS") {
+        if (!existingBooking.payments.some((p) => p.status === "SUCCESS")) {
           return fail("Ajoutez un paiement payé avant de confirmer la réservation", 400, "PAYMENT_REQUIRED");
         }
         // La chambre a pu être prise entre-temps : on refuse une confirmation en conflit.
@@ -81,19 +81,19 @@ const handler = withAuth(async (req) => {
               : null,
         },
         include: {
-          payment: true,
+          payments: true,
           room: { select: { name: true } },
         },
       });
 
-      // If the booking is cancelled and its payment was successful, mark it as refunded
+      // If the booking is cancelled, mark all its successful payments as refunded
       let refunded = false;
-      if (parsed.status === "CANCELLED" && booking.payment && booking.payment.status === "SUCCESS") {
-        await prisma.payment.update({
-          where: { id: booking.payment.id },
+      if (parsed.status === "CANCELLED") {
+        const result = await prisma.payment.updateMany({
+          where: { bookingId: id, status: "SUCCESS" },
           data: { status: "REFUNDED" },
         });
-        refunded = true;
+        refunded = result.count > 0;
       }
 
       if (parsed.status === "CONFIRMED" || parsed.status === "CANCELLED") {
@@ -245,7 +245,7 @@ const handler = withAuth(async (req) => {
           guestPhone: true,
           user: { select: { id: true, name: true, email: true, phone: true } },
           room: { select: { name: true, slug: true } },
-          payment: {
+          payments: {
             select: {
               id: true,
               status: true,
@@ -254,9 +254,11 @@ const handler = withAuth(async (req) => {
               reference: true,
               method: true,
               provider: true,
+              dueAt: true,
               createdAt: true,
               updatedAt: true,
             },
+            orderBy: { createdAt: "asc" },
           },
         },
       }),

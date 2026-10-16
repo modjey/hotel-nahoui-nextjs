@@ -18,6 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getDiscountedPrice } from "@/lib/pricing";
 
 type Room = {
   id: string;
@@ -28,6 +29,7 @@ type Room = {
   shortDescription: string | null;
   basePrice: number;
   currency: string;
+  discountPercent: number;
   maxGuests: number;
   beds: number | null;
   bathrooms: number | null;
@@ -422,7 +424,9 @@ function StayDetailPageContent() {
     category: room.roomType.name,
     location: room.location.city ? `${room.location.city}, ${room.location.name}` : room.location.name,
     country: "Côte d’Ivoire",
-    price: room.basePrice,
+    price: getDiscountedPrice(room.basePrice, room.discountPercent),
+    originalPrice: room.basePrice,
+    discountPercent: room.discountPercent,
     currency: room.currency,
     rating: reviewStats.approved > 0 ? reviewStats.averageRating : 0,
     reviews: reviewStats.approved,
@@ -827,7 +831,7 @@ function StayDetailPageContent() {
             <HotelBookingCalendar
               hotelName={room.name}
               availability={availabilityMap}
-              basePrice={room.basePrice}
+              basePrice={getDiscountedPrice(room.basePrice, room.discountPercent)}
               currencyLabel={room.currency === "XOF" ? "FCFA" : room.currency}
               monthsToShow={2}
               maxGuestsPerRoom={room.maxGuests}
@@ -979,7 +983,15 @@ function StayDetailPageContent() {
             <div className="border border-border bg-card">
               <div className="frame-inset px-7 py-6 flex items-end justify-between gap-4">
                 <div>
-                  <span className="text-[0.8125rem] font-semibold text-white/90">La nuit, à partir de</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[0.8125rem] font-semibold text-white/90">La nuit, à partir de</span>
+                    {p.discountPercent > 0 && (
+                      <span className="bg-red-600 text-white text-[0.6875rem] font-semibold px-1.5 py-0.5">-{p.discountPercent}%</span>
+                    )}
+                  </div>
+                  {p.discountPercent > 0 && (
+                    <div className="text-sm text-white/70 line-through">{fcfa(p.originalPrice, p.currency)}</div>
+                  )}
                   <div className="font-display text-4xl leading-none mt-1.5 tabular">{fcfa(p.price, p.currency)}</div>
                 </div>
                 {p.reviews > 0 && (
@@ -1328,7 +1340,8 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
   }, [user, guestInfo.firstName, guestInfo.lastName, guestInfo.email]);
 
   const nights = checkIn && checkOut ? differenceInDays(checkOut, checkIn) : 3;
-  const total = room?.basePrice ? room.basePrice * nights : 0;
+  const nightlyPrice = room ? getDiscountedPrice(room.basePrice, room.discountPercent) : 0;
+  const total = nightlyPrice * nights;
 
   const overlayAvailabilityMap = useMemo(() => buildAvailabilityMap(bookings), [bookings]);
 
@@ -1565,7 +1578,7 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
                     <div className="mt-3 space-y-3">
                       <HotelBookingCalendar
                         availability={overlayAvailabilityMap}
-                        basePrice={room?.basePrice ?? 0}
+                        basePrice={nightlyPrice}
                         currencyLabel={room?.currency === "XOF" ? "FCFA" : room?.currency ?? "FCFA"}
                         monthsToShow={1}
                         maxGuestsPerRoom={room?.maxGuests ?? 4}
@@ -1754,7 +1767,7 @@ function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdul
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-border space-y-3 text-sm">
-                  <div className="flex justify-between"><span className="text-muted-foreground">{fcfa(room?.basePrice || 0, room?.currency)} × {nights} nuit{nights > 1 ? 's' : ''}</span><span className="tabular">{fcfa(total, room?.currency)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">{fcfa(nightlyPrice, room?.currency)} × {nights} nuit{nights > 1 ? 's' : ''}</span><span className="tabular">{fcfa(total, room?.currency)}</span></div>
                   <div className="pt-3 border-t border-border flex justify-between font-display text-lg">
                     <span>Total</span><span className="tabular">{fcfa(total, room?.currency)}</span>
                   </div>

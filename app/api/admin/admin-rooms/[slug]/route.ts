@@ -18,6 +18,7 @@ const handler = withAuth(async (req) => {
         description: true,
         basePrice: true,
         currency: true,
+        discountPercent: true,
         maxGuests: true,
         beds: true,
         bathrooms: true,
@@ -48,7 +49,7 @@ const handler = withAuth(async (req) => {
             guestPhone: true,
             status: true,
             expiresAt: true,
-            payment: { select: { status: true } },
+            payments: { select: { status: true } },
             userId: true,
             user: {
               select: {

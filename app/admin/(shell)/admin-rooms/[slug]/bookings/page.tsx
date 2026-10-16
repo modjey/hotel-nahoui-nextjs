@@ -21,6 +21,7 @@ type Room = {
   slug: string;
   name: string;
   basePrice: number;
+  discountPercent?: number;
   currency: string;
   maxGuests: number;
   beds: number;
@@ -41,7 +42,7 @@ type Booking = {
   guestEmail: string | null;
   guestPhone: string | null;
   status: string;
-  payment: { status: string | null } | null;
+  payments: { status: string | null }[];
   userId: string | null;
   user?: {
     id: string;
@@ -296,7 +297,7 @@ export default function AdminRoomBookingsPage() {
                   <div className="font-medium">{selectedBooking.reference}</div>
                 </div>
               )}
-              {selectedBooking.payment?.status === "SUCCESS" && (
+              {selectedBooking.payments?.some((p) => p.status === "SUCCESS") && (
                 <div>
                   <Label className="text-muted-foreground">Paiement</Label>
                   <Badge variant="outline" className="text-green-600 border-green-600">

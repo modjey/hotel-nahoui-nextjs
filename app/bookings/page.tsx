@@ -33,7 +33,7 @@ type Booking = {
     currency: string;
     location: { name: string; city: string | null } | null;
   };
-  payment: { id: string; reference: string; amount: number; currency: string; status: string } | null;
+  payments: { id: string; reference: string; amount: number; currency: string; status: string }[];
 };
 
 export default function MyBookingsPage() {
@@ -91,14 +91,16 @@ export default function MyBookingsPage() {
     }
   };
 
-  const getPaymentStatusBadge = (payment: Booking["payment"]) => {
-    if (!payment) return statusBadge("Non initié", null, "neutral");
-    switch (payment.status) {
-      case "PENDING": return statusBadge("En attente", <Clock className="h-3 w-3" />, "pending");
-      case "SUCCESS": return statusBadge("Payé", <CheckCircle className="h-3 w-3" />, "success");
-      case "FAILED": return statusBadge("Échoué", <AlertCircle className="h-3 w-3" />, "error");
-      default: return statusBadge(payment.status, null, "neutral");
-    }
+  const getPaymentStatusBadge = (payments: Booking["payments"]) => {
+    if (!payments || payments.length === 0) return statusBadge("Non initié", null, "neutral");
+    const paidCount = payments.filter((p) => p.status === "SUCCESS").length;
+    const hasPending = payments.some((p) => p.status === "PENDING");
+    const hasFailed = payments.some((p) => p.status === "FAILED");
+    if (paidCount > 0 && hasPending) return statusBadge(`Acompte versé (${paidCount}/${payments.length})`, <CheckCircle className="h-3 w-3" />, "success");
+    if (paidCount > 0 && !hasPending && !hasFailed) return statusBadge("Payé", <CheckCircle className="h-3 w-3" />, "success");
+    if (hasPending) return statusBadge("En attente", <Clock className="h-3 w-3" />, "pending");
+    if (hasFailed) return statusBadge("Échoué", <AlertCircle className="h-3 w-3" />, "error");
+    return statusBadge(payments[0].status, null, "neutral");
   };
 
   const nights = (checkIn: string, checkOut: string) => {
@@ -154,7 +156,7 @@ export default function MyBookingsPage() {
                           {booking.room.location?.city ? `${booking.room.location.city}, ` : ""}{booking.room.location?.name}
                         </p>
                       </div>
-                      {booking.payment ? getPaymentStatusBadge(booking.payment) : getStatusBadge(booking.status)}
+                      {booking.payments?.length ? getPaymentStatusBadge(booking.payments) : getStatusBadge(booking.status)}
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-sm">
@@ -179,7 +181,7 @@ export default function MyBookingsPage() {
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-6 border-t border-border">
                       <div>
                         <p className="eyebrow text-muted-foreground">Référence</p>
-                        <p className="font-mono text-sm mt-1">{booking.reference || booking.payment?.reference || "-"}</p>
+                        <p className="font-mono text-sm mt-1">{booking.reference || booking.payments?.[0]?.reference || "-"}</p>
                       </div>
                       <div className="flex flex-col sm:flex-row items-center gap-6 w-full sm:w-auto">
                         <Link href={`/rooms/${booking.room.slug}`} className="link-underline text-foreground">

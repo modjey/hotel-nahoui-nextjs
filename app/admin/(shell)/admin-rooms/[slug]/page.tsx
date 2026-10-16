@@ -38,6 +38,7 @@ type Room = {
   description: string | null;
   basePrice: number;
   currency: string;
+  discountPercent: number;
   maxGuests: number;
   beds: number;
   bathrooms: number;
@@ -66,7 +67,7 @@ type Room = {
     guestEmail: string | null;
     guestPhone: string | null;
     status: string;
-    payment: { status: string | null } | null;
+    payments: { status: string | null }[];
     userId: string | null;
   }>;
 };
@@ -140,6 +141,7 @@ export default function AdminRoomEditPage() {
       amenities,
       isPublished: raw.isPublished === "on",
       basePrice: raw.basePrice ? Number(raw.basePrice) : undefined,
+      discountPercent: raw.discountPercent !== undefined && raw.discountPercent !== "" ? Number(raw.discountPercent) : undefined,
       maxGuests: raw.maxGuests ? Number(raw.maxGuests) : undefined,
       beds: raw.beds ? Number(raw.beds) : undefined,
       bathrooms: raw.bathrooms ? Number(raw.bathrooms) : undefined,
@@ -300,6 +302,22 @@ export default function AdminRoomEditPage() {
                 type="number"
                 defaultValue={room.maxGuests}
               />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="discountPercent">Promo (%)</Label>
+              <Input
+                id="discountPercent"
+                name="discountPercent"
+                type="number"
+                min={0}
+                max={100}
+                defaultValue={room.discountPercent}
+              />
+              <p className="text-xs text-muted-foreground">
+                Réduction appliquée au prix de base, visible côté client.
+              </p>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -478,7 +496,7 @@ export default function AdminRoomEditPage() {
                         Réf: N/A
                       </Badge>
                     )}
-                    {b.payment?.status === "SUCCESS" && (
+                    {b.payments?.some((p) => p.status === "SUCCESS") && (
                       <Badge variant="outline" className="text-[10px] px-1 py-0 text-green-600 border-green-600">
                         Payé
                       </Badge>

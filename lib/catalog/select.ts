@@ -30,6 +30,7 @@ export const roomCardSelect = {
   shortDescription: true,
   basePrice: true,
   currency: true,
+  discountPercent: true,
   maxGuests: true,
   beds: true,
   bathrooms: true,

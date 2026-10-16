@@ -32,8 +32,8 @@ export async function GET(request: Request) {
         where: {
           status: "PENDING",
           expiresAt: { lt: now },
-          // Ne jamais annuler une réservation déjà payée (état transitoire).
-          NOT: { payment: { is: { status: "SUCCESS" } } },
+          // Ne jamais annuler une réservation ayant déjà un versement encaissé.
+          NOT: { payments: { some: { status: "SUCCESS" } } },
         },
         select: { id: true, reference: true },
         take: BATCH_SIZE,

@@ -35,6 +35,7 @@ interface AdminRoom {
   slug: string;
   maxGuests: number;
   basePrice: number;
+  discountPercent?: number;
   currency: string;
   bookings: { id: string; checkIn: string; checkOut: string; status: string }[];
 }
@@ -64,7 +65,7 @@ interface Booking {
     slug: string;
     name: string;
   };
-  payment?: {
+  payments?: {
     id: string;
     status: string;
     amount: number;
@@ -72,9 +73,10 @@ interface Booking {
     reference: string;
     method: string;
     provider: string;
+    dueAt: string | null;
     createdAt: string;
     updatedAt: string;
-  };
+  }[];
 }
 
 interface BookingsResponse {
@@ -302,7 +304,16 @@ export default function AdminBookingsPage() {
                       </div>
                     </TableCell>
                     <TableCell className="font-medium">
-                      {booking.payment ? `${new Intl.NumberFormat("fr-FR").format(booking.payment.amount)} ${booking.payment.currency}` : "N/A"}
+                      {(() => {
+                        const payments = booking.payments ?? [];
+                        if (payments.length === 0) return "N/A";
+                        const currency = payments[0].currency;
+                        const paid = payments.filter((p) => p.status === "SUCCESS").reduce((s, p) => s + p.amount, 0);
+                        const total = payments.reduce((s, p) => s + p.amount, 0);
+                        return paid === total
+                          ? `${new Intl.NumberFormat("fr-FR").format(total)} ${currency}`
+                          : `${new Intl.NumberFormat("fr-FR").format(paid)} / ${new Intl.NumberFormat("fr-FR").format(total)} ${currency}`;
+                      })()}
                     </TableCell>
                     <TableCell>
                       <Badge className={`flex items-center gap-1 ${

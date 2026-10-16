@@ -49,7 +49,7 @@ const handler = withAuth(async (req) => {
             name: true,
           },
         },
-        payment: {
+        payments: {
           select: {
             status: true,
           },
@@ -119,7 +119,7 @@ const handler = withAuth(async (req) => {
                 name: true,
               },
             },
-            payment: {
+            payments: {
               select: {
                 status: true,
               },

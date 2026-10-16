@@ -66,6 +66,7 @@ export const roomCreateSchema = z.object({
   roomTypeId: z.string().min(1),
   basePrice: z.number().int().min(0).optional(),
   currency: z.string().length(3).optional(),
+  discountPercent: z.number().int().min(0).max(100).optional(),
   maxGuests: z.number().int().min(1).max(20).optional(),
   beds: z.number().int().min(0).max(20).optional(),
   bathrooms: z.number().int().min(0).max(20).optional(),

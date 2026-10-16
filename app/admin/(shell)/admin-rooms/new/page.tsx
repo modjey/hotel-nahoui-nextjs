@@ -153,6 +153,7 @@ export default function NewRoomPage() {
       amenities,
       isPublished: raw.isPublished === "on",
       basePrice: raw.basePrice ? Number(raw.basePrice) : 0,
+      discountPercent: raw.discountPercent ? Number(raw.discountPercent) : 0,
       maxGuests: raw.maxGuests ? Number(raw.maxGuests) : 2,
       beds: raw.beds ? Number(raw.beds) : 1,
       bathrooms: raw.bathrooms ? Number(raw.bathrooms) : 1,
@@ -267,6 +268,23 @@ export default function NewRoomPage() {
             <div className="grid gap-2">
               <Label htmlFor="maxGuests">Max personnes</Label>
               <Input id="maxGuests" name="maxGuests" type="number" defaultValue={2} />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="discountPercent">Promo (%)</Label>
+              <Input
+                id="discountPercent"
+                name="discountPercent"
+                type="number"
+                min={0}
+                max={100}
+                defaultValue={0}
+                placeholder="0"
+              />
+              <p className="text-xs text-muted-foreground">
+                Réduction appliquée au prix de base, visible côté client.
+              </p>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

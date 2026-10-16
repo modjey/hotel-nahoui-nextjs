@@ -13,6 +13,7 @@ import { useApi } from "@/hooks/use-api";
 import { toast } from "sonner";
 import { ArrowLeft, User, Mail, Phone, Calendar, CreditCard, Users, BedDouble, Pencil, CheckCircle2, Trash2, CircleCheckBig } from "lucide-react";
 import { BookingFormDialog, type BookingFormRoom } from "@/components/admin/BookingFormDialog";
+import { getDiscountedPrice } from "@/lib/pricing";
 
 type Booking = {
   id: string;
@@ -39,8 +40,11 @@ type Booking = {
     name: string;
     slug: string;
     coverImageUrl: string | null;
+    basePrice: number;
+    currency: string;
+    discountPercent: number;
   };
-  payment: {
+  payments: {
     id: string;
     reference: string;
     status: string | null;
@@ -49,9 +53,11 @@ type Booking = {
     method: string;
     provider: string | null;
     transactionId: string | null;
+    dueAt: string | null;
+    paidAt: string | null;
     createdAt: string;
     updatedAt: string;
-  } | null;
+  }[];
 };
 
 const statusLabels: Record<string, string> = {
@@ -70,7 +76,7 @@ const statusColors: Record<string, "default" | "secondary" | "destructive" | "ou
 
 const paymentStatusLabels: Record<string, string> = {
   PENDING: "En attente",
-  SUCCESS: "Payé",
+  SUCCESS: "Encaissé",
   FAILED: "Échoué",
   REFUNDED: "Remboursé",
 };
@@ -88,11 +94,13 @@ export default function AdminBookingDetailPage() {
   const { data, loading, error, refetch } = useApi<{ booking: Booking }>(`/api/admin/admin-bookings/${id}`);
   const router = useRouter();
   const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentCurrency, setPaymentCurrency] = useState("XOF");
   const [paymentMethod, setPaymentMethod] = useState("CASH");
   const [paymentReference, setPaymentReference] = useState("");
   const [paymentStatus, setPaymentStatus] = useState("SUCCESS");
+  const [paymentDueAt, setPaymentDueAt] = useState("");
   const [savingPayment, setSavingPayment] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editRoom, setEditRoom] = useState<BookingFormRoom | null>(null);
@@ -149,21 +157,24 @@ export default function AdminBookingDetailPage() {
   };
 
   const resetPaymentForm = () => {
+    setEditingPaymentId(null);
     setPaymentAmount("");
     setPaymentCurrency("XOF");
     setPaymentMethod("CASH");
     setPaymentReference("");
     setPaymentStatus("SUCCESS");
+    setPaymentDueAt("");
   };
 
-  const openPaymentForm = () => {
-    const payment = data?.booking.payment;
+  const openPaymentForm = (payment?: Booking["payments"][number]) => {
     if (payment) {
+      setEditingPaymentId(payment.id);
       setPaymentAmount(String(payment.amount));
       setPaymentCurrency(payment.currency || "XOF");
       setPaymentMethod(payment.method || "CASH");
       setPaymentReference(payment.reference || "");
       setPaymentStatus(payment.status || "SUCCESS");
+      setPaymentDueAt(payment.dueAt ? payment.dueAt.split("T")[0] : "");
     } else {
       resetPaymentForm();
     }
@@ -185,14 +196,18 @@ export default function AdminBookingDetailPage() {
         method: paymentMethod,
         reference: paymentReference || undefined,
         status: paymentStatus,
+        dueAt: paymentDueAt || undefined,
       };
 
-      if (data.booking.payment) {
-        await api.patch(`/api/admin/admin-bookings/${data.booking.id}/payment`, payload);
-        toast.success("Paiement modifié avec succès");
+      if (editingPaymentId) {
+        await api.patch(`/api/admin/admin-bookings/${data.booking.id}/payment`, {
+          ...payload,
+          paymentId: editingPaymentId,
+        });
+        toast.success("Échéance modifiée");
       } else {
         await api.post(`/api/admin/admin-bookings/${data.booking.id}/payment`, payload);
-        toast.success("Paiement ajouté avec succès");
+        toast.success("Échéance ajoutée");
       }
 
       setShowPaymentForm(false);
@@ -205,18 +220,33 @@ export default function AdminBookingDetailPage() {
     }
   };
 
-  const deletePayment = async () => {
-    if (!data?.booking.payment) return;
-    if (!confirm("Supprimer ce paiement ?")) return;
+  const deletePayment = async (paymentId: string) => {
+    if (!data) return;
+    if (!confirm("Supprimer cette échéance ?")) return;
 
     try {
-      await api.del(`/api/admin/admin-bookings/${data.booking.id}/payment`);
-      toast.success("Paiement supprimé");
-      setShowPaymentForm(false);
-      resetPaymentForm();
+      await api.del(`/api/admin/admin-bookings/${data.booking.id}/payment?paymentId=${paymentId}`);
+      toast.success("Échéance supprimée");
       refetch();
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Erreur lors de la suppression du paiement");
+      toast.error(err instanceof ApiError ? err.message : "Erreur lors de la suppression");
+    }
+  };
+
+  const markPaymentPaid = async (payment: Booking["payments"][number]) => {
+    if (!data) return;
+    try {
+      await api.patch(`/api/admin/admin-bookings/${data.booking.id}/payment`, {
+        paymentId: payment.id,
+        amount: payment.amount,
+        currency: payment.currency,
+        method: payment.method,
+        status: "SUCCESS",
+      });
+      toast.success("Échéance encaissée");
+      refetch();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Erreur");
     }
   };
 
@@ -402,128 +432,169 @@ export default function AdminBookingDetailPage() {
           </div>
 
           <div className="rounded-2xl bg-card border border-border p-6">
-            <h3 className="font-semibold mb-4 flex items-center gap-2">
-              <CreditCard className="h-4 w-4" />
-              Paiement
-            </h3>
-            {booking.payment && !showPaymentForm && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <div className="text-sm text-muted-foreground">Montant</div>
-                    <div className="font-display text-2xl">
-                      {new Intl.NumberFormat("fr-FR").format(booking.payment.amount)} {booking.payment.currency}
-                    </div>
-                  </div>
-                  <Badge variant={booking.payment.status ? paymentStatusColors[booking.payment.status] : "secondary"}>
-                    {booking.payment.status ? paymentStatusLabels[booking.payment.status] : booking.payment.status}
-                  </Badge>
-                </div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <div className="text-muted-foreground">Référence</div>
-                    <div className="font-medium">{booking.payment.reference}</div>
-                  </div>
-                  <div>
-                    <div className="text-muted-foreground">Méthode</div>
-                    <div className="font-medium">{booking.payment.method}</div>
-                  </div>
-                  <div>
-                    <div className="text-muted-foreground">Date du paiement</div>
-                    <div className="font-medium">
-                      {format(new Date(booking.payment.createdAt), "dd MMM yyyy à HH:mm", { locale: fr })}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-muted-foreground">Dernière mise à jour</div>
-                    <div className="font-medium">
-                      {format(new Date(booking.payment.updatedAt), "dd MMM yyyy à HH:mm", { locale: fr })}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-muted-foreground">ID de transaction</div>
-                    <div className="font-medium break-all">{booking.payment.transactionId || "—"}</div>
-                  </div>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-2 pt-2">
-                  <Button onClick={openPaymentForm} className="flex-1">Modifier le paiement</Button>
-                  <Button variant="destructive" onClick={deletePayment} className="flex-1">Supprimer le paiement</Button>
-                </div>
-              </div>
-            )}
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold flex items-center gap-2">
+                <CreditCard className="h-4 w-4" />
+                Échéancier de paiement
+              </h3>
+              {!showPaymentForm && (
+                <Button size="sm" onClick={() => openPaymentForm()}>
+                  Ajouter une échéance
+                </Button>
+              )}
+            </div>
 
-            {!booking.payment && !showPaymentForm && (
+            {booking.payments.length === 0 && !showPaymentForm && (
               <div className="space-y-4">
-                <p className="text-muted-foreground">Aucun paiement enregistré</p>
-                <Button onClick={openPaymentForm} className="w-full">
-                  Ajouter un paiement
+                <p className="text-muted-foreground">Aucune échéance enregistrée</p>
+                <Button onClick={() => openPaymentForm()} className="w-full">
+                  Ajouter un acompte
                 </Button>
               </div>
             )}
 
+            {booking.payments.length > 0 && (
+              <div className="space-y-3">
+                {booking.payments.map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex items-start justify-between gap-3 rounded-xl border border-border p-4"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-display text-lg">
+                          {new Intl.NumberFormat("fr-FR").format(p.amount)} {p.currency}
+                        </span>
+                        <Badge variant={p.status ? paymentStatusColors[p.status] : "secondary"}>
+                          {p.status ? paymentStatusLabels[p.status] || p.status : "—"}
+                        </Badge>
+                      </div>
+                      <div className="mt-1 text-xs text-muted-foreground space-y-0.5">
+                        <div>Réf {p.reference} · {p.method}</div>
+                        {p.dueAt && (
+                          <div>Échéance : {format(new Date(p.dueAt), "dd MMM yyyy", { locale: fr })}</div>
+                        )}
+                        {p.paidAt && (
+                          <div>Encaissé le {format(new Date(p.paidAt), "dd MMM yyyy à HH:mm", { locale: fr })}</div>
+                        )}
+                        {p.transactionId && (
+                          <div className="break-all">Transaction : {p.transactionId}</div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 gap-1">
+                      {p.status === "PENDING" && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Marquer comme encaissé"
+                          onClick={() => markPaymentPaid(p)}
+                        >
+                          <CheckCircle2 className="h-4 w-4 text-green-600" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Modifier"
+                        onClick={() => openPaymentForm(p)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Supprimer"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => deletePayment(p.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {showPaymentForm && (
-              <div className="space-y-4 pt-4 border-t border-border">
-                <div>
-                  <label className="text-sm font-medium">Montant</label>
-                  <input
-                    type="number"
-                    value={paymentAmount}
-                    onChange={(e) => setPaymentAmount(e.target.value)}
-                    className="w-full mt-1 px-3 py-2 border border-border rounded-md"
-                    placeholder="Montant"
-                  />
+              <div className="space-y-4 pt-4 mt-4 border-t border-border">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-sm font-medium">Montant *</label>
+                    <input
+                      type="number"
+                      value={paymentAmount}
+                      onChange={(e) => setPaymentAmount(e.target.value)}
+                      className="w-full mt-1 px-3 py-2 border border-border rounded-md"
+                      placeholder="Montant"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Devise</label>
+                    <select
+                      value={paymentCurrency}
+                      onChange={(e) => setPaymentCurrency(e.target.value)}
+                      className="w-full mt-1 px-3 py-2 border border-border rounded-md"
+                    >
+                      <option value="XOF">XOF</option>
+                      <option value="USD">USD</option>
+                      <option value="EUR">EUR</option>
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-sm font-medium">Devise</label>
-                  <select
-                    value={paymentCurrency}
-                    onChange={(e) => setPaymentCurrency(e.target.value)}
-                    className="w-full mt-1 px-3 py-2 border border-border rounded-md"
-                  >
-                    <option value="XOF">XOF</option>
-                    <option value="USD">USD</option>
-                    <option value="EUR">EUR</option>
-                  </select>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-sm font-medium">Méthode</label>
+                    <select
+                      value={paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      className="w-full mt-1 px-3 py-2 border border-border rounded-md"
+                    >
+                      <option value="CASH">Espèces</option>
+                      <option value="CARD">Carte</option>
+                      <option value="BANK_TRANSFER">Virement</option>
+                      <option value="MOBILE_MONEY">Mobile Money</option>
+                      <option value="ON_SITE">Sur place</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Date d&apos;échéance</label>
+                    <input
+                      type="date"
+                      value={paymentDueAt}
+                      onChange={(e) => setPaymentDueAt(e.target.value)}
+                      className="w-full mt-1 px-3 py-2 border border-border rounded-md"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="text-sm font-medium">Méthode</label>
-                  <select
-                    value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    className="w-full mt-1 px-3 py-2 border border-border rounded-md"
-                  >
-                    <option value="CASH">Espèces</option>
-                    <option value="CARD">Carte</option>
-                    <option value="BANK_TRANSFER">Virement</option>
-                    <option value="MOBILE_MONEY">Mobile Money</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Référence (optionnel)</label>
-                  <input
-                    type="text"
-                    value={paymentReference}
-                    onChange={(e) => setPaymentReference(e.target.value)}
-                    className="w-full mt-1 px-3 py-2 border border-border rounded-md"
-                    placeholder="Référence du paiement"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Statut</label>
-                  <select
-                    value={paymentStatus}
-                    onChange={(e) => setPaymentStatus(e.target.value)}
-                    className="w-full mt-1 px-3 py-2 border border-border rounded-md"
-                  >
-                    <option value="SUCCESS">Payé</option>
-                    <option value="PENDING">En attente</option>
-                    <option value="FAILED">Échoué</option>
-                    <option value="REFUNDED">Remboursé</option>
-                  </select>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-sm font-medium">Statut</label>
+                    <select
+                      value={paymentStatus}
+                      onChange={(e) => setPaymentStatus(e.target.value)}
+                      className="w-full mt-1 px-3 py-2 border border-border rounded-md"
+                    >
+                      <option value="SUCCESS">Encaissé</option>
+                      <option value="PENDING">En attente</option>
+                      <option value="FAILED">Échoué</option>
+                      <option value="REFUNDED">Remboursé</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Référence (optionnel)</label>
+                    <input
+                      type="text"
+                      value={paymentReference}
+                      onChange={(e) => setPaymentReference(e.target.value)}
+                      className="w-full mt-1 px-3 py-2 border border-border rounded-md"
+                      placeholder="Référence du paiement"
+                    />
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <Button onClick={savePayment} disabled={savingPayment} className="flex-1">
-                    {savingPayment ? "Enregistrement..." : booking.payment ? "Modifier" : "Ajouter"}
+                    {savingPayment ? "Enregistrement..." : editingPaymentId ? "Modifier" : "Ajouter"}
                   </Button>
                   <Button variant="outline" onClick={() => { setShowPaymentForm(false); resetPaymentForm(); }} className="flex-1">
                     Annuler
@@ -535,16 +606,50 @@ export default function AdminBookingDetailPage() {
 
           <div className="rounded-2xl bg-card border border-border p-6">
             <h3 className="font-semibold mb-4">Récapitulatif</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Total</span>
-                <span className="font-display text-xl">
-                  {booking.payment
-                    ? `${new Intl.NumberFormat("fr-FR").format(booking.payment.amount)} ${booking.payment.currency}`
-                    : "—"}
-                </span>
-              </div>
-            </div>
+            {(() => {
+              const nights = Math.max(
+                1,
+                Math.round((new Date(booking.checkOut).getTime() - new Date(booking.checkIn).getTime()) / 86400000)
+              );
+              const nightlyRate = getDiscountedPrice(booking.room.basePrice, booking.room.discountPercent);
+              const stayTotal = nightlyRate * nights;
+              const currency = booking.payments[0]?.currency || booking.room.currency;
+              const paid = booking.payments
+                .filter((p) => p.status === "SUCCESS")
+                .reduce((s, p) => s + p.amount, 0);
+              const pending = booking.payments
+                .filter((p) => p.status === "PENDING")
+                .reduce((s, p) => s + p.amount, 0);
+              const remaining = Math.max(0, stayTotal - paid);
+              const fmtAmount = (n: number) => `${new Intl.NumberFormat("fr-FR").format(n)} ${currency}`;
+              return (
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">
+                      Total séjour ({nights} nuit{nights > 1 ? "s" : ""})
+                      {booking.room.discountPercent > 0 && (
+                        <span className="ml-1.5 text-green-600">(promo -{booking.room.discountPercent}%)</span>
+                      )}
+                    </span>
+                    <span className="font-medium">{fmtAmount(stayTotal)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Encaissé</span>
+                    <span className="font-medium text-green-600">{fmtAmount(paid)}</span>
+                  </div>
+                  {pending > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Échéances en attente</span>
+                      <span className="font-medium">{fmtAmount(pending)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between pt-2 border-t border-border">
+                    <span className="text-muted-foreground">Reste à payer</span>
+                    <span className="font-display text-xl">{fmtAmount(remaining)}</span>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>

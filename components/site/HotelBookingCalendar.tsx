@@ -300,6 +300,13 @@ export default function HotelBookingCalendar({
   function handleDayClick(date: Date, disabled: boolean) {
     if (disabled) return;
 
+    // Une seule date est sélectionnée (arrivée en attente de départ) : un nouveau clic
+    // sur cette même date la désélectionne.
+    if (checkIn && !checkOut && sameDay(date, checkIn)) {
+      clearSelection();
+      return;
+    }
+
     if (!checkIn || (checkIn && checkOut)) {
       setCheckIn(date);
       setCheckOut(null);

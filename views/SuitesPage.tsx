@@ -12,6 +12,8 @@ import { fr } from "date-fns/locale";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getDiscountedPrice } from "@/lib/pricing";
+
 
 type Room = {
   id: string;
@@ -21,6 +23,7 @@ type Room = {
   shortDescription: string | null;
   basePrice: number;
   currency: string;
+  discountPercent: number;
   maxGuests: number;
   beds: number | null;
   bathrooms: number | null;
@@ -129,10 +132,11 @@ function SuitesPageContent() {
   const categories = useMemo(() => {
     const map = new Map<string, { name: string; from: number; count: number }>();
     rooms.forEach((r) => {
+      const price = getDiscountedPrice(r.basePrice, r.discountPercent);
       const prev = map.get(r.roomType.name);
       map.set(r.roomType.name, {
         name: r.roomType.name,
-        from: prev ? Math.min(prev.from, r.basePrice) : r.basePrice,
+        from: prev ? Math.min(prev.from, price) : price,
         count: (prev?.count ?? 0) + 1,
       });
     });
@@ -148,8 +152,8 @@ function SuitesPageContent() {
       if (availableOnly && showAvailability && roomAvailability[r.id] === false) return false;
       return true;
     });
-    if (sort === "Prix croissant") out = [...out].sort((a, b) => a.basePrice - b.basePrice);
-    if (sort === "Prix décroissant") out = [...out].sort((a, b) => b.basePrice - a.basePrice);
+    if (sort === "Prix croissant") out = [...out].sort((a, b) => getDiscountedPrice(a.basePrice, a.discountPercent) - getDiscountedPrice(b.basePrice, b.discountPercent));
+    if (sort === "Prix décroissant") out = [...out].sort((a, b) => getDiscountedPrice(b.basePrice, b.discountPercent) - getDiscountedPrice(a.basePrice, a.discountPercent));
     if (sort === "Surface") out = [...out].sort((a, b) => (b.sizeSqm ?? 0) - (a.sizeSqm ?? 0));
     // Les chambres disponibles d'abord
     if (showAvailability) {
@@ -395,12 +399,24 @@ function RoomCard({
             {unavailable && (
               <span className="bg-card text-foreground text-xs font-semibold px-2.5 py-1.5">Complet à ces dates</span>
             )}
+            {room.discountPercent > 0 && !unavailable && (
+              <span className="bg-red-600 text-white text-xs font-semibold px-2.5 py-1.5">-{room.discountPercent}%</span>
+            )}
           </div>
 
           {!unavailable && (
             <span className="price-stamp absolute left-4 bottom-4">
               <small>la nuit, dès</small>
-              <strong>{formatFcfa(room.basePrice, room.currency).replace(" FCFA", " F")}</strong>
+              {room.discountPercent > 0 ? (
+                <>
+                  <span className="text-xs line-through opacity-70">
+                    {formatFcfa(room.basePrice, room.currency).replace(" FCFA", " F")}
+                  </span>
+                  <strong>{formatFcfa(getDiscountedPrice(room.basePrice, room.discountPercent), room.currency).replace(" FCFA", " F")}</strong>
+                </>
+              ) : (
+                <strong>{formatFcfa(room.basePrice, room.currency).replace(" FCFA", " F")}</strong>
+              )}
             </span>
           )}
         </div>
@@ -419,7 +435,7 @@ function RoomCard({
           <div className="mt-4 pt-4 border-t border-border flex items-center justify-between gap-4">
             {!unavailable && nights > 0 ? (
               <p className="text-sm">
-                <span className="font-semibold tabular">{formatFcfa(room.basePrice * nights, room.currency)}</span>
+                <span className="font-semibold tabular">{formatFcfa(getDiscountedPrice(room.basePrice, room.discountPercent) * nights, room.currency)}</span>
                 <span className="text-muted-foreground"> · {nights} nuit{nights > 1 ? "s" : ""}</span>
               </p>
             ) : (

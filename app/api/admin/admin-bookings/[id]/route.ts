@@ -15,8 +15,8 @@ const handler = withAuth(async (req) => {
       where: { id },
       include: {
         user: { select: { id: true, name: true, email: true, phone: true, role: true } },
-        room: { select: { id: true, name: true, slug: true, coverImageUrl: true } },
-        payment: {
+        room: { select: { id: true, name: true, slug: true, coverImageUrl: true, basePrice: true, currency: true, discountPercent: true } },
+        payments: {
           select: {
             id: true,
             reference: true,
@@ -26,10 +26,12 @@ const handler = withAuth(async (req) => {
             method: true,
             provider: true,
             transactionId: true,
+            dueAt: true,
             paidAt: true,
             createdAt: true,
             updatedAt: true,
           },
+          orderBy: [{ dueAt: "asc" }, { createdAt: "asc" }],
         },
       },
     });

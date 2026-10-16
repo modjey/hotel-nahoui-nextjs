@@ -73,11 +73,22 @@ export async function settlePaymentByReference(
           });
         }
       } else if (incomingStatus === "FAILED" && existing.booking.status === "PENDING") {
-        bookingStatus = "CANCELLED";
-        await tx.booking.update({
-          where: { id: existing.booking.id },
-          data: { status: "CANCELLED", expiresAt: null },
+        // Avec un échéancier, un versement échoué n'annule la réservation que
+        // s'il ne reste ni échéance en attente ni acompte déjà encaissé.
+        const remaining = await tx.payment.count({
+          where: {
+            bookingId: existing.booking.id,
+            status: { in: ["PENDING", "SUCCESS"] },
+            id: { not: payment.id },
+          },
         });
+        if (remaining === 0) {
+          bookingStatus = "CANCELLED";
+          await tx.booking.update({
+            where: { id: existing.booking.id },
+            data: { status: "CANCELLED", expiresAt: null },
+          });
+        }
       }
     }
 

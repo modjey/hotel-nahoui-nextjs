@@ -21,6 +21,7 @@ import { api, ApiError } from "@/lib/api-client";
 import { useApi } from "@/hooks/use-api";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Search, BedDouble, Power, Eye, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { getDiscountedPrice } from "@/lib/pricing";
 
 type Room = {
   id: string;
@@ -28,6 +29,7 @@ type Room = {
   name: string;
   basePrice: number;
   currency: string;
+  discountPercent: number;
   maxGuests: number;
   beds: number;
   coverImageUrl: string | null;
@@ -46,7 +48,7 @@ type Room = {
     guestEmail: string | null;
     guestPhone: string | null;
     status: string;
-    payment: { status: string | null } | null;
+    payments: { status: string | null }[];
     userId: string | null;
   }>;
 };
@@ -181,7 +183,21 @@ export default function AdminRoomsPage() {
                   <TableCell className="text-muted-foreground">{r.location.name}</TableCell>
                   <TableCell className="text-muted-foreground">{r.roomType.name}</TableCell>
                   <TableCell className="font-medium">
-                    {r.basePrice.toLocaleString()} {r.currency}
+                    {r.discountPercent > 0 ? (
+                      <div className="flex flex-col">
+                        <span className="text-xs text-muted-foreground line-through">
+                          {r.basePrice.toLocaleString()} {r.currency}
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          {getDiscountedPrice(r.basePrice, r.discountPercent).toLocaleString()} {r.currency}
+                          <Badge className="text-[10px] px-1 py-0 bg-red-600 text-white border-red-600">
+                            -{r.discountPercent}%
+                          </Badge>
+                        </span>
+                      </div>
+                    ) : (
+                      <>{r.basePrice.toLocaleString()} {r.currency}</>
+                    )}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {r.maxGuests} pers · {r.beds} lit{r.beds > 1 ? "s" : ""}
@@ -222,7 +238,7 @@ export default function AdminRoomsPage() {
                               }`}>
                                 {b.status === "CONFIRMED" ? "Confirmé" : "En attente"}
                               </Badge>
-                              {b.payment?.status === "SUCCESS" && (
+                              {b.payments?.some((p) => p.status === "SUCCESS") && (
                                 <Badge className="text-[10px] px-1 py-0 bg-green-600 text-white border-green-600">
                                   Payé
                                 </Badge>

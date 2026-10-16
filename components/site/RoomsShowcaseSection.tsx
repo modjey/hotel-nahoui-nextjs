@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getDiscountedPrice } from "@/lib/pricing";
 
 type Room = {
   id: string;
@@ -15,6 +16,7 @@ type Room = {
   maxGuests?: number | null;
   basePrice?: number | null;
   currency?: string | null;
+  discountPercent?: number | null;
   coverImageUrl: string | null;
   roomType: { name: string } | null;
 };
@@ -124,9 +126,26 @@ export function RoomsShowcaseSection() {
                     {room.basePrice ? (
                       <span className="price-stamp absolute left-4 bottom-4">
                         <small>dès</small>
-                        <strong>
-                          {formatPrice(room.basePrice)} {room.currency === "XOF" || !room.currency ? "F" : room.currency}
-                        </strong>
+                        {room.discountPercent ? (
+                          <>
+                            <span className="text-xs line-through opacity-70">
+                              {formatPrice(room.basePrice)}
+                            </span>
+                            <strong>
+                              {formatPrice(getDiscountedPrice(room.basePrice, room.discountPercent))}{" "}
+                              {room.currency === "XOF" || !room.currency ? "F" : room.currency}
+                            </strong>
+                          </>
+                        ) : (
+                          <strong>
+                            {formatPrice(room.basePrice)} {room.currency === "XOF" || !room.currency ? "F" : room.currency}
+                          </strong>
+                        )}
+                      </span>
+                    ) : null}
+                    {room.discountPercent ? (
+                      <span className="absolute right-4 top-4 bg-red-600 text-white text-xs font-semibold px-2 py-1">
+                        -{room.discountPercent}%
                       </span>
                     ) : null}
                   </div>
