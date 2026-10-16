@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { ImageUpload } from "@/components/admin/ImageUpload";
+import { flushPendingUploads } from "@/lib/pending-uploads";
 import { api, ApiError } from "@/lib/api-client";
 import { useApi } from "@/hooks/use-api";
 import { ArrowLeft, Loader2 } from "lucide-react";
@@ -41,7 +42,11 @@ export default function NewPhotoAlbumPage() {
     setLoading(true);
 
     try {
-      await api.post("/api/admin/admin-photo-albums", formData);
+      const uploaded = await flushPendingUploads();
+      await api.post("/api/admin/admin-photo-albums", {
+        ...formData,
+        coverImage: uploaded.coverImage ?? formData.coverImage,
+      });
       router.push("/admin/admin-photo-albums");
     } catch (err) {
       alert(err instanceof ApiError ? err.message : "Erreur lors de la création");
@@ -123,6 +128,7 @@ export default function NewPhotoAlbumPage() {
               value={formData.coverImage}
               onChange={(value) => setFormData({ ...formData, coverImage: value })}
               folder="albums"
+              name="coverImage"
             />
           </div>
 

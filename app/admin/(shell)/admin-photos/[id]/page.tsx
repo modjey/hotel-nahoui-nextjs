@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { ImageUpload } from "@/components/admin/ImageUpload";
+import { flushPendingUploads } from "@/lib/pending-uploads";
 import { api, ApiError } from "@/lib/api-client";
 import { useApi } from "@/hooks/use-api";
 import { ArrowLeft, Trash2 } from "lucide-react";
@@ -56,7 +57,11 @@ export default function EditPhotoPage({ params }: { params: Promise<{ id: string
     setLoading(true);
 
     try {
-      await api.put(`/api/admin/admin-photos/${id}`, formData);
+      const uploaded = await flushPendingUploads();
+      await api.put(`/api/admin/admin-photos/${id}`, {
+        ...formData,
+        imageUrl: uploaded.imageUrl ?? formData.imageUrl,
+      });
       router.push("/admin/admin-photos");
     } catch (err) {
       alert(err instanceof ApiError ? err.message : "Erreur lors de la mise à jour");
@@ -100,6 +105,7 @@ export default function EditPhotoPage({ params }: { params: Promise<{ id: string
               value={formData.imageUrl}
               onChange={(value) => setFormData({ ...formData, imageUrl: value })}
               folder="photos"
+              name="imageUrl"
             />
           </div>
           <div className="grid gap-2">

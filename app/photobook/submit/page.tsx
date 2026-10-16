@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ImageUpload } from "@/components/admin/ImageUpload";
+import { flushPendingUploads } from "@/lib/pending-uploads";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
 import { ArrowLeft, Upload, CheckCircle } from "lucide-react";
@@ -58,6 +59,7 @@ export default function SubmitPhotoPage() {
     setLoading(true);
 
     try {
+      const uploaded = await flushPendingUploads();
       const response = await fetch("/api/admin/admin-photos", {
         method: "POST",
         headers: {
@@ -65,6 +67,7 @@ export default function SubmitPhotoPage() {
         },
         body: JSON.stringify({
           ...formData,
+          imageUrl: uploaded.imageUrl ?? formData.imageUrl,
           isApproved: false, // Requires moderation
           isFeatured: false,
         }),
@@ -141,6 +144,7 @@ export default function SubmitPhotoPage() {
                 value={formData.imageUrl}
                 onChange={(value) => setFormData({ ...formData, imageUrl: value })}
                 folder="photos"
+                name="imageUrl"
               />
             </div>
 

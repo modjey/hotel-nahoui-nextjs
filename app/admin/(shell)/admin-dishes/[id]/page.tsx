@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ImageUpload } from "@/components/admin/ImageUpload";
+import { flushPendingUploads } from "@/lib/pending-uploads";
 import { api, ApiError } from "@/lib/api-client";
 import { useApi, useMutation } from "@/hooks/use-api";
 import { toast } from "sonner";
@@ -82,6 +83,15 @@ export default function AdminDishEditPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    let uploaded: Record<string, string>;
+    try {
+      uploaded = await flushPendingUploads();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur d'upload");
+      return;
+    }
+
     const fd = new FormData(e.currentTarget);
     const raw = Object.fromEntries(fd.entries());
 
@@ -90,7 +100,7 @@ export default function AdminDishEditPage() {
       categoryId,
       locationId,
       currency,
-      imageUrl: imageUrl || null,
+      imageUrl: uploaded.imageUrl ?? (imageUrl || null),
       isAvailable: raw.isAvailable === "on",
       isPublished: raw.isPublished === "on",
       isFeatured: raw.isFeatured === "on",
@@ -219,7 +229,7 @@ export default function AdminDishEditPage() {
           <h2 className="font-display text-lg">Image</h2>
           <div className="grid gap-2">
             <Label>Image du plat</Label>
-            <ImageUpload value={imageUrl} onChange={setImageUrl} folder="dishes" />
+            <ImageUpload value={imageUrl} onChange={setImageUrl} folder="dishes" name="imageUrl" />
           </div>
         </section>
 

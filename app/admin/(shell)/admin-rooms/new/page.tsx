@@ -22,6 +22,7 @@ import { api } from "@/lib/api-client";
 import { useApi, useMutation } from "@/hooks/use-api";
 import { roomCreateSchema, parseYoutubeId } from "@/lib/catalog/schemas";
 import { compressImage } from "@/lib/image-compress";
+import { flushPendingUploads } from "@/lib/pending-uploads";
 import { z } from "zod";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, Plus, Trash2, Youtube } from "lucide-react";
@@ -29,7 +30,10 @@ import { ArrowLeft, Loader2, Plus, Trash2, Youtube } from "lucide-react";
 type PendingMedia = {
   localId: string;
   type: "IMAGE" | "VIDEO";
+  /** Aperçu : blob URL locale pour les images, URL YouTube pour les vidéos. */
   url: string;
+  /** Fichier image en attente — téléversé à la création de la chambre. */
+  file?: File;
   title?: string;
 };
 
@@ -62,25 +66,16 @@ export default function NewRoomPage() {
     try {
       for (const file of Array.from(files)) {
         const compressed = await compressImage(file);
-        const fd = new FormData();
-        fd.append("file", compressed);
-        fd.append("folder", "rooms");
-        const res = await fetch("/api/admin/upload", {
-          method: "POST",
-          body: fd,
-          credentials: "include",
-        });
-        const json = await res.json();
-        if (!res.ok || !json?.success) throw new Error(json?.error?.message ?? "Erreur d'upload");
         added.push({
           localId: crypto.randomUUID(),
           type: "IMAGE",
-          url: json.data.url,
+          url: URL.createObjectURL(compressed),
+          file: compressed,
           title: file.name,
         });
       }
       setPendingMedia((prev) => [...prev, ...added]);
-      toast.success(`${added.length} image${added.length > 1 ? "s" : ""} prête${added.length > 1 ? "s" : ""}`);
+      toast.success(`${added.length} image${added.length > 1 ? "s" : ""} en attente — envoyée${added.length > 1 ? "s" : ""} à l'enregistrement`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erreur");
     } finally {
@@ -112,20 +107,38 @@ export default function NewRoomPage() {
     "/api/admin/admin-rooms",
     {
       onSuccess: async (res) => {
-        // Attacher tous les médias en attente à la chambre créée
+        // Attacher tous les médias en attente à la chambre créée.
+        // Les images locales sont d'abord téléversées pour obtenir leur URL.
         if (pendingMedia.length > 0) {
           try {
-            await Promise.all(
-              pendingMedia.map((m, i) =>
-                api.post("/api/admin/admin-media", {
+            const resolved = await Promise.all(
+              pendingMedia.map(async (m, i) => {
+                let url = m.url;
+                if (m.file) {
+                  const fd = new FormData();
+                  fd.append("file", m.file);
+                  fd.append("folder", "rooms");
+                  const uploadRes = await fetch("/api/admin/upload", {
+                    method: "POST",
+                    body: fd,
+                    credentials: "include",
+                  });
+                  const json = await uploadRes.json();
+                  if (!uploadRes.ok || !json?.success) {
+                    throw new Error(json?.error?.message ?? "Erreur d'upload");
+                  }
+                  url = json.data.url;
+                }
+                return api.post("/api/admin/admin-media", {
                   type: m.type,
-                  url: m.url,
+                  url,
                   title: m.title,
                   order: i,
                   roomId: res.room.id,
-                }),
-              ),
+                });
+              }),
             );
+            void resolved;
             toast.success(`Chambre créée avec ${pendingMedia.length} média${pendingMedia.length > 1 ? "s" : ""}`);
           } catch {
             toast.warning("Chambre créée mais certains médias n'ont pas pu être attachés");
@@ -140,6 +153,15 @@ export default function NewRoomPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    let uploaded: Record<string, string>;
+    try {
+      uploaded = await flushPendingUploads();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur d'upload");
+      return;
+    }
+
     const fd = new FormData(e.currentTarget);
     const raw = Object.fromEntries(fd.entries());
 
@@ -149,7 +171,7 @@ export default function NewRoomPage() {
       roomTypeId,
       currency,
       roomNumber: raw.roomNumber || null,
-      coverImageUrl: coverImageUrl || null,
+      coverImageUrl: uploaded.coverImageUrl ?? (coverImageUrl || null),
       amenities,
       isPublished: raw.isPublished === "on",
       basePrice: raw.basePrice ? Number(raw.basePrice) : 0,
@@ -311,6 +333,7 @@ export default function NewRoomPage() {
               value={coverImageUrl}
               onChange={setCoverImageUrl}
               folder="rooms"
+              name="coverImageUrl"
             />
           </div>
           <div className="grid gap-2">

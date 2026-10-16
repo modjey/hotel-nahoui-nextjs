@@ -45,7 +45,16 @@ export default function AdminRoomTypeEditPage() {
 
   const update = useMutation<{ type: RoomType }, z.infer<typeof roomTypeUpdateSchema>>(
     `/api/admin/admin-room-types/${slug}`,
-    { method: "PATCH", onSuccess: () => toast.success("Mis à jour") },
+    {
+      method: "PATCH",
+      onSuccess: (res) => {
+        toast.success("Mis à jour");
+        // Le nom peut régénérer le slug côté API : suivre la nouvelle URL.
+        if (res.type.slug !== slug) {
+          router.replace(`/admin/admin-room-types/${res.type.slug}`);
+        }
+      },
+    },
   );
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {

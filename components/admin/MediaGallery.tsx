@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api, ApiError } from "@/lib/api-client";
 import { Loader2, Plus, Trash2, Link as LinkIcon, Youtube, Pencil, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/image-compress";
+import { registerPendingUpload } from "@/lib/pending-uploads";
 
 export type MediaItem = {
   id: string;
@@ -17,6 +18,14 @@ export type MediaItem = {
   title: string | null;
   alt: string | null;
   order: number;
+};
+
+type PendingFile = {
+  localId: string;
+  file: File;
+  /** Aperçu local (blob URL) — pas encore envoyé au serveur. */
+  previewUrl: string;
+  title: string;
 };
 
 interface MediaGalleryProps {
@@ -32,6 +41,12 @@ interface MediaGalleryProps {
   folder?: string;
 }
 
+/**
+ * Galerie média : les fichiers choisis restent en attente (aperçu blob) et
+ * ne sont téléversés qu'à la soumission du formulaire parent via
+ * flushPendingUploads(). Les suppressions/éditions/ajouts YouTube portent
+ * sur des médias déjà en base et restent immédiats.
+ */
 export function MediaGallery({
   roomId,
   locationId,
@@ -40,7 +55,8 @@ export function MediaGallery({
   folder = "general",
 }: MediaGalleryProps) {
   const fileRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
+  const [preparing, setPreparing] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [addingYt, setAddingYt] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -49,6 +65,50 @@ export function MediaGallery({
 
   const parentPayload = roomId ? { roomId } : { locationId };
 
+  // Refs lus par le flush enregistré (toujours à jour, sans réenregistrement).
+  const pendingRef = useRef<PendingFile[]>([]);
+  const parentRef = useRef(parentPayload);
+  const onChangeRef = useRef(onChange);
+  pendingRef.current = pendingFiles;
+  parentRef.current = parentPayload;
+  onChangeRef.current = onChange;
+
+  useEffect(() => {
+    return registerPendingUpload({
+      flush: async () => {
+        const files = pendingRef.current;
+        if (!files.length) return null;
+        let count = 0;
+        for (const p of files) {
+          const fd = new FormData();
+          fd.append("file", p.file);
+          fd.append("folder", folder);
+          const res = await fetch("/api/admin/upload", {
+            method: "POST",
+            body: fd,
+            credentials: "include",
+          });
+          const json = await res.json();
+          if (!res.ok || !json?.success) {
+            throw new Error(json?.error?.message ?? "Erreur d'upload");
+          }
+          await api.post("/api/admin/admin-media", {
+            type: "IMAGE",
+            provider: "LOCAL",
+            url: json.data.url,
+            title: p.title,
+            order: media.length + count,
+            ...parentRef.current,
+          });
+          count++;
+        }
+        setPendingFiles([]);
+        onChangeRef.current();
+        return null;
+      },
+    });
+  }, [folder, media.length]);
+
   // Extract YouTube video ID from URL
   const getYoutubeId = (url: string) => {
     const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
@@ -56,45 +116,30 @@ export function MediaGallery({
   };
 
   const handleFiles = async (files: FileList) => {
-    setUploading(true);
-    let count = 0;
+    setPreparing(true);
     try {
+      const added: PendingFile[] = [];
       for (const file of Array.from(files)) {
-        // Étape 1 : upload binaire
         const compressed = await compressImage(file);
-        const fd = new FormData();
-        fd.append("file", compressed);
-        fd.append("folder", folder);
-        const res = await fetch("/api/admin/upload", {
-          method: "POST",
-          body: fd,
-          credentials: "include",
-        });
-        const json = await res.json();
-        if (!res.ok || !json?.success) {
-          throw new Error(json?.error?.message ?? "Erreur d'upload");
-        }
-        const url = json.data.url as string;
-
-        // Étape 2 : création du Media en base
-        await api.post("/api/admin/admin-media", {
-          type: "IMAGE",
-          provider: "LOCAL",
-          url,
+        added.push({
+          localId: crypto.randomUUID(),
+          file: compressed,
+          previewUrl: URL.createObjectURL(compressed),
           title: file.name,
-          order: media.length + count,
-          ...parentPayload,
         });
-        count++;
       }
-      toast.success(`${count} image${count > 1 ? "s" : ""} ajoutée${count > 1 ? "s" : ""}`);
-      onChange();
+      setPendingFiles((prev) => [...prev, ...added]);
+      toast.success(`${added.length} image${added.length > 1 ? "s" : ""} en attente — envoyée${added.length > 1 ? "s" : ""} à l'enregistrement`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erreur");
     } finally {
-      setUploading(false);
+      setPreparing(false);
       if (fileRef.current) fileRef.current.value = "";
     }
+  };
+
+  const removePending = (localId: string) => {
+    setPendingFiles((prev) => prev.filter((p) => p.localId !== localId));
   };
 
   const addYoutube = async () => {
@@ -149,6 +194,8 @@ export function MediaGallery({
     }
   };
 
+  const totalCount = media.length + pendingFiles.length;
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
@@ -158,7 +205,7 @@ export function MediaGallery({
           accept="image/*"
           multiple
           className="hidden"
-          disabled={uploading}
+          disabled={preparing}
           onChange={(e) => {
             if (e.target.files?.length) handleFiles(e.target.files);
           }}
@@ -166,12 +213,12 @@ export function MediaGallery({
         <Button
           type="button"
           variant="outline"
-          disabled={uploading}
+          disabled={preparing}
           onClick={() => fileRef.current?.click()}
           className="gap-2"
         >
-          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-          {uploading ? "Téléversement..." : "Ajouter des images"}
+          {preparing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+          {preparing ? "Préparation..." : "Ajouter des images"}
         </Button>
 
         <div className="flex items-center gap-2 flex-1 min-w-[280px]">
@@ -194,7 +241,13 @@ export function MediaGallery({
         </div>
       </div>
 
-      {media.length === 0 ? (
+      {pendingFiles.length > 0 && (
+        <p className="text-xs text-amber-600">
+          {pendingFiles.length} image{pendingFiles.length > 1 ? "s" : ""} en attente — sera{pendingFiles.length > 1 ? "ont" : ""} envoyée{pendingFiles.length > 1 ? "s" : ""} à l'enregistrement.
+        </p>
+      )}
+
+      {totalCount === 0 ? (
         <div className="border-2 border-dashed border-border rounded-xl p-8 text-center text-sm text-muted-foreground">
           Aucun média. Téléversez des images ou ajoutez des vidéos YouTube ci-dessus.
         </div>
@@ -286,6 +339,34 @@ export function MediaGallery({
                   {m.alt && <div className="text-muted-foreground truncate">{m.alt}</div>}
                 </div>
               )}
+            </div>
+          ))}
+
+          {pendingFiles.map((p) => (
+            <div
+              key={p.localId}
+              className="group relative rounded-xl border border-amber-300 bg-card overflow-hidden"
+            >
+              <div className="aspect-video bg-muted relative">
+                <img src={p.previewUrl} alt={p.title} className="h-full w-full object-cover" />
+                <div className="absolute top-2 left-2 flex gap-1">
+                  <span className="bg-amber-500/90 text-white text-[10px] uppercase px-2 py-0.5 rounded">
+                    En attente
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removePending(p.localId)}
+                  className="absolute top-2 right-2 h-7 w-7 rounded-full bg-destructive/90 text-white grid place-items-center hover:bg-destructive opacity-0 group-hover:opacity-100 transition"
+                  aria-label="Retirer"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </div>
+              <div className="p-2 text-xs truncate">
+                <div className="font-medium truncate">{p.title || "Sans titre"}</div>
+                <div className="text-muted-foreground truncate">Envoyée à l'enregistrement</div>
+              </div>
             </div>
           ))}
         </div>

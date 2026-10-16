@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { ImageUpload } from "@/components/admin/ImageUpload";
+import { flushPendingUploads } from "@/lib/pending-uploads";
 import { api, ApiError } from "@/lib/api-client";
 import { useApi } from "@/hooks/use-api";
 import { ArrowLeft, Loader2 } from "lucide-react";
@@ -50,6 +51,9 @@ export default function NewPhotoPage() {
     setLoading(true);
 
     try {
+      const uploaded = await flushPendingUploads();
+      const imageUrl = uploaded.imageUrl ?? formData.imageUrl;
+
       const formDataToSend = new FormData();
       formDataToSend.append("file", new Blob(), "placeholder");
       formDataToSend.append("title", formData.title);
@@ -58,7 +62,7 @@ export default function NewPhotoPage() {
       formDataToSend.append("isApproved", formData.isApproved.toString());
       formDataToSend.append("isFeatured", formData.isFeatured.toString());
       formDataToSend.append("order", formData.order.toString());
-      formDataToSend.append("imageUrl", formData.imageUrl);
+      formDataToSend.append("imageUrl", imageUrl);
 
       await fetch("/api/admin/admin-photos", {
         method: "POST",
@@ -94,6 +98,7 @@ export default function NewPhotoPage() {
               value={formData.imageUrl}
               onChange={(value) => setFormData({ ...formData, imageUrl: value })}
               folder="photos"
+              name="imageUrl"
             />
           </div>
 

@@ -15,6 +15,7 @@ import { useRouter, useParams } from "next/navigation";
 import { locationUpdateSchema } from "@/lib/catalog/schemas";
 import { z } from "zod";
 import { ImageUpload } from "@/components/admin/ImageUpload";
+import { flushPendingUploads } from "@/lib/pending-uploads";
 import { AmenitiesInput } from "@/components/admin/AmenitiesInput";
 import { MediaGallery, type MediaItem } from "@/components/admin/MediaGallery";
 
@@ -68,17 +69,35 @@ export default function AdminLocationEditPage() {
 
   const update = useMutation<{ location: Location }, z.infer<typeof locationUpdateSchema>>(
     `/api/admin/admin-locations/${slug}`,
-    { method: "PATCH", onSuccess: () => toast.success("Mis à jour") },
+    {
+      method: "PATCH",
+      onSuccess: (res) => {
+        toast.success("Mis à jour");
+        // Le nom peut régénérer le slug côté API : suivre la nouvelle URL.
+        if (res.location.slug !== slug) {
+          router.replace(`/admin/admin-locations/${res.location.slug}`);
+        }
+      },
+    },
   );
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    let uploaded: Record<string, string>;
+    try {
+      uploaded = await flushPendingUploads();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur d'upload");
+      return;
+    }
+
     const fd = new FormData(e.currentTarget);
     const raw = Object.fromEntries(fd.entries());
 
     const data = {
       ...raw,
-      coverImageUrl: coverImageUrl || null,
+      coverImageUrl: uploaded.coverImageUrl ?? (coverImageUrl || null),
       amenities,
       isPublished: raw.isPublished === "on",
       isFeatured: raw.isFeatured === "on",
@@ -232,6 +251,7 @@ export default function AdminLocationEditPage() {
               value={coverImageUrl}
               onChange={setCoverImageUrl}
               folder="locations"
+              name="coverImageUrl"
             />
           </div>
           <div className="grid gap-2">

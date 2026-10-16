@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ImageUpload } from "@/components/admin/ImageUpload";
+import { flushPendingUploads } from "@/lib/pending-uploads";
 import { ArrowLeft, Save, Trash2 } from "lucide-react";
 
 type Category = {
@@ -111,6 +112,7 @@ export default function EditBlogPostPage() {
       const params = new URLSearchParams(window.location.search);
       const id = params.get("id");
       
+      const uploaded = await flushPendingUploads();
       const response = await fetch(`/api/admin/blog-posts/${id}`, {
         method: "PUT",
         headers: {
@@ -118,6 +120,7 @@ export default function EditBlogPostPage() {
         },
         body: JSON.stringify({
           ...formData,
+          coverImage: uploaded.coverImage ?? formData.coverImage,
           wasPublished: post?.isPublished,
         }),
       });
@@ -232,6 +235,7 @@ export default function EditBlogPostPage() {
             value={formData.coverImage}
             onChange={(value) => setFormData({ ...formData, coverImage: value })}
             folder="blog"
+            name="coverImage"
           />
         </div>
 

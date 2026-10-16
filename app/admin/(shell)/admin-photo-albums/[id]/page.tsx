@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { ImageUpload } from "@/components/admin/ImageUpload";
+import { flushPendingUploads } from "@/lib/pending-uploads";
 import { api, ApiError } from "@/lib/api-client";
 import { useApi } from "@/hooks/use-api";
 import { ArrowLeft, Trash2, Loader2 } from "lucide-react";
@@ -62,7 +63,11 @@ export default function EditPhotoAlbumPage({ params }: { params: Promise<{ id: s
     setLoading(true);
 
     try {
-      await api.put(`/api/admin/admin-photo-albums/${id}`, formData);
+      const uploaded = await flushPendingUploads();
+      await api.put(`/api/admin/admin-photo-albums/${id}`, {
+        ...formData,
+        coverImage: uploaded.coverImage ?? formData.coverImage,
+      });
       router.push("/admin/admin-photo-albums");
     } catch (err) {
       alert(err instanceof ApiError ? err.message : "Erreur lors de la mise à jour");
@@ -158,6 +163,7 @@ export default function EditPhotoAlbumPage({ params }: { params: Promise<{ id: s
               value={formData.coverImage}
               onChange={(value) => setFormData({ ...formData, coverImage: value })}
               folder="albums"
+              name="coverImage"
             />
           </div>
 

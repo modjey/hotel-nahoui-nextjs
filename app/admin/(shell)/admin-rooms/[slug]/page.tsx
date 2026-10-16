@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ImageUpload } from "@/components/admin/ImageUpload";
+import { flushPendingUploads } from "@/lib/pending-uploads";
 import { AmenitiesInput } from "@/components/admin/AmenitiesInput";
 import { MediaGallery, type MediaItem } from "@/components/admin/MediaGallery";
 import { api, ApiError } from "@/lib/api-client";
@@ -123,11 +124,30 @@ export default function AdminRoomEditPage() {
 
   const update = useMutation<{ room: Room }, z.infer<typeof roomUpdateSchema>>(
     `/api/admin/admin-rooms/${slug}`,
-    { method: "PATCH", onSuccess: () => toast.success("Mis à jour") },
+    {
+      method: "PATCH",
+      onSuccess: (res) => {
+        toast.success("Mis à jour");
+        // Le nom peut régénérer le slug côté API : suivre la nouvelle URL
+        // sinon le prochain enregistrement viserait l'ancien slug (404).
+        if (res.room.slug !== slug) {
+          router.replace(`/admin/admin-rooms/${res.room.slug}`);
+        }
+      },
+    },
   );
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    let uploaded: Record<string, string>;
+    try {
+      uploaded = await flushPendingUploads();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur d'upload");
+      return;
+    }
+
     const fd = new FormData(e.currentTarget);
     const raw = Object.fromEntries(fd.entries());
 
@@ -137,7 +157,7 @@ export default function AdminRoomEditPage() {
       roomTypeId,
       currency,
       roomNumber: raw.roomNumber || null,
-      coverImageUrl: coverImageUrl || null,
+      coverImageUrl: uploaded.coverImageUrl ?? (coverImageUrl || null),
       amenities,
       isPublished: raw.isPublished === "on",
       basePrice: raw.basePrice ? Number(raw.basePrice) : undefined,
@@ -354,6 +374,7 @@ export default function AdminRoomEditPage() {
               value={coverImageUrl}
               onChange={setCoverImageUrl}
               folder="rooms"
+              name="coverImageUrl"
             />
           </div>
           <div className="grid gap-2">

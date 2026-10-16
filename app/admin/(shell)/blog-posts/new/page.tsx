@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ImageUpload } from "@/components/admin/ImageUpload";
+import { flushPendingUploads } from "@/lib/pending-uploads";
 import { ArrowLeft, Save } from "lucide-react";
 
 type Category = {
@@ -61,12 +62,16 @@ export default function NewBlogPostPage() {
     setLoading(true);
 
     try {
+      const uploaded = await flushPendingUploads();
       const response = await fetch("/api/admin/blog-posts", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          coverImage: uploaded.coverImage ?? formData.coverImage,
+        }),
       });
 
       const data = await response.json();
@@ -151,6 +156,7 @@ export default function NewBlogPostPage() {
             value={formData.coverImage}
             onChange={(value) => setFormData({ ...formData, coverImage: value })}
             folder="blog"
+            name="coverImage"
           />
         </div>
 
