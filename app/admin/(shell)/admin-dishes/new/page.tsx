@@ -49,6 +49,7 @@ export default function NewDishPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const form = e.currentTarget;
 
     let uploaded: Record<string, string>;
     try {
@@ -58,7 +59,7 @@ export default function NewDishPage() {
       return;
     }
 
-    const fd = new FormData(e.currentTarget);
+    const fd = new FormData(form);
     const raw = Object.fromEntries(fd.entries());
 
     const payload = {

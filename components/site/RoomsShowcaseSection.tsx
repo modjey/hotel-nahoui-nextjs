@@ -161,7 +161,7 @@ export function RoomsShowcaseSection() {
                       .filter(Boolean)
                       .join(" · ")}
                     {room.shortDescription ? (
-                      <span className="block mt-1 line-clamp-2">{room.shortDescription}</span>
+                      <span className="block mt-1 line-clamp-1">{room.shortDescription}</span>
                     ) : null}
                   </p>
                   <span className="link-underline mt-4 text-brand-text">
