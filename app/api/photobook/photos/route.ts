@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { slugify } from "@/lib/utils";
+import { rateLimit, clientKey } from "@/lib/rate-limit";
+import { getSession } from "@/lib/auth/session";
+import { ok, fail } from "@/lib/auth/api";
 
 export async function GET(req: NextRequest) {
   try {
@@ -77,5 +81,72 @@ export async function GET(req: NextRequest) {
       { success: false, error: "Erreur lors de la récupération des photos" },
       { status: 500 }
     );
+  }
+}
+
+// POST /api/photobook/photos - Soumission publique d'une photo (modération requise)
+export async function POST(req: NextRequest) {
+  try {
+    const rl = rateLimit(`photobook-submit:${clientKey(req.headers)}`, 5, 15 * 60 * 1000);
+    if (!rl.ok) {
+      return fail("Trop de soumissions, réessayez plus tard", 429, "RATE_LIMITED");
+    }
+
+    const body = await req.json().catch(() => null);
+    const { title, description, imageUrl, albumId } = body ?? {};
+
+    if (!imageUrl || typeof imageUrl !== "string") {
+      return fail("Image manquante", 400, "MISSING_IMAGE");
+    }
+
+    // Seules les images hébergées ici (upload photobook) ou des URLs externes sont acceptées
+    if (!imageUrl.startsWith("/uploads/") && !/^https?:\/\//.test(imageUrl)) {
+      return fail("URL d'image invalide", 400, "INVALID_IMAGE_URL");
+    }
+
+    if (!albumId || typeof albumId !== "string") {
+      return fail("Album manquant", 400, "MISSING_ALBUM");
+    }
+
+    const album = await prisma.photoAlbum.findFirst({
+      where: { id: albumId, isPublished: true },
+    });
+    if (!album) {
+      return fail("Album introuvable", 404, "ALBUM_NOT_FOUND");
+    }
+
+    // Associe la photo au compte du visiteur s'il est connecté (optionnel)
+    let uploadedBy: string | null = null;
+    try {
+      const session = await getSession(req);
+      uploadedBy = session?.userId ?? null;
+    } catch {
+      uploadedBy = null;
+    }
+
+    const baseSlug = slugify(title || "photo") || "photo";
+    let slug = baseSlug;
+    let suffix = 2;
+    while (await prisma.photo.findUnique({ where: { slug } })) {
+      slug = `${baseSlug}-${suffix++}`;
+    }
+
+    const photo = await prisma.photo.create({
+      data: {
+        slug,
+        title: title?.trim() || null,
+        description: description?.trim() || null,
+        imageUrl,
+        albumId,
+        uploadedBy,
+        isApproved: false, // modération requise
+        isFeatured: false,
+      },
+    });
+
+    return ok({ photo }, { status: 201 });
+  } catch (error) {
+    console.error("Error submitting photo:", error);
+    return fail("Erreur lors de la soumission", 500);
   }
 }

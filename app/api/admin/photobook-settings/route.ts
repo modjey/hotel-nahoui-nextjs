@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { isAdmin } from "@/lib/auth/session";
+
+const settingsSchema = z.object({
+  allowDownloads: z.boolean().optional(),
+  requireBookingForDownload: z.boolean().optional(),
+  watermarkEnabled: z.boolean().optional(),
+  watermarkText: z.string().max(200).optional().nullable(),
+});
 
 export async function GET(req: NextRequest) {
   try {
@@ -52,18 +60,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
+    const parsed = settingsSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: "Paramètres invalides" },
+        { status: 400 }
+      );
+    }
 
     let settings = await prisma.photobookSettings.findFirst();
 
     if (settings) {
       settings = await prisma.photobookSettings.update({
         where: { id: settings.id },
-        data: body,
+        data: parsed.data,
       });
     } else {
       settings = await prisma.photobookSettings.create({
-        data: body,
+        data: parsed.data,
       });
     }
 

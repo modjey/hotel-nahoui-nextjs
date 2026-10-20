@@ -6,8 +6,10 @@ import { slugify } from "@/lib/utils";
 
 // Schema for updating a photo
 const updatePhotoSchema = z.object({
-  title: z.string().optional(),
-  description: z.string().optional(),
+  title: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  imageUrl: z.string().min(1).optional(),
+  albumId: z.string().min(1).optional(),
   isApproved: z.boolean().optional(),
   isFeatured: z.boolean().optional(),
   order: z.number().optional(),
@@ -59,7 +61,7 @@ export const PUT = withAuth(async (req, { session }) => {
   const bodyResult = await parseBody(req, updatePhotoSchema);
   if (!bodyResult.ok) return bodyResult.response;
 
-  const { title, description, isApproved, isFeatured, order } = bodyResult.data;
+  const { title, description, imageUrl, albumId, isApproved, isFeatured, order } = bodyResult.data;
 
   // Check if photo exists
   const existing = await prisma.photo.findUnique({ where: { id } });
@@ -67,10 +69,23 @@ export const PUT = withAuth(async (req, { session }) => {
     return fail("Photo non trouvée", 404, "NOT_FOUND");
   }
 
-  // Update slug if title changed
+  // Verify album exists when reassigned
+  if (albumId !== undefined) {
+    const album = await prisma.photoAlbum.findUnique({ where: { id: albumId } });
+    if (!album) {
+      return fail("Album non trouvé", 404, "ALBUM_NOT_FOUND");
+    }
+  }
+
+  // Update slug if title changed, ensure uniqueness
   let slug = undefined;
   if (title && title !== existing.title) {
-    slug = slugify(title);
+    const baseSlug = slugify(title);
+    slug = baseSlug;
+    let suffix = 2;
+    while (await prisma.photo.findFirst({ where: { slug, NOT: { id } } })) {
+      slug = `${baseSlug}-${suffix++}`;
+    }
   }
 
   const photo = await prisma.photo.update({
@@ -79,6 +94,8 @@ export const PUT = withAuth(async (req, { session }) => {
       ...(title !== undefined && { title }),
       ...(slug !== undefined && { slug }),
       ...(description !== undefined && { description }),
+      ...(imageUrl !== undefined && { imageUrl }),
+      ...(albumId !== undefined && { albumId }),
       ...(isApproved !== undefined && { isApproved }),
       ...(isFeatured !== undefined && { isFeatured }),
       ...(order !== undefined && { order }),

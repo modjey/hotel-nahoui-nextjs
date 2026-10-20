@@ -99,7 +99,8 @@ export const GET = withAuth(async (req, { session }) => {
 export const POST = withAuth(async (req, { session }) => {
   try {
     const formData = await req.formData();
-    const file = formData.get("file") as File;
+    const file = formData.get("file") as File | null;
+    const imageUrlField = formData.get("imageUrl") as string | null;
     const title = formData.get("title") as string | null;
     const description = formData.get("description") as string | null;
     const albumId = formData.get("albumId") as string;
@@ -108,7 +109,8 @@ export const POST = withAuth(async (req, { session }) => {
     const order = parseInt(formData.get("order") as string || "0");
     const uploadedBy = formData.get("uploadedBy") as string | null;
 
-    if (!file) {
+    const hasFile = !!file && file.size > 0;
+    if (!hasFile && !imageUrlField) {
       return fail("Fichier image manquant", 400, "MISSING_FILE");
     }
 
@@ -122,17 +124,27 @@ export const POST = withAuth(async (req, { session }) => {
       return fail("Album non trouvé", 404, "ALBUM_NOT_FOUND");
     }
 
-    // Validate file type
-    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
-    if (!allowedTypes.includes(file.type)) {
-      return fail("Type de fichier non supporté", 400, "INVALID_FILE_TYPE");
+    let imageUrl: string;
+    let sizeBytes: number | null = null;
+    if (hasFile) {
+      // Validate file type
+      const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
+      if (!allowedTypes.includes(file!.type)) {
+        return fail("Type de fichier non supporté", 400, "INVALID_FILE_TYPE");
+      }
+      imageUrl = await saveUploadedFile(file!, "uploads/photos");
+      sizeBytes = file!.size;
+    } else {
+      imageUrl = imageUrlField!;
     }
 
-    // Save file
-    const imageUrl = await saveUploadedFile(file, "uploads/photos");
-
-    // Generate slug from title or filename
-    const slug = slugify(title || file.name.replace(/\.[^/.]+$/, ""));
+    // Generate slug from title or filename, ensure uniqueness
+    const baseSlug = slugify(title || (hasFile ? file!.name.replace(/\.[^/.]+$/, "") : "photo")) || "photo";
+    let slug = baseSlug;
+    let suffix = 2;
+    while (await prisma.photo.findUnique({ where: { slug } })) {
+      slug = `${baseSlug}-${suffix++}`;
+    }
 
     // Create photo record
     const photo = await prisma.photo.create({
@@ -146,7 +158,7 @@ export const POST = withAuth(async (req, { session }) => {
         isFeatured,
         order,
         uploadedBy: uploadedBy || null,
-        sizeBytes: file.size,
+        sizeBytes,
       },
     });
 

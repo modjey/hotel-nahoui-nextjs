@@ -66,7 +66,9 @@ export default function EditPhotoAlbumPage({ params }: { params: Promise<{ id: s
       const uploaded = await flushPendingUploads();
       await api.put(`/api/admin/admin-photo-albums/${id}`, {
         ...formData,
-        coverImage: uploaded.coverImage ?? formData.coverImage,
+        description: formData.description || null,
+        coverImage: uploaded.coverImage ?? (formData.coverImage || null),
+        locationId: formData.locationId || null,
       });
       router.push("/admin/admin-photo-albums");
     } catch (err) {

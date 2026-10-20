@@ -29,11 +29,13 @@ export default function EditPhotoPage({ params }: { params: Promise<{ id: string
     title: "",
     description: "",
     imageUrl: "",
+    albumId: "",
     isApproved: true,
     isFeatured: false,
     order: 0,
   });
   const { data: photoData, loading: photoLoading } = useApi<any>(`/api/admin/admin-photos/${id}`);
+  const { data: albumsData } = useApi<{ albums: { id: string; name: string; slug: string }[] }>("/api/admin/admin-photo-albums");
 
   useEffect(() => {
     params.then((p) => setId(p.id));
@@ -45,6 +47,7 @@ export default function EditPhotoPage({ params }: { params: Promise<{ id: string
         title: photoData.title || "",
         description: photoData.description || "",
         imageUrl: photoData.imageUrl || "",
+        albumId: photoData.albumId || "",
         isApproved: photoData.isApproved ?? true,
         isFeatured: photoData.isFeatured ?? false,
         order: photoData.order || 0,
@@ -54,13 +57,29 @@ export default function EditPhotoPage({ params }: { params: Promise<{ id: string
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.albumId) {
+      alert("Veuillez sélectionner un album");
+      return;
+    }
+
     setLoading(true);
 
     try {
       const uploaded = await flushPendingUploads();
+      const imageUrl = uploaded.imageUrl ?? formData.imageUrl;
+      if (!imageUrl) {
+        alert("Veuillez sélectionner une image");
+        return;
+      }
       await api.put(`/api/admin/admin-photos/${id}`, {
-        ...formData,
-        imageUrl: uploaded.imageUrl ?? formData.imageUrl,
+        title: formData.title || null,
+        description: formData.description || null,
+        imageUrl,
+        albumId: formData.albumId,
+        isApproved: formData.isApproved,
+        isFeatured: formData.isFeatured,
+        order: formData.order,
       });
       router.push("/admin/admin-photos");
     } catch (err) {
@@ -125,6 +144,22 @@ export default function EditPhotoPage({ params }: { params: Promise<{ id: string
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
             />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="album">Album *</Label>
+            <Select value={formData.albumId} onValueChange={(value) => setFormData({ ...formData, albumId: value })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionner un album" />
+              </SelectTrigger>
+              <SelectContent>
+                {albumsData?.albums?.map((album) => (
+                  <SelectItem key={album.id} value={album.id}>
+                    {album.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="grid gap-2">

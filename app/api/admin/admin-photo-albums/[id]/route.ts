@@ -7,13 +7,13 @@ import { slugify } from "@/lib/utils";
 // Schema for updating an album
 const updateAlbumSchema = z.object({
   name: z.string().min(1).optional(),
-  description: z.string().optional(),
+  description: z.string().nullable().optional(),
   type: z.enum(["GALLERY", "GUEST", "EVENT", "ROOM", "AMENITY"]).optional(),
-  coverImage: z.string().optional(),
+  coverImage: z.string().nullable().optional(),
   isPublished: z.boolean().optional(),
   isFeatured: z.boolean().optional(),
   order: z.number().optional(),
-  locationId: z.string().optional(),
+  locationId: z.string().nullable().optional(),
 });
 
 // GET /api/admin/admin-photo-albums/[id] - Get a single album (admin only)

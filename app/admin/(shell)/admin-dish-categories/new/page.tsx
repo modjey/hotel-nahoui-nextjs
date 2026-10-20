@@ -34,6 +34,7 @@ export default function NewDishCategoryPage() {
 
     const payload = {
       ...raw,
+      description: raw.description || null,
       isPublished: raw.isPublished === "on",
       order: raw.order ? Number(raw.order) : 0,
     };

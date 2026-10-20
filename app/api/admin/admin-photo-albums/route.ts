@@ -7,25 +7,25 @@ import { slugify } from "@/lib/utils";
 // Schema for creating an album
 const createAlbumSchema = z.object({
   name: z.string().min(1),
-  description: z.string().optional(),
+  description: z.string().nullable().optional(),
   type: z.enum(["GALLERY", "GUEST", "EVENT", "ROOM", "AMENITY"]).default("GALLERY"),
-  coverImage: z.string().optional(),
+  coverImage: z.string().nullable().optional(),
   isPublished: z.boolean().default(true),
   isFeatured: z.boolean().default(false),
   order: z.number().default(0),
-  locationId: z.string().optional(),
+  locationId: z.string().nullable().optional(),
 });
 
 // Schema for updating an album
 const updateAlbumSchema = z.object({
   name: z.string().min(1).optional(),
-  description: z.string().optional(),
+  description: z.string().nullable().optional(),
   type: z.enum(["GALLERY", "GUEST", "EVENT", "ROOM", "AMENITY"]).optional(),
-  coverImage: z.string().optional(),
+  coverImage: z.string().nullable().optional(),
   isPublished: z.boolean().optional(),
   isFeatured: z.boolean().optional(),
   order: z.number().optional(),
-  locationId: z.string().optional(),
+  locationId: z.string().nullable().optional(),
 });
 
 // GET /api/admin/admin-photo-albums - List all albums (admin only)

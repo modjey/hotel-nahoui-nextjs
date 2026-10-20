@@ -45,7 +45,9 @@ export default function NewPhotoAlbumPage() {
       const uploaded = await flushPendingUploads();
       await api.post("/api/admin/admin-photo-albums", {
         ...formData,
-        coverImage: uploaded.coverImage ?? formData.coverImage,
+        description: formData.description || null,
+        coverImage: uploaded.coverImage ?? (formData.coverImage || null),
+        locationId: formData.locationId || null,
       });
       router.push("/admin/admin-photo-albums");
     } catch (err) {

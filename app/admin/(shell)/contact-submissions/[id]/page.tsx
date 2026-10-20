@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,18 +32,16 @@ type ContactSubmission = {
 
 export default function ContactSubmissionDetailPage() {
   const router = useRouter();
+  const params = useParams();
+  const id = params.id as string;
   const [submission, setSubmission] = useState<ContactSubmission | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [reply, setReply] = useState("");
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get("id");
-    if (id) {
-      fetchSubmission(id);
-    }
-  }, []);
+    fetchSubmission(id);
+  }, [id]);
 
   const fetchSubmission = async (id: string) => {
     try {
@@ -63,9 +61,6 @@ export default function ContactSubmissionDetailPage() {
   const handleUpdateStatus = async (status: string) => {
     setSaving(true);
     try {
-      const params = new URLSearchParams(window.location.search);
-      const id = params.get("id");
-      
       const response = await fetch(`/api/admin/contact-submissions/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -88,9 +83,6 @@ export default function ContactSubmissionDetailPage() {
   const handleReply = async () => {
     setSaving(true);
     try {
-      const params = new URLSearchParams(window.location.search);
-      const id = params.get("id");
-      
       const response = await fetch(`/api/admin/contact-submissions/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -120,9 +112,6 @@ export default function ContactSubmissionDetailPage() {
     }
 
     try {
-      const params = new URLSearchParams(window.location.search);
-      const id = params.get("id");
-      
       const response = await fetch(`/api/admin/contact-submissions/${id}`, {
         method: "DELETE",
       });

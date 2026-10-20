@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +40,8 @@ type BlogPost = {
 
 export default function EditBlogPostPage() {
   const router = useRouter();
+  const params = useParams();
+  const id = params.id as string;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -58,13 +60,9 @@ export default function EditBlogPostPage() {
   });
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get("id");
-    if (id) {
-      fetchPost(id);
-      fetchCategories();
-    }
-  }, []);
+    fetchPost(id);
+    fetchCategories();
+  }, [id]);
 
   const fetchPost = async (id: string) => {
     try {
@@ -109,9 +107,6 @@ export default function EditBlogPostPage() {
     setSaving(true);
 
     try {
-      const params = new URLSearchParams(window.location.search);
-      const id = params.get("id");
-      
       const uploaded = await flushPendingUploads();
       const response = await fetch(`/api/admin/blog-posts/${id}`, {
         method: "PUT",
@@ -120,14 +115,17 @@ export default function EditBlogPostPage() {
         },
         body: JSON.stringify({
           ...formData,
-          coverImage: uploaded.coverImage ?? formData.coverImage,
+          excerpt: formData.excerpt || null,
+          coverImage: uploaded.coverImage ?? (formData.coverImage || null),
+          categoryId: formData.categoryId || null,
+          order: formData.order || 0,
           wasPublished: post?.isPublished,
         }),
       });
 
       const data = await response.json();
 
-      if (data.success) {
+      if (response.ok && data.success) {
         router.push("/admin/blog-posts");
       } else {
         alert("Erreur lors de la mise à jour: " + (data.error || "Erreur inconnue"));
@@ -147,9 +145,6 @@ export default function EditBlogPostPage() {
 
     setDeleting(true);
     try {
-      const params = new URLSearchParams(window.location.search);
-      const id = params.get("id");
-      
       const response = await fetch(`/api/admin/blog-posts/${id}`, {
         method: "DELETE",
       });
@@ -264,7 +259,7 @@ export default function EditBlogPostPage() {
             id="order"
             type="number"
             value={formData.order}
-            onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) })}
+            onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) || 0 })}
           />
         </div>
 

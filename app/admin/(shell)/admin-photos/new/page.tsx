@@ -55,7 +55,6 @@ export default function NewPhotoPage() {
       const imageUrl = uploaded.imageUrl ?? formData.imageUrl;
 
       const formDataToSend = new FormData();
-      formDataToSend.append("file", new Blob(), "placeholder");
       formDataToSend.append("title", formData.title);
       formDataToSend.append("description", formData.description);
       formDataToSend.append("albumId", formData.albumId);
@@ -64,10 +63,16 @@ export default function NewPhotoPage() {
       formDataToSend.append("order", formData.order.toString());
       formDataToSend.append("imageUrl", imageUrl);
 
-      await fetch("/api/admin/admin-photos", {
+      const res = await fetch("/api/admin/admin-photos", {
         method: "POST",
         body: formDataToSend,
       });
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data?.success) {
+        alert(data?.error?.message || "Erreur lors de la création");
+        return;
+      }
 
       router.push("/admin/admin-photos");
     } catch (err) {

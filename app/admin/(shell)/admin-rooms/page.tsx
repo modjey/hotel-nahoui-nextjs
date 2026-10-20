@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useRouter } from "next/navigation";
@@ -9,6 +9,13 @@ import { PageHeader } from "@/components/admin/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableHeader,
@@ -20,7 +27,7 @@ import {
 import { api, ApiError } from "@/lib/api-client";
 import { useApi } from "@/hooks/use-api";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, BedDouble, Power, Eye, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, BedDouble, Power, Eye, Calendar, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { getDiscountedPrice } from "@/lib/pricing";
 
 type Room = {
@@ -55,10 +62,47 @@ type Room = {
 
 export default function AdminRoomsPage() {
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-  const { data, loading, error, refetch } = useApi<{ rooms: Room[]; total: number; page: number; limit: number; totalPages: number }>(`/api/admin/admin-rooms?page=${page}&limit=${limit}`);
+  const [limit] = useState(50);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [locationId, setLocationId] = useState("all");
+  const [roomTypeId, setRoomTypeId] = useState("all");
+  const [status, setStatus] = useState("all");
+  const [promo, setPromo] = useState("all");
   const router = useRouter();
+
+  // La recherche frappe l'API : petit délai pour ne pas requêter à chaque frappe.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // Tout changement de filtre ramène à la première page.
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, locationId, roomTypeId, status, promo]);
+
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (debouncedSearch) params.set("search", debouncedSearch);
+  if (locationId !== "all") params.set("locationId", locationId);
+  if (roomTypeId !== "all") params.set("roomTypeId", roomTypeId);
+  if (status !== "all") params.set("isPublished", status);
+  if (promo !== "all") params.set("promo", promo);
+
+  const { data, loading, error, refetch } = useApi<{ rooms: Room[]; total: number; page: number; limit: number; totalPages: number }>(`/api/admin/admin-rooms?${params.toString()}`);
+  const { data: locationsData } = useApi<{ locations: { id: string; name: string; city: string | null }[] }>("/api/admin/admin-locations");
+  const { data: typesData } = useApi<{ types: { id: string; name: string }[] }>("/api/admin/admin-room-types");
+  const locations = locationsData?.locations ?? [];
+  const roomTypes = typesData?.types ?? [];
+
+  const hasFilters = debouncedSearch || locationId !== "all" || roomTypeId !== "all" || status !== "all" || promo !== "all";
+  const resetFilters = () => {
+    setSearch("");
+    setLocationId("all");
+    setRoomTypeId("all");
+    setStatus("all");
+    setPromo("all");
+  };
 
   const deleteRoom = async (slug: string) => {
     if (!confirm("Supprimer cette chambre ?")) return;
@@ -85,15 +129,7 @@ export default function AdminRoomsPage() {
     setPage(newPage);
   };
 
-  const filtered = (data?.rooms ?? []).filter((r) =>
-    search
-      ? [r.name, r.location.name, r.roomType.name]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase()
-          .includes(search.toLowerCase())
-      : true,
-  );
+  const rooms = data?.rooms ?? [];
 
   return (
     <div>
@@ -111,15 +147,69 @@ export default function AdminRoomsPage() {
       />
 
       <div className="rounded-2xl bg-card border border-border">
-        <div className="p-4 border-b border-border">
+        <div className="p-4 border-b border-border space-y-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Rechercher par nom, localisation, type..."
+              placeholder="Rechercher par nom, numéro, description..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-10 max-w-md"
             />
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Select value={locationId} onValueChange={setLocationId}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Localisation" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toutes les localisations</SelectItem>
+                {locations.map((loc) => (
+                  <SelectItem key={loc.id} value={loc.id}>
+                    {loc.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={roomTypeId} onValueChange={setRoomTypeId}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les types</SelectItem>
+                {roomTypes.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Statut" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous statuts</SelectItem>
+                <SelectItem value="true">Publiées</SelectItem>
+                <SelectItem value="false">Brouillons</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={promo} onValueChange={setPromo}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Promotion" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous prix</SelectItem>
+                <SelectItem value="true">En promotion</SelectItem>
+                <SelectItem value="false">Sans promotion</SelectItem>
+              </SelectContent>
+            </Select>
+            {hasFilters && (
+              <Button variant="ghost" size="sm" onClick={resetFilters}>
+                <X className="h-4 w-4 mr-1" />
+                Réinitialiser
+              </Button>
+            )}
           </div>
         </div>
 
@@ -150,14 +240,14 @@ export default function AdminRoomsPage() {
                   Erreur de chargement
                 </TableCell>
               </TableRow>
-            ) : filtered.length === 0 ? (
+            ) : rooms.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   Aucune chambre trouvée
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((r) => (
+              rooms.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">

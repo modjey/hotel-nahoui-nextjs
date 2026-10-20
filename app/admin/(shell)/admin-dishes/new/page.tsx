@@ -64,6 +64,7 @@ export default function NewDishPage() {
 
     const payload = {
       ...raw,
+      description: raw.description || null,
       categoryId,
       locationId,
       currency,

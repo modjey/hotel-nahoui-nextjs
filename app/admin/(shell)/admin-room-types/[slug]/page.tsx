@@ -64,6 +64,8 @@ export default function AdminRoomTypeEditPage() {
 
     const data = {
       ...raw,
+      slug: raw.slug || undefined,
+      description: raw.description || null,
       isPublished: raw.isPublished === "on",
     };
 

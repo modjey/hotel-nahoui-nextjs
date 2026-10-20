@@ -9,11 +9,25 @@ const handler = withAuth(async (req) => {
     const { searchParams } = new URL(req.url);
     const locationId = searchParams.get("locationId");
     const roomTypeId = searchParams.get("roomTypeId");
+    const search = searchParams.get("search")?.trim();
+    const isPublished = searchParams.get("isPublished");
+    const promo = searchParams.get("promo");
     const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "10", 10);
-    const where: Record<string, string> = {};
+    const limit = Math.min(parseInt(searchParams.get("limit") || "10", 10), 100);
+    const where: Record<string, unknown> = {};
     if (locationId) where.locationId = locationId;
     if (roomTypeId) where.roomTypeId = roomTypeId;
+    if (isPublished === "true" || isPublished === "false") {
+      where.isPublished = isPublished === "true";
+    }
+    if (promo === "true") where.discountPercent = { gt: 0 };
+    if (promo === "false") where.discountPercent = { lte: 0 };
+    if (search) {
+      const contains = { contains: search, mode: "insensitive" as const };
+      where.AND = [
+        { OR: [{ name: contains }, { roomNumber: contains }, { shortDescription: contains }] },
+      ];
+    }
 
     const [rooms, total] = await Promise.all([
       prisma.room.findMany({

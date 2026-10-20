@@ -26,6 +26,7 @@ const handler = withAuth(async (req) => {
         amenities: true,
         coverImageUrl: true,
         isPublished: true,
+        isFeatured: true,
         order: true,
         checkInStart: true,
         checkInEnd: true,

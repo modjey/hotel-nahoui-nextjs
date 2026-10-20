@@ -82,6 +82,16 @@ export default function AdminLocationsPage() {
 
     const data = {
       ...raw,
+      slug: raw.slug || undefined,
+      shortDescription: raw.shortDescription || null,
+      description: raw.description || null,
+      address: raw.address || null,
+      city: raw.city || null,
+      country: raw.country || null,
+      phone: raw.phone || null,
+      email: raw.email || null,
+      mapLink: raw.mapLink || null,
+      coverImageUrl: raw.coverImageUrl || null,
       amenities: amenitiesStr ? amenitiesStr.split(",").map((a) => a.trim()).filter(Boolean) : [],
       isPublished: raw.isPublished === "on",
       isFeatured: raw.isFeatured === "on",
@@ -205,6 +215,10 @@ export default function AdminLocationsPage() {
                 <div className="grid gap-2">
                   <Label htmlFor="amenities">Équipements (séparés par virgule)</Label>
                   <Input id="amenities" name="amenities" placeholder="Piscine, Restaurant, Wi-Fi..." />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="order">Ordre d'affichage</Label>
+                  <Input id="order" name="order" type="number" defaultValue={0} />
                 </div>
                 <div className="flex items-center gap-6">
                   <div className="flex items-center gap-2">

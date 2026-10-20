@@ -98,12 +98,21 @@ export default function AdminLocationEditPage() {
 
     const data = {
       ...raw,
+      shortDescription: raw.shortDescription || null,
+      description: raw.description || null,
+      address: raw.address || null,
+      city: raw.city || null,
+      country: raw.country || null,
+      mapLink: raw.mapLink || null,
+      phone: raw.phone || null,
+      email: raw.email || null,
       coverImageUrl: uploaded.coverImageUrl ?? (coverImageUrl || null),
       amenities,
       isPublished: raw.isPublished === "on",
       isFeatured: raw.isFeatured === "on",
       latitude: raw.latitude ? Number(raw.latitude) : null,
       longitude: raw.longitude ? Number(raw.longitude) : null,
+      order: raw.order ? Number(raw.order) : 0,
     };
 
     const result = locationUpdateSchema.safeParse(data);
@@ -291,6 +300,10 @@ export default function AdminLocationEditPage() {
               <Switch id="isFeatured" name="isFeatured" defaultChecked={loc.isFeatured} />
               <Label htmlFor="isFeatured">Vedette</Label>
             </div>
+          </div>
+          <div className="grid gap-2 max-w-[200px]">
+            <Label htmlFor="order">Ordre d'affichage</Label>
+            <Input id="order" name="order" type="number" defaultValue={loc.order} />
           </div>
         </section>
 

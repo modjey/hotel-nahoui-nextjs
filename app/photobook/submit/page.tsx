@@ -60,25 +60,25 @@ export default function SubmitPhotoPage() {
 
     try {
       const uploaded = await flushPendingUploads();
-      const response = await fetch("/api/admin/admin-photos", {
+      const response = await fetch("/api/photobook/photos", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          ...formData,
+          title: formData.title,
+          description: formData.description,
+          albumId: formData.albumId,
           imageUrl: uploaded.imageUrl ?? formData.imageUrl,
-          isApproved: false, // Requires moderation
-          isFeatured: false,
         }),
       });
 
       const data = await response.json();
 
-      if (data.success) {
+      if (response.ok && data.success) {
         setSubmitted(true);
       } else {
-        alert("Erreur lors de la soumission: " + (data.error || "Erreur inconnue"));
+        alert("Erreur lors de la soumission: " + (data.error?.message || "Erreur inconnue"));
       }
     } catch (error) {
       console.error("Error submitting photo:", error);
@@ -145,6 +145,7 @@ export default function SubmitPhotoPage() {
                 onChange={(value) => setFormData({ ...formData, imageUrl: value })}
                 folder="photos"
                 name="imageUrl"
+                uploadUrl="/api/photobook/upload"
               />
             </div>
 

@@ -70,13 +70,16 @@ export default function NewBlogPostPage() {
         },
         body: JSON.stringify({
           ...formData,
-          coverImage: uploaded.coverImage ?? formData.coverImage,
+          excerpt: formData.excerpt || null,
+          coverImage: uploaded.coverImage ?? (formData.coverImage || null),
+          categoryId: formData.categoryId || null,
+          order: formData.order || 0,
         }),
       });
 
       const data = await response.json();
 
-      if (data.success) {
+      if (response.ok && data.success) {
         router.push("/admin/blog-posts");
       } else {
         alert("Erreur lors de la création: " + (data.error || "Erreur inconnue"));
@@ -185,7 +188,7 @@ export default function NewBlogPostPage() {
             id="order"
             type="number"
             value={formData.order}
-            onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) })}
+            onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) || 0 })}
           />
         </div>
 

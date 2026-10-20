@@ -98,6 +98,7 @@ export default function AdminDishEditPage() {
 
     const payload = {
       ...raw,
+      description: raw.description || null,
       categoryId,
       locationId,
       currency,

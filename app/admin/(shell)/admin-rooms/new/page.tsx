@@ -86,6 +86,10 @@ export default function NewRoomPage() {
 
   const addYoutubePending = () => {
     if (!youtubeUrl.trim()) return;
+    if (!parseYoutubeId(youtubeUrl.trim())) {
+      toast.error("URL YouTube invalide");
+      return;
+    }
     setPendingMedia((prev) => [
       ...prev,
       {
@@ -172,20 +176,24 @@ export default function NewRoomPage() {
       roomTypeId,
       currency,
       roomNumber: raw.roomNumber || null,
+      shortDescription: raw.shortDescription || null,
+      description: raw.description || null,
       coverImageUrl: uploaded.coverImageUrl ?? (coverImageUrl || null),
       amenities,
       isPublished: raw.isPublished === "on",
+      isFeatured: raw.isFeatured === "on",
+      order: raw.order ? Number(raw.order) : 0,
       basePrice: raw.basePrice ? Number(raw.basePrice) : 0,
       discountPercent: raw.discountPercent ? Number(raw.discountPercent) : 0,
       maxGuests: raw.maxGuests ? Number(raw.maxGuests) : 2,
       beds: raw.beds ? Number(raw.beds) : 1,
       bathrooms: raw.bathrooms ? Number(raw.bathrooms) : 1,
       sizeSqm: raw.sizeSqm ? Number(raw.sizeSqm) : null,
-      checkInStart,
-      checkInEnd,
-      checkOutTime,
-      checkInMethod,
-      cancellationPolicy,
+      checkInStart: checkInStart || null,
+      checkInEnd: checkInEnd || null,
+      checkOutTime: checkOutTime || null,
+      checkInMethod: checkInMethod || null,
+      cancellationPolicy: cancellationPolicy || null,
     };
 
     const result = roomCreateSchema.safeParse(payload);
@@ -515,6 +523,23 @@ export default function NewRoomPage() {
           <div className="flex items-center gap-2">
             <Switch id="isPublished" name="isPublished" defaultChecked />
             <Label htmlFor="isPublished">Publier immédiatement</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch id="isFeatured" name="isFeatured" />
+            <Label htmlFor="isFeatured">Coup de cœur (mise en avant)</Label>
+          </div>
+          <div className="grid gap-2 max-w-[200px]">
+            <Label htmlFor="order">Ordre d&apos;affichage</Label>
+            <Input
+              id="order"
+              name="order"
+              type="number"
+              min={0}
+              defaultValue={0}
+            />
+            <p className="text-xs text-muted-foreground">
+              Plus le nombre est petit, plus la chambre apparaît tôt.
+            </p>
           </div>
         </section>
 

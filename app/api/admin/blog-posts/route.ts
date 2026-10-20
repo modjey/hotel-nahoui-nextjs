@@ -88,20 +88,35 @@ export async function POST(req: NextRequest) {
       order,
     } = body;
 
+    if (!title || !content) {
+      return NextResponse.json(
+        { success: false, error: "Titre et contenu requis" },
+        { status: 400 }
+      );
+    }
+
     // Generate slug from title if not provided
     const finalSlug = slug || title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+
+    const slugTaken = await prisma.blogPost.findUnique({ where: { slug: finalSlug } });
+    if (slugTaken) {
+      return NextResponse.json(
+        { success: false, error: "Un article avec ce slug existe déjà" },
+        { status: 409 }
+      );
+    }
 
     const post = await prisma.blogPost.create({
       data: {
         slug: finalSlug,
         title,
-        excerpt,
+        excerpt: excerpt || null,
         content,
-        coverImage,
+        coverImage: coverImage || null,
         isPublished: isPublished ?? false,
         isFeatured: isFeatured ?? false,
         publishedAt: isPublished ? new Date() : null,
-        categoryId,
+        categoryId: categoryId || null,
         authorId: session.userId,
         order: order ?? 0,
       },

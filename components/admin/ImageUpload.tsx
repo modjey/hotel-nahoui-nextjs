@@ -17,6 +17,8 @@ interface ImageUploadProps {
   folder?: string;
   /** Clé du champ : nom du champ caché + clé dans le résultat de flushPendingUploads(). */
   name?: string;
+  /** Endpoint d'upload (défaut : /api/admin/upload, réservé aux admins). */
+  uploadUrl?: string;
   /** Largeur d'aperçu. */
   className?: string;
 }
@@ -32,6 +34,7 @@ export function ImageUpload({
   onChange,
   folder = "general",
   name,
+  uploadUrl = "/api/admin/upload",
   className,
 }: ImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -62,7 +65,7 @@ export function ImageUpload({
         const fd = new FormData();
         fd.append("file", file);
         fd.append("folder", folder);
-        const res = await fetch("/api/admin/upload", {
+        const res = await fetch(uploadUrl, {
           method: "POST",
           body: fd,
           credentials: "include",
@@ -80,7 +83,7 @@ export function ImageUpload({
       },
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [name, folder]);
+  }, [name, folder, uploadUrl]);
 
   useEffect(() => releaseBlob, []);
 
