@@ -47,13 +47,14 @@ export function ContactPage() {
   const contactInfo = [
     { icon: Phone, title: "Téléphone", content: ["+225 27 34 71 22 33", "+225 07 87 94 34 49", "+225 01 01 40 84 00", "+225 07 88 49 49 79"] },
     { icon: Mail, title: "Email", content: ["hotelnahoui@yahoo.com"] },
-    { icon: MapPin, title: "Adresse", content: ["Hôtel Nahoui Balmer", "San Pedro, Côte d'Ivoire"] },
+    { icon: Mail, title: "Réservations", content: ["reservations@nahouihotel.ci"] },
+    { icon: MapPin, title: "Adresse", content: ["Hôtel Nahoui Balmer", "01 BP 1864 San-Pedro 01", "Côte d'Ivoire"] },
     { icon: Clock, title: "Horaires", content: ["Réception : 24h/24", "Restaurant : 6h – 23h", "Spa : 9h – 20h"] },
   ];
 
   const getContactHref = (title: string, line: string): string | null => {
     if (title === "Téléphone") return `tel:${line.replace(/[^+\d]/g, "")}`;
-    if (title === "Email") return `mailto:${line}`;
+    if (title === "Email" || title === "Réservations") return `mailto:${line}`;
     return null;
   };
 

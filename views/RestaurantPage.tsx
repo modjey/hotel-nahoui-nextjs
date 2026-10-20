@@ -1,7 +1,10 @@
 "use client";
 import { motion } from "framer-motion";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Clock, MapPin, Phone, Mail, Star, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Clock, MapPin, Phone, Mail, Star, X, ChevronLeft, ChevronRight,
+  UtensilsCrossed, Coffee, ChefHat, Waves, Wine, CheckCircle2,
+} from "lucide-react";
 import Link from "next/link";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
@@ -9,6 +12,67 @@ import { api } from "@/lib/api-client";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const heroImg = "/assets/resto.png";
+
+const quickLinks = [
+  { id: "room-service",   label: "Room Service",   icon: UtensilsCrossed },
+  { id: "petit-dejeuner", label: "Petit-déjeuner", icon: Coffee },
+  { id: "restaurant",     label: "Restaurant",     icon: ChefHat },
+  { id: "aqua-bar",       label: "Aqua Bar",       icon: Waves },
+  { id: "bar-vip",        label: "Bar VIP",        icon: Wine },
+];
+
+type RestaurantBlockProps = {
+  eyebrow: string;
+  title: string;
+  text: string;
+  cta: { label: string; href: string };
+  image: string;
+  imageAlt: string;
+  reverse?: boolean;
+  features?: string[];
+};
+
+function RestaurantBlock({ eyebrow, title, text, cta, image, imageAlt, reverse, features }: RestaurantBlockProps) {
+  return (
+    <div className="mx-auto max-w-[1440px] px-5 lg:px-10 py-6 lg:py-8">
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+        className="grid grid-cols-1 lg:grid-cols-2 overflow-hidden bg-card border border-border"
+      >
+        <div className={`relative h-64 sm:h-80 lg:h-auto overflow-hidden ${reverse ? "lg:order-2" : ""}`}>
+          <img src={image} alt={imageAlt} loading="lazy" className="img-zoom absolute inset-0 h-full w-full object-cover" />
+        </div>
+
+        <div className="flex items-center p-8 sm:p-10 lg:p-14">
+          <div className="max-w-lg">
+            <span className="eyebrow text-primary">{eyebrow}</span>
+            <h2 className="font-display mt-3 text-2xl sm:text-3xl lg:text-4xl font-light leading-[1.1]">{title}</h2>
+            <p className="mt-4 text-sm leading-relaxed text-muted-foreground text-pretty">{text}</p>
+
+            {features && (
+              <div className="mt-5 flex flex-wrap gap-2">
+                {features.map((f) => (
+                  <span key={f} className="inline-flex items-center gap-1.5 bg-secondary/60 px-3 py-1.5 text-xs text-foreground">
+                    <CheckCircle2 className="h-3 w-3 text-primary shrink-0" /> {f}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-7">
+              <Link href={cta.href} className="btn-fill-editorial">
+                {cta.label}
+              </Link>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
 
 type Dish = {
   id: string;
@@ -59,6 +123,32 @@ export function RestaurantPage() {
 
   const flatDishes = useMemo(() => groupedDishes.flatMap((g) => g.items), [groupedDishes]);
   const dishIndexById = useMemo(() => new Map(flatDishes.map((d, i) => [d.id, i])), [flatDishes]);
+
+  const [activeId, setActiveId] = useState(quickLinks[0].id);
+  const isClickScrolling = useRef(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (isClickScrolling.current) return;
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) setActiveId(entry.target.id);
+        });
+      },
+      { rootMargin: "-160px 0px -65% 0px", threshold: 0 }
+    );
+    quickLinks.forEach((l) => {
+      const el = document.getElementById(l.id);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, []);
+
+  const handleQuickNavClick = (id: string) => {
+    setActiveId(id);
+    isClickScrolling.current = true;
+    window.setTimeout(() => { isClickScrolling.current = false; }, 800);
+  };
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -126,12 +216,67 @@ export function RestaurantPage() {
         </div>
       </section>
 
-      {/* Info */}
-      <section className="mx-auto max-w-[1440px] px-5 lg:px-10 py-14 lg:py-16">
+      {/* Quick nav — pill segmented control with sliding active indicator */}
+      <div className="border-b border-border bg-background/95 sticky top-20 z-30 backdrop-blur-xl">
+        <div className="mx-auto max-w-[1440px] px-5 lg:px-10 py-3.5">
+          <div className="flex items-center justify-start lg:justify-center gap-1.5 overflow-x-auto no-scrollbar">
+            {quickLinks.map((l) => {
+              const active = activeId === l.id;
+              return (
+                <a
+                  key={l.id}
+                  href={`#${l.id}`}
+                  onClick={() => handleQuickNavClick(l.id)}
+                  className={`relative flex items-center gap-2 shrink-0 px-4 py-2.5 text-xs font-medium whitespace-nowrap transition-colors duration-300 ${
+                    active ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {active && (
+                    <motion.span
+                      layoutId="restaurant-nav-pill"
+                      className="absolute inset-0 bg-primary"
+                      transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                    />
+                  )}
+                  <l.icon className="relative z-10 h-3.5 w-3.5" />
+                  <span className="relative z-10">{l.label}</span>
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div id="room-service" className="scroll-mt-36 pt-10 lg:pt-14">
+        <RestaurantBlock
+          eyebrow="En chambre"
+          title="Room Service"
+          text="Envie d'un repas en toute intimité ? Notre service en chambre vous permet de savourer nos plats et boissons depuis le confort de votre chambre, aux mêmes horaires que le restaurant."
+          cta={{ label: "Voir le menu", href: "#restaurant" }}
+          image="/assets/restoservice.png"
+          imageAlt="Room service de l'Hôtel Nahoui Balmer"
+        />
+      </div>
+
+      <div id="petit-dejeuner" className="scroll-mt-36">
+        <RestaurantBlock
+          eyebrow="Chaque matin"
+          title="Petit-déjeuner"
+          text="Un buffet généreux entre spécialités locales et classiques internationaux vous attend chaque matin, servi de 6h à 10h dans une ambiance chaleureuse."
+          cta={{ label: "Réserver votre séjour", href: "/stays" }}
+          image="/assets/image3.jpg"
+          imageAlt="Petit-déjeuner de l'Hôtel Nahoui Balmer"
+          reverse
+          features={["Buffet continental", "Jus frais & fruits de saison", "Spécialités ivoiriennes", "Thé & café artisanal"]}
+        />
+      </div>
+
+      {/* Info & carte */}
+      <section id="restaurant" className="scroll-mt-28 mx-auto max-w-[1440px] px-5 lg:px-10 py-14 lg:py-16">
         <div className="grid grid-cols-1 sm:grid-cols-3 border-y border-border mb-20 sm:divide-x divide-border">
           {[
             { icon: Clock, title: "Horaires", content: ["Petit-déjeuner : 6h – 10h", "Déjeuner : 12h – 15h", "Dîner : 19h – 23h"] },
-            { icon: MapPin, title: "Emplacement", content: ["Restaurant principal", "Hôtel Nahoui Balmer", "San Pedro, Côte d'Ivoire"] },
+            { icon: MapPin, title: "Emplacement", content: ["Hôtel Nahoui Balmer", "01 BP 1864 San-Pedro 01", "Côte d'Ivoire"] },
             { icon: Star, title: "Spécialités", content: ["Cuisine ivoirienne", "Fruits de mer", "Plats traditionnels"] },
           ].map((item, index) => (
             <motion.div
@@ -242,6 +387,29 @@ export function RestaurantPage() {
         )}
       </section>
 
+      <div id="aqua-bar" className="scroll-mt-36">
+        <RestaurantBlock
+          eyebrow="Au bord de l'eau"
+          title="Aqua Bar"
+          text="Les pieds dans l'eau, notre Aqua Bar propose cocktails rafraîchissants, jus pressés et encas légers à déguster au bord de la piscine, du matin jusqu'au coucher du soleil."
+          cta={{ label: "Découvrir la piscine", href: "/bien-etre" }}
+          image="/assets/image14.jpg"
+          imageAlt="Aqua Bar au bord de la piscine de l'Hôtel Nahoui Balmer"
+        />
+      </div>
+
+      <div id="bar-vip" className="scroll-mt-36">
+        <RestaurantBlock
+          eyebrow="Vie nocturne"
+          title="Bar VIP"
+          text="Véritable lieu de vie, le Bar VIP accueille aussi bien les retrouvailles entre amis que les soirées festives. Musique, lumières tamisées et service soigné composent une atmosphère élégante."
+          cta={{ label: "Nous contacter", href: "/contact" }}
+          image="/assets/cocktail.jpg"
+          imageAlt="Bar VIP de l'Hôtel Nahoui Balmer"
+          reverse
+        />
+      </div>
+
       {/* Reservation CTA */}
       <section className="bg-primary text-white text-center px-5 shadow-[inset_0_0_0_12px_var(--brand),inset_0_0_0_13px_rgb(255_255_255/0.8)] py-20 lg:py-28">
         <span className="eyebrow text-white/90">Réservation</span>
@@ -251,7 +419,7 @@ export function RestaurantPage() {
             <Phone className="h-4 w-4" /> 27 34 71 22 33 · 07 88 49 49 79
           </span>
           <span className="flex items-center gap-2">
-            <Mail className="h-4 w-4" /> hotelnahoui@yahoo.com
+            <Mail className="h-4 w-4" /> reservations@nahouihotel.ci
           </span>
         </div>
         <div className="mt-9">

@@ -64,9 +64,18 @@ export function BienEtrePage() {
         title="Maintenez votre rythme, même en voyage."
         text="Équipée des derniers appareils cardio et de musculation, notre salle de sport, accompagnée d'un coach qualifié, est ouverte tous les jours de 9h à 19h."
         cta={{ label: "Réserver votre séjour", href: "/stays" }}
-        image="https://hotelnahoui.net/wp-content/uploads/2024/07/images-4.jpeg"
+        image="/assets/sport.jpg"
         imageAlt="Salle de sport de l'Hôtel Nahoui Balmer"
         reverse
+      />
+
+      <EditorialSplit
+        eyebrow="SPA"
+        title="Une parenthèse sensorielle, hors du temps."
+        text="Soins bien-être sur mesure et gestes experts, directement dans l'intimité de votre chambre : massages relaxants, soins du visage et rituels sur-mesure pour apaiser le corps et l'esprit."
+        cta={{ label: "Réserver un soin", href: "/contact" }}
+        image="/assets/spa.png"
+        imageAlt="SPA de l'Hôtel Nahoui Balmer"
       />
 
       <section className="mx-auto max-w-[1440px] px-5 lg:px-10 pb-24 lg:pb-32">

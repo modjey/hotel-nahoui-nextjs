@@ -171,7 +171,7 @@ export default function AdminDashboardPage() {
           {/* Graphiques */}
           <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="rounded-2xl bg-card border border-border p-6 lg:col-span-2">
-              <h3 className="font-display text-xl mb-4">Revenus & réservations — 6 derniers mois</h3>
+              <h3 className="font-display text-xl mb-4">Revenus & réservations - 6 derniers mois</h3>
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={stats.monthly}>
@@ -262,7 +262,7 @@ export default function AdminDashboardPage() {
                   <span className="text-muted-foreground flex items-center gap-2">
                     <Star className="h-4 w-4 text-yellow-500" /> Note moyenne
                   </span>
-                  <span className="font-medium">{stats.reviews.avgRating || "—"} / 5</span>
+                  <span className="font-medium">{stats.reviews.avgRating || "-"} / 5</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Total des avis</span>
@@ -331,7 +331,7 @@ export default function AdminDashboardPage() {
                     <Link key={b.id} href={`/admin/bookings/${b.id}`} className="flex items-center justify-between py-3 group">
                       <div className="min-w-0">
                         <div className="text-sm font-medium truncate group-hover:underline">
-                          {b.guestName} — {b.roomName}
+                          {b.guestName} - {b.roomName}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           {format(new Date(b.checkIn), "dd MMM", { locale: fr })} → {format(new Date(b.checkOut), "dd MMM yyyy", { locale: fr })}

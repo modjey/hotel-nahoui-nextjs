@@ -1,8 +1,6 @@
 "use client";
-import { motion } from "framer-motion";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowRight, BedDouble, Minus, Plus, Users, Maximize2 } from "lucide-react";
+import { Minus, Plus } from "lucide-react";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
 import { api } from "@/lib/api-client";
@@ -13,38 +11,16 @@ import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getDiscountedPrice } from "@/lib/pricing";
+import { RoomCard, type RoomCardRoom } from "@/components/site/RoomCard";
 
 
-type Room = {
-  id: string;
-  slug: string;
-  name: string;
-  roomNumber: string | null;
-  shortDescription: string | null;
-  basePrice: number;
-  currency: string;
-  discountPercent: number;
-  maxGuests: number;
-  beds: number | null;
-  bathrooms: number | null;
-  sizeSqm: number | null;
-  coverImageUrl: string | null;
-  isFeatured: boolean;
+type Room = RoomCardRoom & {
   roomType: { id: string; slug: string; name: string };
   location: { id: string; slug: string; name: string; city: string | null };
 };
 
 const sorts = ["Prix croissant", "Prix décroissant", "Surface"] as const;
 type Sort = typeof sorts[number];
-
-const ease = [0.22, 1, 0.36, 1] as const;
-
-export function formatFcfa(value: number, currency = "XOF") {
-  if (currency !== "XOF") {
-    return new Intl.NumberFormat("fr-FR", { style: "currency", currency, maximumFractionDigits: 0 }).format(value);
-  }
-  return `${new Intl.NumberFormat("fr-FR").format(value).replace(/ | /g, " ")} FCFA`;
-}
 
 function Stepper({ label, hint, value, min, onChange }: { label: string; hint: string; value: number; min: number; onChange: (v: number) => void }) {
   return (
@@ -190,7 +166,7 @@ function SuitesPageContent() {
             <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
               <PopoverTrigger asChild>
                 <button type="button" className="text-left px-5 py-4 md:flex-[1.6] border-b md:border-b-0 md:border-r border-white/35 hover:bg-white/10">
-                  <span className="eyebrow block text-white/85">Arrivée — Départ</span>
+                  <span className="eyebrow block text-white/85">Arrivée - Départ</span>
                   <span className="mt-1 block text-[1.0625rem] font-medium first-letter:uppercase">
                     {checkIn && checkOut ? `${fmt(checkIn)} → ${fmt(checkOut)}` : "Choisir les dates"}
                   </span>
@@ -302,7 +278,7 @@ function SuitesPageContent() {
           <div className="py-24 text-center">
             <p className="font-display text-3xl">Aucune chambre ne correspond.</p>
             <p className="mt-3 text-muted-foreground">
-              Essayez une autre catégorie ou moins de voyageurs — notre Grande Mezzanine accueille jusqu&rsquo;à 6 personnes.
+              Essayez une autre catégorie ou moins de voyageurs - notre Grande Mezzanine accueille jusqu&rsquo;à 6 personnes.
             </p>
             <button type="button" onClick={() => { setCat("Toutes"); setAvailableOnly(false); }} className="btn-outline-editorial mt-8">
               Voir toutes les chambres
@@ -310,20 +286,25 @@ function SuitesPageContent() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-14">
-            {list.map((room, index) => (
-              <RoomCard
-                key={room.id}
-                room={room}
-                index={index}
-                isAvailable={roomAvailability[room.id] !== false}
-                showAvailability={showAvailability}
-                checkIn={availabilityCheckIn}
-                checkOut={availabilityCheckOut}
-                nights={nights}
-                adults={adults}
-                childrenCount={children}
-              />
-            ))}
+            {list.map((room, index) => {
+              const detailsParams = new URLSearchParams({
+                checkIn: availabilityCheckIn.toISOString(),
+                checkOut: availabilityCheckOut.toISOString(),
+                adults: adults.toString(),
+                children: children.toString(),
+              });
+              return (
+                <RoomCard
+                  key={room.id}
+                  room={room}
+                  index={index}
+                  href={`/rooms/${room.slug}?${detailsParams.toString()}`}
+                  isAvailable={roomAvailability[room.id] !== false}
+                  showAvailability={showAvailability}
+                  nights={nights}
+                />
+              );
+            })}
           </div>
         )}
       </main>
@@ -341,113 +322,3 @@ export function SuitesPage() {
   );
 }
 
-function RoomCard({
-  room,
-  index = 0,
-  isAvailable = true,
-  showAvailability = false,
-  checkIn,
-  checkOut,
-  nights,
-  adults,
-  childrenCount,
-}: {
-  room: Room;
-  index?: number;
-  isAvailable?: boolean;
-  showAvailability?: boolean;
-  checkIn: Date;
-  checkOut: Date;
-  nights: number;
-  adults: number;
-  childrenCount: number;
-}) {
-  const unavailable = showAvailability && !isAvailable;
-  const detailsParams = new URLSearchParams({
-    checkIn: checkIn.toISOString(),
-    checkOut: checkOut.toISOString(),
-    adults: adults.toString(),
-    children: childrenCount.toString(),
-  });
-
-  return (
-    <motion.article
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.7, ease, delay: (index % 3) * 0.06 }}
-    >
-      <Link href={`/rooms/${room.slug}?${detailsParams.toString()}`} className="group block">
-        <div className="relative aspect-[4/5] overflow-hidden bg-muted">
-          {room.coverImageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={room.coverImageUrl}
-              alt={room.name}
-              loading="lazy"
-              className={`h-full w-full object-cover img-zoom ${unavailable ? "grayscale" : ""}`}
-            />
-          ) : (
-            <div className="h-full w-full grid place-items-center text-muted-foreground text-sm">Photo à venir</div>
-          )}
-          {unavailable && <div className="absolute inset-0 bg-[rgb(26_12_9/0.5)]" />}
-
-          <div className="absolute left-4 top-4 flex gap-2">
-            {room.isFeatured && !unavailable && (
-              <span className="bg-card text-foreground text-xs font-semibold px-2.5 py-1.5">Coup de cœur</span>
-            )}
-            {unavailable && (
-              <span className="bg-card text-foreground text-xs font-semibold px-2.5 py-1.5">Complet à ces dates</span>
-            )}
-            {room.discountPercent > 0 && !unavailable && (
-              <span className="bg-red-600 text-white text-xs font-semibold px-2.5 py-1.5">-{room.discountPercent}%</span>
-            )}
-          </div>
-
-          {!unavailable && (
-            <span className="price-stamp absolute left-4 bottom-4">
-              <small>la nuit, dès</small>
-              {room.discountPercent > 0 ? (
-                <>
-                  <span className="text-xs line-through opacity-70">
-                    {formatFcfa(room.basePrice, room.currency).replace(" FCFA", " F")}
-                  </span>
-                  <strong>{formatFcfa(getDiscountedPrice(room.basePrice, room.discountPercent), room.currency).replace(" FCFA", " F")}</strong>
-                </>
-              ) : (
-                <strong>{formatFcfa(room.basePrice, room.currency).replace(" FCFA", " F")}</strong>
-              )}
-            </span>
-          )}
-        </div>
-
-        <div className="pt-5">
-          <p className="eyebrow text-muted-foreground">
-            {room.roomType.name}
-            {room.roomNumber ? ` · N° ${room.roomNumber}` : ""}
-          </p>
-          <h3 className="font-display mt-1.5 text-[1.75rem] leading-tight">{room.name}</h3>
-          <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
-            {room.sizeSqm ? <li className="inline-flex items-center gap-1.5"><Maximize2 className="h-3.5 w-3.5" />{room.sizeSqm} m²</li> : null}
-            <li className="inline-flex items-center gap-1.5"><Users className="h-3.5 w-3.5" />{room.maxGuests} pers.</li>
-            {room.beds ? <li className="inline-flex items-center gap-1.5"><BedDouble className="h-3.5 w-3.5" />{room.beds} lit{room.beds > 1 ? "s" : ""}</li> : null}
-          </ul>
-          <div className="mt-4 pt-4 border-t border-border flex items-center justify-between gap-4">
-            {!unavailable && nights > 0 ? (
-              <p className="text-sm">
-                <span className="font-semibold tabular">{formatFcfa(getDiscountedPrice(room.basePrice, room.discountPercent) * nights, room.currency)}</span>
-                <span className="text-muted-foreground"> · {nights} nuit{nights > 1 ? "s" : ""}</span>
-              </p>
-            ) : (
-              <p className="text-sm text-muted-foreground">Changez de dates pour la réserver</p>
-            )}
-            <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-text">
-              {unavailable ? "Détails" : "Réserver"}
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </span>
-          </div>
-        </div>
-      </Link>
-    </motion.article>
-  );
-}

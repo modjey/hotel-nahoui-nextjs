@@ -75,7 +75,7 @@ export default function NewRoomPage() {
         });
       }
       setPendingMedia((prev) => [...prev, ...added]);
-      toast.success(`${added.length} image${added.length > 1 ? "s" : ""} en attente — envoyée${added.length > 1 ? "s" : ""} à l'enregistrement`);
+      toast.success(`${added.length} image${added.length > 1 ? "s" : ""} en attente - envoyée${added.length > 1 ? "s" : ""} à l'enregistrement`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erreur");
     } finally {

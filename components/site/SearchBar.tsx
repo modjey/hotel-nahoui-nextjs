@@ -93,7 +93,7 @@ export function SearchBar() {
         <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
           <PopoverTrigger asChild>
             <button type="button" className={`${fieldClass} sm:flex-[1.6]`}>
-              <span className="eyebrow block text-white/85">Arrivée — Départ</span>
+              <span className="eyebrow block text-white/85">Arrivée - Départ</span>
               <span className="mt-1 block text-[1.0625rem] font-medium truncate first-letter:uppercase">
                 {checkIn && checkOut
                   ? `${fmt(checkIn)} → ${fmt(checkOut)}`

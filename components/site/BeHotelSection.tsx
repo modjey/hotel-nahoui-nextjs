@@ -26,11 +26,11 @@ const cards = [
     href: "/evenements",
   },
   {
-    img: "/assets/restoservice.png",
-    title: "Chambres & Suites",
-    text: "Chaque chambre et suite de l'Hôtel Nahoui Balmer est un univers à part, pensé pour savourer l'art de vivre ivoirien dans sa plus belle expression.",
-    cta: "Voir les chambres",
-    href: "/stays",
+    img: "/assets/cocktail.jpg",
+    title: "Bar VIP",
+    text: "Musique, lumières tamisées et service soigné : le Bar VIP accueille retrouvailles entre amis et soirées festives dans une atmosphère élégante.",
+    cta: "Découvrir",
+    href: "/restaurant#bar-vip",
   },
 ];
 

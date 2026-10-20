@@ -3,20 +3,25 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { ArrowRight } from "lucide-react";
+import { api, ApiError } from "@/lib/api-client";
 
 export function NewsletterSection() {
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
     setSubmitting(true);
-    setTimeout(() => {
+    try {
+      await api.post("/api/newsletter", { email });
       toast.success("Merci, vous êtes bien inscrit(e) à notre newsletter.");
       setEmail("");
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Une erreur est survenue, réessayez.");
+    } finally {
       setSubmitting(false);
-    }, 600);
+    }
   };
 
   return (

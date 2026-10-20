@@ -8,8 +8,8 @@ const ease = [0.22, 1, 0.36, 1] as const;
 const facts = [
   { value: "28", label: "chambres et suites, de 23 à 80 m²" },
   { value: "10", label: "catégories, de la Standard à la Suite Présidentielle" },
-  { value: "15h", label: "arrivée — départ avant 11h" },
-  { value: "1998", label: "l'année où la maison a ouvert ses portes" },
+  { value: "15h", label: "arrivée - départ avant 11h" },
+  { value: "2016", label: "l'année où l'hotel a ouvert ses portes" },
 ];
 
 export function IntroSection() {
@@ -25,16 +25,14 @@ export function IntroSection() {
         >
           <span className="eyebrow text-primary">Bienvenue</span>
           <h2 className="font-display mt-6 text-[2.25rem] sm:text-5xl leading-[1.06] text-balance">
-            Un art de recevoir, transmis depuis des générations.
+            Un écrin d’élégance entre confort et sérénité
           </h2>
           <p className="mt-6 max-w-xl text-[1.0625rem] leading-relaxed text-muted-foreground text-pretty">
-            Face à la mer, l&rsquo;Hôtel Nahoui Balmer réunit vingt-huit chambres et suites,
-            une table où se mêlent tradition ivoirienne et raffinement, et une hospitalité
-            pensée pour chaque instant du séjour.
+            Bienvenue à l’Hôtel Nahoui Balmer, une adresse d’exception où se conjuguent raffinement, confort et sens de l’hospitalité. Situé face à la mer, dans un environnement paisible et soigneusement préservé, notre établissement vous invite à vivre une expérience unique, placée sous le signe du bien-être et de la détente.
           </p>
           <div className="mt-9 flex flex-wrap items-center gap-6">
             <Link href="/services" className="btn-fill-editorial">
-              Découvrir la maison
+              Découvrir notre hébergement
             </Link>
             <Link href="/stays" className="link-underline">
               Voir les chambres <ArrowRight className="h-4 w-4" />

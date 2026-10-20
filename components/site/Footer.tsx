@@ -12,7 +12,7 @@ const footerSections = [
   {
     title: "Séjourner",
     links: [
-      { label: "Chambres & Suites", href: "/stays" },
+      { label: "Hébergements", href: "/stays" },
       { label: "Mes réservations", href: "/bookings" },
       { label: "Avis clients", href: "/avis" },
     ],
@@ -20,7 +20,7 @@ const footerSections = [
   {
     title: "Découvrir",
     links: [
-      { label: "Restaurant", href: "/restaurant" },
+      { label: "Restauration", href: "/restaurant" },
       { label: "Bien-être", href: "/bien-etre" },
       { label: "Expériences", href: "/services" },
       { label: "Événements", href: "/evenements" },
@@ -43,7 +43,7 @@ export function Footer() {
             <img src="/logo.png" alt="" className="h-16 w-16" />
             <div>
               <p className="font-display text-3xl sm:text-4xl leading-none">Hôtel Nahoui Balmer</p>
-              <p className="mt-2 text-[0.9375rem] text-white/70">San Pedro, Côte d&rsquo;Ivoire · depuis 1998</p>
+              <p className="mt-2 text-[0.9375rem] text-white/70">San Pedro, Côte d&rsquo;Ivoire · depuis 2016</p>
             </div>
           </div>
           <Link href="/stays" className="btn-fill-editorial w-fit">
@@ -70,7 +70,8 @@ export function Footer() {
           <div>
             <h2 className="text-[0.8125rem] font-semibold text-white/55">Contact</h2>
             <div className="mt-5 space-y-3 text-[0.9375rem] text-white/85">
-              <p>San Pedro, Côte d&rsquo;Ivoire</p>
+              <p>01 BP 1864 San-Pedro 01</p>
+              <p>Côte d&rsquo;Ivoire</p>
               {phoneNumbers.map((phone) => (
                 <a key={phone} href={`tel:${phone.replace(/\s/g, "")}`} className="block hover:text-white tabular">
                   {phone}
@@ -78,6 +79,9 @@ export function Footer() {
               ))}
               <a href="mailto:hotelnahoui@yahoo.com" className="block hover:text-white break-all">
                 hotelnahoui@yahoo.com
+              </a>
+              <a href="mailto:reservations@nahouihotel.ci" className="block hover:text-white break-all">
+                reservations@nahouihotel.ci
               </a>
             </div>
           </div>

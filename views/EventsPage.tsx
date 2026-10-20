@@ -121,7 +121,7 @@ export function EventsPage() {
             transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
             className="mt-5 max-w-xl text-base sm:text-lg text-white/90 text-pretty"
           >
-            Circuit de la petite côte — à la découverte du littoral sud, entre plages, lagunes et villages de pêcheurs.
+            Circuit de la petite côte - à la découverte du littoral sud, entre plages, lagunes et villages de pêcheurs.
           </motion.p>
         </div>
       </section>
@@ -157,7 +157,7 @@ export function EventsPage() {
               <ul className="space-y-2 text-sm text-muted-foreground mb-6 pl-8">
                 {circuit.activities.map((activity, i) => (
                   <li key={i} className="flex items-start gap-2">
-                    <span className="text-primary mt-1">—</span>
+                    <span className="text-primary mt-1">-</span>
                     <span>{activity}</span>
                   </li>
                 ))}

@@ -58,7 +58,7 @@ Chaque test réserve un créneau de dates **disjoint** des autres (espacement de
 14 jours, base dérivée de l'horloge) : deux tests d'une même exécution ne
 peuvent pas se chevaucher. Le test de concurrence vérifie en plus explicitement
 qu'aucune réservation ne traîne déjà sur sa plage, et échoue avec le détail des
-réservations fautives le cas échéant — plutôt que de produire un faux résultat.
+réservations fautives le cas échéant - plutôt que de produire un faux résultat.
 
 Les tests s'appuient sur l'auth par jeton Bearer plutôt que sur l'OTP, afin de
 ne pas consommer le quota anti-abus des codes et de rester déterministes.

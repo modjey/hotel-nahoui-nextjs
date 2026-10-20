@@ -466,7 +466,7 @@ export default function AdminBookingDetailPage() {
                           {new Intl.NumberFormat("fr-FR").format(p.amount)} {p.currency}
                         </span>
                         <Badge variant={p.status ? paymentStatusColors[p.status] : "secondary"}>
-                          {p.status ? paymentStatusLabels[p.status] || p.status : "—"}
+                          {p.status ? paymentStatusLabels[p.status] || p.status : "-"}
                         </Badge>
                       </div>
                       <div className="mt-1 text-xs text-muted-foreground space-y-0.5">

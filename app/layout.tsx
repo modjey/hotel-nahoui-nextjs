@@ -22,9 +22,9 @@ const schibsted = Schibsted_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Hôtel Nahoui Balmer — Hôtel à San Pedro, Côte d'Ivoire",
+  title: "Hôtel Nahoui Balmer - Hôtel à San Pedro, Côte d'Ivoire",
   description:
-    "L'Hôtel Nahoui Balmer, à San Pedro depuis 1998 : 28 chambres et suites, piscine, restaurant de cuisine ivoirienne et italienne, salles de réunion. Réservation en ligne en FCFA.",
+    "L'Hôtel Nahoui Balmer, à San Pedro depuis 2016 : 28 chambres et suites, piscine, restaurant de cuisine ivoirienne et italienne, salles de réunion. Réservation en ligne en FCFA.",
 };
 
 export default function RootLayout({

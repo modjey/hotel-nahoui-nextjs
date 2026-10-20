@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import SwaggerClient from "./SwaggerClient";
 
 export const metadata: Metadata = {
-  title: "API Docs — Hôtel Nahoui",
+  title: "API Docs - Hôtel Nahoui",
   robots: { index: false, follow: false },
 };
 

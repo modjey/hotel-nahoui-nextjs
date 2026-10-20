@@ -15,7 +15,7 @@ export function normalizeIvoryCoastPhone(input: string): string | null {
   return `+225${n}`;
 }
 
-const emailSchema = z.string().trim().toLowerCase().email();
+export const emailSchema = z.string().trim().toLowerCase().email();
 const phoneInputSchema = z
   .string()
   .trim()

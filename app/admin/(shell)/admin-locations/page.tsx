@@ -293,8 +293,8 @@ export default function AdminLocationsPage() {
                       <span>{loc.name}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{loc.city || "—"}</TableCell>
-                  <TableCell className="text-muted-foreground">{loc.country || "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{loc.city || "-"}</TableCell>
+                  <TableCell className="text-muted-foreground">{loc.country || "-"}</TableCell>
                   <TableCell>{loc._count.rooms}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">

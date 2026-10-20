@@ -24,7 +24,7 @@ export function HostCta() {
           </h2>
           <p className="mt-6 text-base text-muted-foreground max-w-md leading-relaxed text-pretty">
             Un accompagnement personnalisé, une présentation soignée et une gestion
-            attentive — pensés pour celles et ceux qui tiennent à la présentation
+            attentive - pensés pour celles et ceux qui tiennent à la présentation
             de leur maison.
           </p>
           <div className="mt-9 flex flex-wrap items-center gap-8">

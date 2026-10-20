@@ -448,24 +448,24 @@ export default function HotelBookingCalendar({
             <div className="mt-3 flex border border-[#DDD8CD]">
               <div className="flex-1 border-r border-[#DDD8CD] px-3 py-3">
                 <p className="text-[11px] text-[#6B655A]">Arrivée</p>
-                <p className="text-sm">{checkIn ? formatShortDate(checkIn) : "—"}</p>
+                <p className="text-sm">{checkIn ? formatShortDate(checkIn) : "-"}</p>
               </div>
               <div className="flex-1 px-3 py-3">
                 <p className="text-[11px] text-[#6B655A]">Départ</p>
-                <p className="text-sm">{checkOut ? formatShortDate(checkOut) : "—"}</p>
+                <p className="text-sm">{checkOut ? formatShortDate(checkOut) : "-"}</p>
               </div>
             </div>
 
             {checkIn && !checkOut && (
               <p className="mt-3 text-xs text-[#8A8372]">
-                Séjour minimum : {getInfo(checkIn).minStay} nuit{getInfo(checkIn).minStay > 1 ? "s" : ""} — choisissez une date de départ
+                Séjour minimum : {getInfo(checkIn).minStay} nuit{getInfo(checkIn).minStay > 1 ? "s" : ""} - choisissez une date de départ
               </p>
             )}
 
             <div className="mt-4 space-y-2 text-sm">
               <div className="flex justify-between text-[#6B655A]">
                 <span>Nuits</span>
-                <span className="text-[#1C1B19]">{nights || "—"}</span>
+                <span className="text-[#1C1B19]">{nights || "-"}</span>
               </div>
               <div className="flex justify-between text-[#6B655A]">
                 <span>Chambres</span>
@@ -477,7 +477,7 @@ export default function HotelBookingCalendar({
                   className="text-base"
                   style={{ fontFamily: "'Fraunces', Georgia, 'Times New Roman', serif" }}
                 >
-                  {subtotal ? formatPrice(subtotal, currencyLabel) : "—"}
+                  {subtotal ? formatPrice(subtotal, currencyLabel) : "-"}
                 </span>
               </div>
             </div>

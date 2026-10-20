@@ -129,7 +129,7 @@ export function MediaGallery({
         });
       }
       setPendingFiles((prev) => [...prev, ...added]);
-      toast.success(`${added.length} image${added.length > 1 ? "s" : ""} en attente — envoyée${added.length > 1 ? "s" : ""} à l'enregistrement`);
+      toast.success(`${added.length} image${added.length > 1 ? "s" : ""} en attente - envoyée${added.length > 1 ? "s" : ""} à l'enregistrement`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erreur");
     } finally {
@@ -243,7 +243,7 @@ export function MediaGallery({
 
       {pendingFiles.length > 0 && (
         <p className="text-xs text-amber-600">
-          {pendingFiles.length} image{pendingFiles.length > 1 ? "s" : ""} en attente — sera{pendingFiles.length > 1 ? "ont" : ""} envoyée{pendingFiles.length > 1 ? "s" : ""} à l'enregistrement.
+          {pendingFiles.length} image{pendingFiles.length > 1 ? "s" : ""} en attente - sera{pendingFiles.length > 1 ? "ont" : ""} envoyée{pendingFiles.length > 1 ? "s" : ""} à l'enregistrement.
         </p>
       )}
 

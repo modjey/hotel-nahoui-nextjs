@@ -225,7 +225,7 @@ export default function AdminRoomTypesPage() {
                     </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground max-w-xs truncate">
-                    {t.description || "—"}
+                    {t.description || "-"}
                   </TableCell>
                   <TableCell>{t._count.rooms}</TableCell>
                   <TableCell>

@@ -3,25 +3,20 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import {
-  Sparkles, Presentation, Users, Mic, GlassWater, Car, Plane,
+  Sparkles, Presentation, Users, Car, Plane,
   UtensilsCrossed, Heart, PawPrint, Music, Sun, CheckCircle2, Layers, Calendar,
-  Waves, Wine, Dumbbell, Gamepad2, PartyPopper, Compass,
+  Gamepad2, PartyPopper, Compass,
 } from "lucide-react";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
 
 const quickLinks = [
-  { id: "piscine", label: "Piscine", icon: Waves },
-  { id: "bar", label: "Bar VIP", icon: Wine },
-  { id: "sport", label: "Salle de sport", icon: Dumbbell },
   { id: "conference", label: "Conférence", icon: Presentation },
   { id: "evenements", label: "Événements", icon: PartyPopper },
   { id: "jeux", label: "Espace jeux", icon: Gamepad2 },
-  { id: "spa", label: "SPA", icon: Sparkles },
   { id: "experience", label: "Expérience", icon: Compass },
 ];
 
-const gymEquipment = ["Tapis de course", "Vélos d'appartement", "Appareils de musculation", "Haltères et poids libres", "Bancs de musculation"];
 const conferenceEquipment = ["Vidéoprojecteur & écran", "Système de sonorisation", "Climatisation", "Tables & chaises modulables", "Wi-Fi haut débit"];
 const conferenceStats = [
   { icon: Users, v: "100", l: "Capacité max." },
@@ -185,54 +180,6 @@ export function ServicesPage() {
         </div>
       </div>
 
-      <div id="piscine" className="scroll-mt-36">
-        <ServiceBlock
-          eyebrow="Détente"
-          title="Piscine"
-          text="Notre piscine extérieure vous accueille tout au long de la journée pour une baignade rafraîchissante ou un moment de calme absolu, dans un cadre serein. Douche, maître-nageur et bassin pour enfants complètent cet espace."
-          cta={{ label: "Réserver votre séjour", href: "/stays" }}
-          image="/assets/Image14.jpg"
-          imageAlt="Piscine de l'Hôtel Nahoui Balmer"
-        />
-      </div>
-
-      <div id="bar" className="scroll-mt-36">
-        <ServiceBlock
-          eyebrow="Vie nocturne"
-          title="Bar VIP"
-          text="Véritable lieu de vie, le Bar VIP accueille aussi bien les retrouvailles entre amis que les soirées festives. Musique, lumières tamisées et service soigné composent une atmosphère élégante."
-          cta={{ label: "Découvrir", href: "/contact" }}
-          image="/assets/restoservice.png"
-          imageAlt="Bar VIP de l'Hôtel Nahoui Balmer"
-          reverse
-        />
-      </div>
-
-      {/* Cocktails banner */}
-      <section className="relative h-[42vh] min-h-[300px] w-full overflow-hidden">
-        <img src="/assets/cocktail.jpg" alt="Cocktails de l'Hôtel Nahoui Balmer" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 photo-scrim" />
-        <div className="relative z-10 mx-auto flex h-full max-w-[1440px] flex-col justify-end px-5 lg:px-10 pb-14 lg:pb-20 text-white">
-          <GlassWater className="h-6 w-6 mb-4 text-white/80" />
-          <span className="eyebrow inline-flex items-center gap-3 before:content-[''] before:h-2.5 before:w-2.5 before:bg-primary before:outline before:outline-1 before:outline-offset-2 before:outline-white">Focus cocktails</span>
-          <h2 className="font-display mt-4 text-3xl sm:text-4xl font-light max-w-lg">
-            Grands classiques revisités, créations originales.
-          </h2>
-        </div>
-      </section>
-
-      <div id="sport" className="scroll-mt-36">
-        <ServiceBlock
-          eyebrow="Fitness"
-          title="Salle de Sport"
-          text="Équipée des derniers appareils cardiovasculaires et de musculation, notre salle vous offre un espace complet pour garder la forme, avec l'accompagnement d'un coach qualifié. Ouverte tous les jours de 9h à 19h."
-          cta={{ label: "Découvrir", href: "/bien-etre" }}
-          image="/assets/sport.jpg"
-          imageAlt="Salle de sport de l'Hôtel Nahoui Balmer"
-          features={gymEquipment}
-        />
-      </div>
-
       <div id="conference" className="scroll-mt-36">
         <ServiceBlock
           eyebrow="Événementiel"
@@ -270,24 +217,13 @@ export function ServicesPage() {
         />
       </div>
 
-      <div id="spa" className="scroll-mt-36">
-        <ServiceBlock
-          eyebrow="Bien-être"
-          title="SPA"
-          text="Soins bien-être sur mesure, gestes experts et senteurs délicates — directement dans l'intimité de votre chambre. Une parenthèse sensorielle hors du temps pour apaiser le corps et l'esprit."
-          cta={{ label: "Découvrir le bien-être", href: "/bien-etre" }}
-          image="/assets/spa.png"
-          imageAlt="SPA de l'Hôtel Nahoui Balmer"
-        />
-      </div>
-
       {/* Expérience Nahoui */}
       <section id="experience" className="scroll-mt-36 mx-auto max-w-[1440px] px-5 lg:px-10 py-16 lg:py-20 border-t border-border">
         <div className="text-center mb-12">
           <span className="eyebrow text-primary">Sur mesure</span>
           <h2 className="font-display mt-4 text-3xl sm:text-4xl font-light">L&rsquo;Expérience Nahoui</h2>
           <p className="mt-3 text-muted-foreground max-w-xl mx-auto">
-            Vivez bien plus qu&rsquo;un séjour — découvrez nos attentions particulières.
+            Vivez bien plus qu&rsquo;un séjour - découvrez nos attentions particulières.
           </p>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">

@@ -451,7 +451,7 @@ function BookingForm({
         <div className="border-t border-border pt-4">
           <h4 className="font-medium mb-1">Acompte / premier versement</h4>
           <p className="text-xs text-muted-foreground mb-3">
-            Optionnel — laissez vide pour un paiement intégral ultérieur. D&apos;autres échéances pourront être ajoutées depuis la fiche réservation.
+            Optionnel - laissez vide pour un paiement intégral ultérieur. D&apos;autres échéances pourront être ajoutées depuis la fiche réservation.
           </p>
           <div className="grid grid-cols-2 gap-3">
             <div>

@@ -30,7 +30,7 @@ export function Hero() {
           className="flex items-center gap-3 text-[0.9375rem] font-medium"
         >
           <span className="h-2.5 w-2.5 bg-primary outline outline-1 outline-offset-2 outline-white" />
-          San Pedro, Côte d&rsquo;Ivoire — depuis 1998
+          San Pedro, Côte d&rsquo;Ivoire - depuis 2016
         </motion.p>
 
         <motion.h1

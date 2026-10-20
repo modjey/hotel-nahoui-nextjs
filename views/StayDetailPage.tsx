@@ -665,7 +665,7 @@ function StayDetailPageContent() {
           {/* L'essentiel en chiffres */}
           <dl className="grid grid-cols-2 sm:grid-cols-4 border-y border-border">
             {[
-              { value: room.sizeSqm ? `${room.sizeSqm}` : "—", unit: "m²", label: "Surface" },
+              { value: room.sizeSqm ? `${room.sizeSqm}` : "-", unit: "m²", label: "Surface" },
               { value: `${p.guests}`, unit: "pers.", label: "Capacité" },
               { value: `${p.beds}`, unit: p.beds > 1 ? "lits" : "lit", label: "Couchage" },
               { value: `${p.baths}`, unit: p.baths > 1 ? "sdb" : "sdb", label: "Salle de bain" },

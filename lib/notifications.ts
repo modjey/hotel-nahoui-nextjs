@@ -14,7 +14,8 @@ export type AdminNotificationType =
   | "PAYMENT_FAILED"
   | "REVIEW_CREATED"
   | "CONTACT_MESSAGE"
-  | "USER_REGISTERED";
+  | "USER_REGISTERED"
+  | "NEWSLETTER_SIGNUP";
 
 export interface AdminNotificationInput {
   type: AdminNotificationType;

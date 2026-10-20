@@ -517,17 +517,17 @@ export default function HotelBookingCalendar({
             <div className="mt-2 flex border border-[rgb(42_23_18/0.14)]">
               <div className="flex-1 border-r border-[rgb(42_23_18/0.14)] px-3 py-2">
                 <p className="text-xs text-[#5e4c44]">Arrivée</p>
-                <p className="text-sm">{checkIn ? formatShortDate(checkIn) : "—"}</p>
+                <p className="text-sm">{checkIn ? formatShortDate(checkIn) : "-"}</p>
               </div>
               <div className="flex-1 px-3 py-2">
                 <p className="text-xs text-[#5e4c44]">Départ</p>
-                <p className="text-sm">{checkOut ? formatShortDate(checkOut) : "—"}</p>
+                <p className="text-sm">{checkOut ? formatShortDate(checkOut) : "-"}</p>
               </div>
             </div>
 
             {checkIn && !checkOut && (
               <p className="mt-2 text-xs text-[#5e4c44]">
-                Séjour minimum : {getInfo(checkIn).minStay} nuit{getInfo(checkIn).minStay > 1 ? "s" : ""} — choisissez une date de départ
+                Séjour minimum : {getInfo(checkIn).minStay} nuit{getInfo(checkIn).minStay > 1 ? "s" : ""} - choisissez une date de départ
               </p>
             )}
 

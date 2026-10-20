@@ -5,37 +5,19 @@ import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getDiscountedPrice } from "@/lib/pricing";
-
-type Room = {
-  id: string;
-  slug: string;
-  name: string;
-  shortDescription: string | null;
-  sizeSqm: number | null;
-  maxGuests?: number | null;
-  basePrice?: number | null;
-  currency?: string | null;
-  discountPercent?: number | null;
-  coverImageUrl: string | null;
-  roomType: { name: string } | null;
-};
+import { RoomCard, type RoomCardRoom } from "@/components/site/RoomCard";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
-function formatPrice(value: number) {
-  return new Intl.NumberFormat("fr-FR").format(value).replace(/ | /g, " ");
-}
-
 export function RoomsShowcaseSection() {
-  const [rooms, setRooms] = useState<Room[]>([]);
+  const [rooms, setRooms] = useState<RoomCardRoom[]>([]);
   const [loading, setLoading] = useState(true);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     (async () => {
       try {
-        const data = await api.get<{ rooms: Room[] }>("/api/rooms");
+        const data = await api.get<{ rooms: RoomCardRoom[] }>("/api/rooms");
         setRooms(data.rooms.slice(0, 8));
       } catch (err) {
         console.error("Erreur chargement chambres", err);
@@ -106,69 +88,9 @@ export function RoomsShowcaseSection() {
             className="no-scrollbar -mx-5 px-5 lg:mx-0 lg:px-0 flex gap-6 overflow-x-auto overflow-y-hidden pb-2 snap-x snap-mandatory"
           >
             {rooms.map((room, i) => (
-              <motion.article
-                key={`${room.id}-${i}`}
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-80px" }}
-                transition={{ duration: 0.9, ease, delay: (i % 4) * 0.06 }}
-                className="w-[78%] shrink-0 snap-start sm:w-[calc(50%-0.75rem)] lg:w-[calc(25%-1.125rem)]"
-              >
-                <Link href={`/rooms/${room.slug}`} className="group block">
-                  <div className="relative overflow-hidden aspect-[4/5] bg-muted">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={room.coverImageUrl || "/assets/hero.png"}
-                      alt={room.name}
-                      loading="lazy"
-                      className="absolute inset-0 h-full w-full object-cover img-zoom"
-                    />
-                    {room.basePrice ? (
-                      <span className="price-stamp absolute left-4 bottom-4">
-                        <small>dès</small>
-                        {room.discountPercent ? (
-                          <>
-                            <span className="text-xs line-through opacity-70">
-                              {formatPrice(room.basePrice)}
-                            </span>
-                            <strong>
-                              {formatPrice(getDiscountedPrice(room.basePrice, room.discountPercent))}{" "}
-                              {room.currency === "XOF" || !room.currency ? "F" : room.currency}
-                            </strong>
-                          </>
-                        ) : (
-                          <strong>
-                            {formatPrice(room.basePrice)} {room.currency === "XOF" || !room.currency ? "F" : room.currency}
-                          </strong>
-                        )}
-                      </span>
-                    ) : null}
-                    {room.discountPercent ? (
-                      <span className="absolute right-4 top-4 bg-red-600 text-white text-xs font-semibold px-2 py-1">
-                        -{room.discountPercent}%
-                      </span>
-                    ) : null}
-                  </div>
-                  <p className="eyebrow mt-5 text-muted-foreground">
-                    {room.roomType?.name || "Chambre"}
-                  </p>
-                  <h3 className="font-display mt-1.5 text-[1.75rem] leading-tight">{room.name}</h3>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {[
-                      room.sizeSqm ? `${room.sizeSqm} m²` : null,
-                      room.maxGuests ? `${room.maxGuests} pers.` : null,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
-                    {room.shortDescription ? (
-                      <span className="block mt-1 line-clamp-1">{room.shortDescription}</span>
-                    ) : null}
-                  </p>
-                  <span className="link-underline mt-4 text-brand-text">
-                    Voir la chambre <ArrowRight className="h-4 w-4" />
-                  </span>
-                </Link>
-              </motion.article>
+              <div key={room.id} className="w-[78%] shrink-0 snap-start sm:w-[calc(50%-0.75rem)] lg:w-[calc(25%-1.125rem)]">
+                <RoomCard room={room} index={i} showDescription />
+              </div>
             ))}
           </div>
         )}

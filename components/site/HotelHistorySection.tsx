@@ -95,10 +95,10 @@ export function HotelHistorySection() {
           className="bg-card max-w-[980px] grid gap-8 p-8 sm:p-12 lg:p-16 md:grid-cols-[auto_1fr] md:gap-14 border border-border"
         >
           <div className="md:border-r md:border-border md:pr-14">
-            <span className="eyebrow text-primary">Une maison d&rsquo;exception</span>
+            <span className="eyebrow text-primary">Un hébergement d&rsquo;exception</span>
             <p className="font-display mt-5 leading-[0.9] text-primary">
               <span className="block text-2xl italic text-foreground">Depuis</span>
-              <span className="block text-7xl sm:text-8xl tabular">1998</span>
+              <span className="block text-7xl sm:text-8xl tabular">2016</span>
             </p>
           </div>
 
