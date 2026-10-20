@@ -20,14 +20,18 @@ const handler = withAuth(async (req) => {
     const type = await prisma.roomType.findUnique({ where: { slug } });
     if (!type) return fail("Type introuvable", 404, "NOT_FOUND");
 
-    if (body.slug && body.slug !== slug) {
-      const existing = await prisma.roomType.findFirst({ where: { slug: body.slug, id: { not: type.id } } });
+    // Le slug ne change que s'il est fourni explicitement ou si le nom a
+    // réellement changé — sinon il est conservé tel quel. L'unicité est
+    // vérifiée dans les deux cas pour éviter une erreur P2002 non gérée.
+    const nextSlug = body.slug ?? (body.name && body.name !== type.name ? slugify(body.name) : undefined);
+    if (nextSlug && nextSlug !== slug) {
+      const existing = await prisma.roomType.findFirst({ where: { slug: nextSlug, id: { not: type.id } } });
       if (existing) return fail("Slug déjà utilisé", 409, "SLUG_TAKEN");
     }
 
     const updated = await prisma.roomType.update({
       where: { slug },
-      data: body.slug ? body : { ...body, slug: body.name ? slugify(body.name) : undefined },
+      data: nextSlug ? { ...body, slug: nextSlug } : body,
     });
     return ok({ type: updated });
   }

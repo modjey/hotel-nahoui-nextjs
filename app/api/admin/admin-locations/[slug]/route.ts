@@ -23,15 +23,18 @@ const handler = withAuth(async (req) => {
     const location = await prisma.location.findUnique({ where: { slug } });
     if (!location) return fail("Localisation introuvable", 404, "NOT_FOUND");
 
-    // Si changement de slug, vérifier unicité
-    if (body.slug && body.slug !== slug) {
-      const existing = await prisma.location.findFirst({ where: { slug: body.slug, id: { not: location.id } } });
+    // Le slug ne change que s'il est fourni explicitement ou si le nom a
+    // réellement changé — sinon il est conservé tel quel. L'unicité est
+    // vérifiée dans les deux cas pour éviter une erreur P2002 non gérée.
+    const nextSlug = body.slug ?? (body.name && body.name !== location.name ? slugify(body.name) : undefined);
+    if (nextSlug && nextSlug !== slug) {
+      const existing = await prisma.location.findFirst({ where: { slug: nextSlug, id: { not: location.id } } });
       if (existing) return fail("Slug déjà utilisé", 409, "SLUG_TAKEN");
     }
 
     const updated = await prisma.location.update({
       where: { slug },
-      data: body.slug ? body : { ...body, slug: body.name ? slugify(body.name) : undefined },
+      data: nextSlug ? { ...body, slug: nextSlug } : body,
     });
     return ok({ location: updated });
   }
