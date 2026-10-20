@@ -18,9 +18,9 @@ import {
 } from "@/components/ui/select";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import { AmenitiesInput } from "@/components/admin/AmenitiesInput";
-import { api } from "@/lib/api-client";
+import { api, ApiError } from "@/lib/api-client";
 import { useApi, useMutation } from "@/hooks/use-api";
-import { roomCreateSchema, parseYoutubeId } from "@/lib/catalog/schemas";
+import { roomCreateSchema, parseYoutubeId, roomFieldLabels } from "@/lib/catalog/schemas";
 import { compressImage } from "@/lib/image-compress";
 import { flushPendingUploads } from "@/lib/pending-uploads";
 import { z } from "zod";
@@ -200,12 +200,16 @@ export default function NewRoomPage() {
     if (!result.success) {
       const errors = result.error.flatten().fieldErrors;
       Object.entries(errors).forEach(([field, msgs]) => {
-        toast.error(`${field}: ${msgs?.join(", ")}`);
+        toast.error(`${roomFieldLabels[field] ?? field} : ${msgs?.join(", ")}`);
       });
       return;
     }
 
-    await create.mutate(result.data);
+    try {
+      await create.mutate(result.data);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Erreur lors de la création");
+    }
   };
 
   return (

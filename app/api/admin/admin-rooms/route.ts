@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { ok, fail, parseBody, withAuth } from "@/lib/auth/api";
-import { roomCreateSchema, slugify } from "@/lib/catalog/schemas";
+import { roomCreateSchema } from "@/lib/catalog/schemas";
+import { roomSlugBase, ensureUniqueRoomSlug } from "@/lib/catalog/slug";
 
 export const runtime = "nodejs";
 
@@ -78,9 +79,25 @@ const handler = withAuth(async (req) => {
     if (!location) return fail("Localisation introuvable", 400, "INVALID_LOCATION");
     if (!roomType) return fail("Type de chambre introuvable", 400, "INVALID_ROOM_TYPE");
 
-    const slug = slugify(body.slug || body.name);
-    const existing = await prisma.room.findUnique({ where: { slug } });
-    if (existing) return fail("Slug déjà utilisé", 409, "SLUG_TAKEN");
+    // Contraintes d'unicité sur le nom et le numéro
+    const [nameTaken, numTaken] = await Promise.all([
+      prisma.room.findFirst({ where: { name: body.name }, select: { id: true } }),
+      body.roomNumber
+        ? prisma.room.findFirst({ where: { roomNumber: body.roomNumber }, select: { id: true } })
+        : Promise.resolve(null),
+    ]);
+    if (nameTaken) return fail(`Une chambre porte déjà le nom « ${body.name} »`, 409, "NAME_TAKEN");
+    if (numTaken) return fail(`Une chambre porte déjà le numéro « ${body.roomNumber} »`, 409, "ROOM_NUMBER_TAKEN");
+
+    let slug: string;
+    if (body.slug) {
+      const existing = await prisma.room.findUnique({ where: { slug: body.slug }, select: { id: true } });
+      if (existing) return fail(`Le slug « ${body.slug} » est déjà utilisé`, 409, "SLUG_TAKEN");
+      slug = body.slug;
+    } else {
+      // nom + numéro, suffixe aléatoire à 6 chiffres si déjà pris
+      slug = await ensureUniqueRoomSlug(roomSlugBase(body.name, body.roomNumber));
+    }
 
     const room = await prisma.room.create({ data: { ...body, slug } });
     return ok({ room }, { status: 201 });

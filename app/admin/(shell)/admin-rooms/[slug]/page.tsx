@@ -25,7 +25,7 @@ import { AmenitiesInput } from "@/components/admin/AmenitiesInput";
 import { MediaGallery, type MediaItem } from "@/components/admin/MediaGallery";
 import { api, ApiError } from "@/lib/api-client";
 import { useApi, useMutation } from "@/hooks/use-api";
-import { roomUpdateSchema } from "@/lib/catalog/schemas";
+import { roomUpdateSchema, roomFieldLabels } from "@/lib/catalog/schemas";
 import { z } from "zod";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, BedDouble, Calendar, Users } from "lucide-react";
@@ -183,12 +183,16 @@ export default function AdminRoomEditPage() {
     if (!result.success) {
       const errors = result.error.flatten().fieldErrors;
       Object.entries(errors).forEach(([field, msgs]) => {
-        toast.error(`${field}: ${msgs?.join(", ")}`);
+        toast.error(`${roomFieldLabels[field] ?? field} : ${msgs?.join(", ")}`);
       });
       return;
     }
 
-    await update.mutate(result.data);
+    try {
+      await update.mutate(result.data);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Erreur lors de l'enregistrement");
+    }
   };
 
   const deleteRoom = async () => {

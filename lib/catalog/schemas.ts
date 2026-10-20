@@ -85,6 +85,34 @@ export const roomCreateSchema = z.object({
 
 export const roomUpdateSchema = roomCreateSchema.partial();
 
+/** Libellés français des champs chambre pour les messages d'erreur formulaire. */
+export const roomFieldLabels: Record<string, string> = {
+  name: "Nom",
+  slug: "Slug",
+  roomNumber: "Numéro de chambre",
+  shortDescription: "Description courte",
+  description: "Description",
+  locationId: "Localisation",
+  roomTypeId: "Type de chambre",
+  basePrice: "Prix de base",
+  currency: "Devise",
+  discountPercent: "Remise (%)",
+  maxGuests: "Capacité (personnes)",
+  beds: "Lits",
+  bathrooms: "Salles de bain",
+  sizeSqm: "Surface (m²)",
+  amenities: "Équipements",
+  coverImageUrl: "Image de couverture",
+  isPublished: "Publication",
+  isFeatured: "Coup de cœur",
+  order: "Ordre d'affichage",
+  checkInStart: "Arrivée à partir de",
+  checkInEnd: "Arrivée jusqu'à",
+  checkOutTime: "Départ avant",
+  checkInMethod: "Mode d'arrivée",
+  cancellationPolicy: "Politique d'annulation",
+};
+
 /* ---------------------------------- Media --------------------------------- */
 
 export const mediaCreateSchema = z.object({
