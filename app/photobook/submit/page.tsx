@@ -66,10 +66,10 @@ export default function SubmitPhotoPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          title: formData.title,
-          description: formData.description,
+          title: formData.title.trim(),
+          description: formData.description.trim(),
           albumId: formData.albumId,
-          imageUrl: uploaded.imageUrl ?? formData.imageUrl,
+          imageUrl: uploaded.imageUrl ?? formData.imageUrl.trim(),
         }),
       });
 

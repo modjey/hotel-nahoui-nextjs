@@ -20,6 +20,7 @@ import { flushPendingUploads } from "@/lib/pending-uploads";
 import { api, ApiError } from "@/lib/api-client";
 import { useApi } from "@/hooks/use-api";
 import { ArrowLeft, Trash2 } from "lucide-react";
+import { trimValues } from "@/lib/utils";
 
 export default function EditPhotoPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -72,7 +73,7 @@ export default function EditPhotoPage({ params }: { params: Promise<{ id: string
         alert("Veuillez sélectionner une image");
         return;
       }
-      await api.put(`/api/admin/admin-photos/${id}`, {
+      await api.put(`/api/admin/admin-photos/${id}`, trimValues({
         title: formData.title || null,
         description: formData.description || null,
         imageUrl,
@@ -80,7 +81,7 @@ export default function EditPhotoPage({ params }: { params: Promise<{ id: string
         isApproved: formData.isApproved,
         isFeatured: formData.isFeatured,
         order: formData.order,
-      });
+      }));
       router.push("/admin/admin-photos");
     } catch (err) {
       alert(err instanceof ApiError ? err.message : "Erreur lors de la mise à jour");

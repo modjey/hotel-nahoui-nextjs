@@ -32,6 +32,7 @@ import { roomTypeCreateSchema } from "@/lib/catalog/schemas";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Search, Tag, ArrowUp, ArrowDown } from "lucide-react";
+import { trimValues } from "@/lib/utils";
 
 type RoomType = {
   id: string;
@@ -66,7 +67,7 @@ export default function AdminRoomTypesPage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const raw = Object.fromEntries(fd.entries());
+    const raw = trimValues(Object.fromEntries(fd.entries()));
 
     const data = {
       ...raw,

@@ -32,6 +32,7 @@ import { locationCreateSchema } from "@/lib/catalog/schemas";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Search, MapPin } from "lucide-react";
+import { trimValues } from "@/lib/utils";
 
 type Location = {
   id: string;
@@ -77,7 +78,7 @@ export default function AdminLocationsPage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const raw = Object.fromEntries(fd.entries());
+    const raw = trimValues(Object.fromEntries(fd.entries()));
     const amenitiesStr = raw.amenities as string;
 
     const data = {

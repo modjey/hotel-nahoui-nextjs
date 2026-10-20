@@ -55,13 +55,13 @@ export default function NewPhotoPage() {
       const imageUrl = uploaded.imageUrl ?? formData.imageUrl;
 
       const formDataToSend = new FormData();
-      formDataToSend.append("title", formData.title);
-      formDataToSend.append("description", formData.description);
+      formDataToSend.append("title", formData.title.trim());
+      formDataToSend.append("description", formData.description.trim());
       formDataToSend.append("albumId", formData.albumId);
       formDataToSend.append("isApproved", formData.isApproved.toString());
       formDataToSend.append("isFeatured", formData.isFeatured.toString());
       formDataToSend.append("order", formData.order.toString());
-      formDataToSend.append("imageUrl", imageUrl);
+      formDataToSend.append("imageUrl", imageUrl.trim());
 
       const res = await fetch("/api/admin/admin-photos", {
         method: "POST",

@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { api, ApiError } from "@/lib/api-client";
+import { trimValues } from "@/lib/utils";
 import { Plus, Pencil, Trash2, Search, Eye } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -147,7 +148,7 @@ export default function UsersPage() {
 
   const handleCreateUser = async () => {
     try {
-      await api.post("/api/admin/admin-users", formData);
+      await api.post("/api/admin/admin-users", trimValues(formData));
       setIsCreateDialogOpen(false);
       resetForm();
       fetchUsers();
@@ -160,7 +161,7 @@ export default function UsersPage() {
   const handleUpdateUser = async () => {
     if (!editingUser) return;
     try {
-      await api.put(`/api/admin/admin-users/${editingUser.id}`, formData);
+      await api.put(`/api/admin/admin-users/${editingUser.id}`, trimValues(formData));
       setIsEditDialogOpen(false);
       setEditingUser(null);
       resetForm();

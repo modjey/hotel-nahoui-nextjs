@@ -86,9 +86,9 @@ export default function ContactSubmissionDetailPage() {
       const response = await fetch(`/api/admin/contact-submissions/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           status: "replied",
-          reply 
+          reply: reply.trim()
         }),
       });
       const data = await response.json();

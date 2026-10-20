@@ -12,6 +12,7 @@ import { Loader2, ArrowLeft } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { roomTypeUpdateSchema } from "@/lib/catalog/schemas";
 import { z } from "zod";
+import { trimValues } from "@/lib/utils";
 
 type RoomType = {
   id: string;
@@ -60,7 +61,7 @@ export default function AdminRoomTypeEditPage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const raw = Object.fromEntries(fd.entries());
+    const raw = trimValues(Object.fromEntries(fd.entries()));
 
     const data = {
       ...raw,

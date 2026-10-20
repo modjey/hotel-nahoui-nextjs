@@ -13,6 +13,7 @@ import { api } from "@/lib/api-client";
 import { useMutation } from "@/hooks/use-api";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { trimValues } from "@/lib/utils";
 
 export default function NewDishCategoryPage() {
   const router = useRouter();
@@ -30,7 +31,7 @@ export default function NewDishCategoryPage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const raw = Object.fromEntries(fd.entries());
+    const raw = trimValues(Object.fromEntries(fd.entries()));
 
     const payload = {
       ...raw,

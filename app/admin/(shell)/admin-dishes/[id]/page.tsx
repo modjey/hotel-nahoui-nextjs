@@ -22,6 +22,7 @@ import { api, ApiError } from "@/lib/api-client";
 import { useApi, useMutation } from "@/hooks/use-api";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { trimValues } from "@/lib/utils";
 
 type Dish = {
   id: string;
@@ -94,7 +95,7 @@ export default function AdminDishEditPage() {
     }
 
     const fd = new FormData(form);
-    const raw = Object.fromEntries(fd.entries());
+    const raw = trimValues(Object.fromEntries(fd.entries()));
 
     const payload = {
       ...raw,

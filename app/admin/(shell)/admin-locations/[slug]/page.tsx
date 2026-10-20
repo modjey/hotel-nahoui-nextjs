@@ -18,6 +18,7 @@ import { ImageUpload } from "@/components/admin/ImageUpload";
 import { flushPendingUploads } from "@/lib/pending-uploads";
 import { AmenitiesInput } from "@/components/admin/AmenitiesInput";
 import { MediaGallery, type MediaItem } from "@/components/admin/MediaGallery";
+import { trimValues } from "@/lib/utils";
 
 type Location = {
   id: string;
@@ -94,7 +95,7 @@ export default function AdminLocationEditPage() {
     }
 
     const fd = new FormData(form);
-    const raw = Object.fromEntries(fd.entries());
+    const raw = trimValues(Object.fromEntries(fd.entries()));
 
     const data = {
       ...raw,

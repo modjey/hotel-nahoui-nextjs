@@ -19,6 +19,7 @@ import { useApi } from "@/hooks/use-api";
 import { toast } from "sonner";
 import { normalizeIvoryCoastPhone } from "@/lib/auth/schemas";
 import { getDiscountedPrice } from "@/lib/pricing";
+import { trimValues } from "@/lib/utils";
 
 export type BookingFormRoom = {
   id: string;
@@ -206,18 +207,19 @@ function BookingForm({
         }
 
         const userResponse = await api.post("/api/admin/users", {
-          name: formData.newName,
-          email: formData.newEmail,
-          phone: formData.newPhone ? normalizeIvoryCoastPhone(formData.newPhone) : null,
+          name: formData.newName.trim(),
+          email: formData.newEmail.trim(),
+          phone: formData.newPhone.trim() ? normalizeIvoryCoastPhone(formData.newPhone.trim()) : null,
         });
         userId = (userResponse as { user: { id: string } }).user.id;
       }
 
-      const payload = {
+      const trimmedName = formData.newName.trim();
+      const payload = trimValues({
         roomId: room.id,
         userId,
-        guestFirstName: creatingUser ? formData.newName.split(" ")[0] : undefined,
-        guestLastName: creatingUser ? formData.newName.split(" ").slice(1).join(" ") : undefined,
+        guestFirstName: creatingUser ? trimmedName.split(" ")[0] : undefined,
+        guestLastName: creatingUser ? trimmedName.split(" ").slice(1).join(" ") : undefined,
         guestEmail: creatingUser ? formData.newEmail : undefined,
         guestPhone: creatingUser ? formData.newPhone : undefined,
         checkIn: new Date(formData.checkIn).toISOString(),
@@ -225,7 +227,7 @@ function BookingForm({
         adults: formData.adults,
         children: formData.children,
         status: formData.status,
-      };
+      });
 
       if (editingBooking) {
         await api.patch(`/api/admin/bookings/${editingBooking.id}`, payload);
@@ -243,8 +245,8 @@ function BookingForm({
             status: formData.paymentStatus,
             method: formData.paymentMethod,
           };
-          if (formData.transactionId) {
-            paymentPayload.transactionId = formData.transactionId;
+          if (formData.transactionId.trim()) {
+            paymentPayload.transactionId = formData.transactionId.trim();
           }
           if (formData.paymentDueAt) {
             paymentPayload.dueAt = formData.paymentDueAt;

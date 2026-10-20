@@ -23,6 +23,7 @@ import { useApi, useMutation } from "@/hooks/use-api";
 import { slugify } from "@/lib/catalog/schemas";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { trimValues } from "@/lib/utils";
 
 type CategoryOption = { id: string; name: string };
 type LocationOption = { id: string; name: string; city: string | null };
@@ -60,7 +61,7 @@ export default function NewDishPage() {
     }
 
     const fd = new FormData(form);
-    const raw = Object.fromEntries(fd.entries());
+    const raw = trimValues(Object.fromEntries(fd.entries()));
 
     const payload = {
       ...raw,

@@ -29,6 +29,7 @@ import { roomUpdateSchema, roomFieldLabels } from "@/lib/catalog/schemas";
 import { z } from "zod";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, BedDouble, Calendar, Users } from "lucide-react";
+import { trimValues } from "@/lib/utils";
 
 type Room = {
   id: string;
@@ -151,7 +152,7 @@ export default function AdminRoomEditPage() {
     }
 
     const fd = new FormData(form);
-    const raw = Object.fromEntries(fd.entries());
+    const raw = trimValues(Object.fromEntries(fd.entries()));
 
     const payload = {
       ...raw,
@@ -162,7 +163,7 @@ export default function AdminRoomEditPage() {
       shortDescription: raw.shortDescription || null,
       description: raw.description || null,
       coverImageUrl: uploaded.coverImageUrl ?? (coverImageUrl || null),
-      amenities,
+      amenities: amenities.map((a) => a.trim()).filter(Boolean),
       isPublished: raw.isPublished === "on",
       isFeatured: raw.isFeatured === "on",
       order: raw.order ? Number(raw.order) : 0,

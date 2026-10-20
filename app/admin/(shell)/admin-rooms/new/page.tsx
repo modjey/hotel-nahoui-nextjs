@@ -26,6 +26,7 @@ import { flushPendingUploads } from "@/lib/pending-uploads";
 import { z } from "zod";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, Plus, Trash2, Youtube } from "lucide-react";
+import { trimValues } from "@/lib/utils";
 
 type PendingMedia = {
   localId: string;
@@ -168,7 +169,7 @@ export default function NewRoomPage() {
     }
 
     const fd = new FormData(form);
-    const raw = Object.fromEntries(fd.entries());
+    const raw = trimValues(Object.fromEntries(fd.entries()));
 
     const payload = {
       ...raw,
@@ -179,7 +180,7 @@ export default function NewRoomPage() {
       shortDescription: raw.shortDescription || null,
       description: raw.description || null,
       coverImageUrl: uploaded.coverImageUrl ?? (coverImageUrl || null),
-      amenities,
+      amenities: amenities.map((a) => a.trim()).filter(Boolean),
       isPublished: raw.isPublished === "on",
       isFeatured: raw.isFeatured === "on",
       order: raw.order ? Number(raw.order) : 0,

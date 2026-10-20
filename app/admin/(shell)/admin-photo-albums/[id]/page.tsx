@@ -20,6 +20,7 @@ import { flushPendingUploads } from "@/lib/pending-uploads";
 import { api, ApiError } from "@/lib/api-client";
 import { useApi } from "@/hooks/use-api";
 import { ArrowLeft, Trash2, Loader2 } from "lucide-react";
+import { trimValues } from "@/lib/utils";
 
 export default function EditPhotoAlbumPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -64,12 +65,12 @@ export default function EditPhotoAlbumPage({ params }: { params: Promise<{ id: s
 
     try {
       const uploaded = await flushPendingUploads();
-      await api.put(`/api/admin/admin-photo-albums/${id}`, {
+      await api.put(`/api/admin/admin-photo-albums/${id}`, trimValues({
         ...formData,
         description: formData.description || null,
         coverImage: uploaded.coverImage ?? (formData.coverImage || null),
         locationId: formData.locationId || null,
-      });
+      }));
       router.push("/admin/admin-photo-albums");
     } catch (err) {
       alert(err instanceof ApiError ? err.message : "Erreur lors de la mise à jour");

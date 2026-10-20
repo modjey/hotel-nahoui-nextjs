@@ -20,6 +20,7 @@ import { flushPendingUploads } from "@/lib/pending-uploads";
 import { api, ApiError } from "@/lib/api-client";
 import { useApi } from "@/hooks/use-api";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { trimValues } from "@/lib/utils";
 
 export default function NewPhotoAlbumPage() {
   const router = useRouter();
@@ -43,12 +44,12 @@ export default function NewPhotoAlbumPage() {
 
     try {
       const uploaded = await flushPendingUploads();
-      await api.post("/api/admin/admin-photo-albums", {
+      await api.post("/api/admin/admin-photo-albums", trimValues({
         ...formData,
         description: formData.description || null,
         coverImage: uploaded.coverImage ?? (formData.coverImage || null),
         locationId: formData.locationId || null,
-      });
+      }));
       router.push("/admin/admin-photo-albums");
     } catch (err) {
       alert(err instanceof ApiError ? err.message : "Erreur lors de la création");

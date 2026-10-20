@@ -18,6 +18,7 @@ import {
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import { flushPendingUploads } from "@/lib/pending-uploads";
 import { ArrowLeft, Save, Trash2 } from "lucide-react";
+import { trimValues } from "@/lib/utils";
 
 type Category = {
   id: string;
@@ -113,14 +114,14 @@ export default function EditBlogPostPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
+        body: JSON.stringify(trimValues({
           ...formData,
           excerpt: formData.excerpt || null,
           coverImage: uploaded.coverImage ?? (formData.coverImage || null),
           categoryId: formData.categoryId || null,
           order: formData.order || 0,
           wasPublished: post?.isPublished,
-        }),
+        })),
       });
 
       const data = await response.json();
