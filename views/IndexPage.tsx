@@ -8,6 +8,7 @@ import { HotelHistorySection } from "@/components/site/HotelHistorySection";
 import { BeHotelSection } from "@/components/site/BeHotelSection";
 import { RoomsShowcaseSection } from "@/components/site/RoomsShowcaseSection";
 import { AvisSection } from "@/components/site/AvisSection";
+import { ContactSection } from "@/components/site/ContactSection";
 import { NewsletterSection } from "@/components/site/NewsletterSection";
 import { InstagramSection } from "@/components/site/InstagramSection";
 import { SocialSection } from "@/components/site/SocialSection";
@@ -33,6 +34,7 @@ export function IndexPage() {
         <BeHotelSection />
         <RoomsShowcaseSection />
         <AvisSection />
+        <ContactSection />
         <NewsletterSection />
         <InstagramSection />
         <SocialSection />

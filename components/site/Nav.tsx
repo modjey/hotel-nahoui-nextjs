@@ -59,8 +59,7 @@ export function Nav() {
     { href: "/stays",      label: "Hébergements" },
     { href: "/restaurant", label: "Restauration" },
     { href: "/photobook",  label: "Photobook" },
-    { href: "/blog",       label: "Journal" },
-    { href: "/contact",    label: "Contact" },
+    { href: "/blog",       label: "Actualité" },
   ];
 
   // Sous-menu "Expériences" — regroupe bien-être, expériences et événements
@@ -92,7 +91,7 @@ export function Nav() {
     { href: "/stays",      label: "Hébergements" },
     { href: "/restaurant", label: "Restauration" },
     { href: "/photobook",  label: "Photobook" },
-    { href: "/blog",       label: "Journal" },
+    { href: "/blog",       label: "Actualité" },
     { href: "/contact",    label: "Contact" },
   ];
 

@@ -25,7 +25,7 @@ const footerSections = [
       { label: "Expériences", href: "/services" },
       { label: "Événements", href: "/evenements" },
       { label: "Photobook", href: "/photobook" },
-      { label: "Journal", href: "/blog" },
+      { label: "Actualité", href: "/blog" },
     ],
   },
 ];

@@ -68,7 +68,7 @@ export function BlogPage() {
 
       <section className="bg-ink text-white">
         <div className="mx-auto max-w-[1440px] px-5 lg:px-10 pt-14 pb-16 lg:pt-20 lg:pb-24">
-          <span className="eyebrow text-primary !text-[#ff8a92]">Journal</span>
+          <span className="eyebrow text-primary !text-[#ff8a92]">Actualité</span>
           <h1 className="font-display mt-5 text-5xl sm:text-6xl lg:text-7xl leading-[0.98] max-w-4xl text-balance">Le Blog</h1>
         </div>
       </section>
