@@ -11,13 +11,13 @@ const links = [
     href: "/restaurant",
   },
   {
-    img: "/assets/spa.png",
+    img: "/assets/image14.jpg",
     title: "Bien-être",
-    subtitle: "Piscine & Spa",
+    subtitle: "Salle de sport, Piscine et Spa",
     href: "/bien-etre",
   },
   {
-    img: "/assets/service.png",
+    img: "/assets/conf.png",
     title: "Offres et activités",
     subtitle: "Laissez-vous choyer",
     href: "/services",

@@ -107,8 +107,7 @@ export function HotelHistorySection() {
               Une histoire, un lieu, une identité.
             </h2>
             <p className="mt-5 text-[1.0625rem] leading-relaxed text-muted-foreground text-pretty">
-              Née à San Pedro d&rsquo;une passion familiale pour l&rsquo;accueil, la maison
-              Nahoui Balmer a grandi sans jamais perdre son caractère intime et son
+              Née à San Pedro d&rsquo;une passion familiale pour l&rsquo;accueil, Hotel Nahoui a grandi sans jamais perdre son caractère intime et son
               attachement à l&rsquo;excellence du service.
             </p>
             <div className="mt-8">

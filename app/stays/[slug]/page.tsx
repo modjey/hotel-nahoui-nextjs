@@ -64,13 +64,19 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const loc = await getLocation(slug);
   if (!loc) {
-    return {
-      title: "Localisation introuvable — Hôtel Nahoui",
-    };
+    return { title: "Localisation introuvable", robots: { index: false, follow: false } };
   }
+  const description = loc.shortDescription ?? loc.description ?? undefined;
   return {
-    title: `${loc.name} — Hôtel Nahoui`,
-    description: loc.shortDescription ?? loc.description ?? undefined,
+    title: loc.name,
+    description,
+    alternates: { canonical: `/stays/${loc.slug}` },
+    openGraph: {
+      url: `/stays/${loc.slug}`,
+      title: loc.name,
+      description,
+      images: loc.coverImageUrl ? [{ url: loc.coverImageUrl }] : undefined,
+    },
   };
 }
 

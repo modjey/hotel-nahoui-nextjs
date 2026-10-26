@@ -49,7 +49,7 @@ export function BeHotelSection() {
         >
           <div>
             <span className="eyebrow text-primary">Be Nahoui Balmer</span>
-            <h2 className="section-title mt-5">Vivre la maison</h2>
+            <h2 className="section-title mt-5">Avec Nahoui Hôtel, Chaque instant devient une expérience...</h2>
           </div>
           <p className="max-w-md text-[1.0625rem] text-muted-foreground text-pretty">
             Une table, une piscine, des salles de réception et vingt-huit chambres :

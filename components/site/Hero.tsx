@@ -48,8 +48,9 @@ export function Hero() {
           transition={{ duration: 1, ease, delay: 0.4 }}
           className="mt-5 max-w-xl text-base sm:text-lg text-white/90 text-pretty"
         >
-          Entre jardin tropical et océan Atlantique : 28 chambres et suites, une piscine
-          et une table ivoirienne et italienne.
+          Entre jardin tropical et océan Atlantique : 28 chambres et suites, piscine,
+          spa, salle de sport, table ivoirienne, deux bars, salles de réception
+          et espace jeux pour enfants.
         </motion.p>
       </div>
     </section>
