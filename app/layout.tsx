@@ -84,6 +84,14 @@ export const metadata: Metadata = {
   },
 };
 
+/** Logo au format ImageObject — format recommandé par Google pour le Logo rich result. */
+const logoImageObject = {
+  "@type": "ImageObject",
+  url: ORGANIZATION.logo,
+  width: 624,
+  height: 624,
+};
+
 /** JSON-LD Hotel/LodgingBusiness — repris sur chaque page via le layout racine. */
 const hotelJsonLd = {
   "@context": "https://schema.org",
@@ -91,7 +99,7 @@ const hotelJsonLd = {
   name: ORGANIZATION.name,
   description: SITE_DESCRIPTION,
   url: ORGANIZATION.url,
-  logo: ORGANIZATION.logo,
+  logo: logoImageObject,
   image: DEFAULT_OG_IMAGE.url,
   telephone: ORGANIZATION.telephone,
   email: ORGANIZATION.email,
@@ -110,6 +118,20 @@ const hotelJsonLd = {
   sameAs: ORGANIZATION.sameAs,
 };
 
+/**
+ * JSON-LD Organization dédié — Google ne rattache le "Logo" du résultat de
+ * recherche (et le logo du panneau de connaissance) qu'à un type Organization
+ * (ou sous-type) présent sur la page d'accueil, avec un logo au format carré.
+ */
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: ORGANIZATION.name,
+  url: ORGANIZATION.url,
+  logo: logoImageObject,
+  sameAs: ORGANIZATION.sameAs,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -124,6 +146,10 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(hotelJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
         />
         <AuthProvider>{children}</AuthProvider>
         <GoogleAnalytics />
