@@ -5,14 +5,11 @@ import { ArrowRight } from "lucide-react";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
-const facts = [
-  { value: "28", label: "chambres et suites, de 23 à 80 m²" },
-  { value: "10", label: "catégories, de la Standard à la Suite Présidentielle" },
-  { value: "15h", label: "arrivée - départ avant 11h" },
-  { value: "2016", label: "l'année où l'hotel a ouvert ses portes" },
-];
-
-export function IntroSection() {
+export function IntroSection({
+  facts,
+}: {
+  facts: Array<{ value: string; label: string }>;
+}) {
   return (
     <section className="mx-auto max-w-[1440px] px-5 lg:px-10 pt-20 pb-24 lg:pt-28 lg:pb-32">
       <div className="grid gap-14 lg:grid-cols-12 lg:gap-10">

@@ -27,7 +27,7 @@ import {
 import { api, ApiError } from "@/lib/api-client";
 import { useApi } from "@/hooks/use-api";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, BedDouble, Power, Eye, Calendar, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, BedDouble, Power, Eye, Calendar, ChevronLeft, ChevronRight, X, ArrowUp, ArrowDown } from "lucide-react";
 import { getDiscountedPrice } from "@/lib/pricing";
 
 type Room = {
@@ -69,6 +69,7 @@ export default function AdminRoomsPage() {
   const [roomTypeId, setRoomTypeId] = useState("all");
   const [status, setStatus] = useState("all");
   const [promo, setPromo] = useState("all");
+  const [reordering, setReordering] = useState(false);
   const router = useRouter();
 
   // La recherche frappe l'API : petit délai pour ne pas requêter à chaque frappe.
@@ -127,6 +128,20 @@ export default function AdminRoomsPage() {
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
+  };
+
+  // Le réordonnancement est global (toutes les chambres confondues) : il faut
+  // que la liste affichée reflète cet ordre, donc filtres désactivés pour bouger.
+  const move = async (id: string, direction: "up" | "down") => {
+    setReordering(true);
+    try {
+      await api.post("/api/admin/admin-rooms/reorder", { id, direction });
+      refetch();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Erreur");
+    } finally {
+      setReordering(false);
+    }
   };
 
   const rooms = data?.rooms ?? [];
@@ -224,30 +239,31 @@ export default function AdminRoomsPage() {
                 <TableHead>Capacité</TableHead>
                 <TableHead>Réservations actives</TableHead>
                 <TableHead>Statut</TableHead>
+                <TableHead>Ordre</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8">
+                <TableCell colSpan={9} className="text-center py-8">
                   Chargement...
                 </TableCell>
               </TableRow>
             ) : error ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-destructive">
+                <TableCell colSpan={9} className="text-center py-8 text-destructive">
                   Erreur de chargement
                 </TableCell>
               </TableRow>
             ) : rooms.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                   Aucune chambre trouvée
                 </TableCell>
               </TableRow>
             ) : (
-              rooms.map((r) => (
+              rooms.map((r, i) => (
                 <TableRow key={r.id}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
@@ -352,6 +368,32 @@ export default function AdminRoomsPage() {
                     }`}>
                       {r.isPublished ? "Publiée" : "Brouillon"}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={reordering || !!hasFilters || (page === 1 && i === 0)}
+                        onClick={() => move(r.id, "up")}
+                        title={hasFilters ? "Réinitialisez les filtres pour réordonner" : "Monter"}
+                      >
+                        <ArrowUp className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={
+                          reordering ||
+                          !!hasFilters ||
+                          (i === rooms.length - 1 && page === (data?.totalPages ?? 1))
+                        }
+                        onClick={() => move(r.id, "down")}
+                        title={hasFilters ? "Réinitialisez les filtres pour réordonner" : "Descendre"}
+                      >
+                        <ArrowDown className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">

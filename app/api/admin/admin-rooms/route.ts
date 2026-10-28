@@ -33,7 +33,7 @@ const handler = withAuth(async (req) => {
     const [rooms, total] = await Promise.all([
       prisma.room.findMany({
         where,
-        orderBy: [{ isPublished: "desc" }, { createdAt: "desc" }],
+        orderBy: [{ order: "asc" }, { createdAt: "desc" }],
         skip: (page - 1) * limit,
         take: limit,
         include: {

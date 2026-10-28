@@ -2,7 +2,7 @@
 import { Nav } from "@/components/site/Nav";
 import { Hero } from "@/components/site/Hero";
 import { SearchBar } from "@/components/site/SearchBar";
-import { IntroSection } from "@/components/site/IntroSection";
+import { IntroSectionWrapper } from "@/components/site/IntroSectionWrapper";
 import { QuickLinksSection } from "@/components/site/QuickLinksSection";
 import { HotelHistorySection } from "@/components/site/HotelHistorySection";
 import { BeHotelSection } from "@/components/site/BeHotelSection";
@@ -28,7 +28,7 @@ export function IndexPage() {
           </div>
         </div>
 
-        <IntroSection />
+        <IntroSectionWrapper />
         <QuickLinksSection />
         <HotelHistorySection />
         <BeHotelSection />
