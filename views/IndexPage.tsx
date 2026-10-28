@@ -2,7 +2,7 @@
 import { Nav } from "@/components/site/Nav";
 import { Hero } from "@/components/site/Hero";
 import { SearchBar } from "@/components/site/SearchBar";
-import { IntroSectionWrapper } from "@/components/site/IntroSectionWrapper";
+import { IntroSection } from "@/components/site/IntroSection";
 import { QuickLinksSection } from "@/components/site/QuickLinksSection";
 import { HotelHistorySection } from "@/components/site/HotelHistorySection";
 import { BeHotelSection } from "@/components/site/BeHotelSection";
@@ -14,7 +14,11 @@ import { InstagramSection } from "@/components/site/InstagramSection";
 import { SocialSection } from "@/components/site/SocialSection";
 import { Footer } from "@/components/site/Footer";
 
-export function IndexPage() {
+export function IndexPage({
+  facts,
+}: {
+  facts: Array<{ value: string; label: string }>;
+}) {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Nav />
@@ -28,7 +32,7 @@ export function IndexPage() {
           </div>
         </div>
 
-        <IntroSectionWrapper />
+        <IntroSection facts={facts} />
         <QuickLinksSection />
         <HotelHistorySection />
         <BeHotelSection />
