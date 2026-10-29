@@ -242,7 +242,6 @@ function SuitesPageContent() {
                   }`}
                 >
                   {c.name}
-                  {c.name !== "Toutes" && <span className={`ml-2 tabular ${active ? "text-white/60" : "text-muted-foreground"}`}>{c.count}</span>}
                 </button>
               );
             })}

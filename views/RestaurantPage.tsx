@@ -262,7 +262,7 @@ export function RestaurantPage() {
         <RestaurantBlock
           eyebrow="Chaque matin"
           title="Petit-déjeuner"
-          text="Un buffet généreux entre spécialités locales et classiques internationaux vous attend chaque matin, servi de 6h à 10h dans une ambiance chaleureuse."
+          text="Un buffet généreux entre spécialités locales et classiques internationaux vous attend chaque matin, servi de 6h30 à 10h en semaine et jusqu'à 10h30 le week-end, dans une ambiance chaleureuse."
           cta={{ label: "Réserver votre séjour", href: "/stays" }}
           image="/assets/image3.jpg"
           imageAlt="Petit-déjeuner de l'Hôtel Nahoui Balmer"
@@ -275,7 +275,7 @@ export function RestaurantPage() {
       <section id="restaurant" className="scroll-mt-28 mx-auto max-w-[1440px] px-5 lg:px-10 py-14 lg:py-16">
         <div className="grid grid-cols-1 sm:grid-cols-3 border-y border-border mb-20 sm:divide-x divide-border">
           {[
-            { icon: Clock, title: "Horaires", content: ["Petit-déjeuner : 6h – 10h", "Déjeuner : 12h – 15h", "Dîner : 19h – 23h"] },
+            { icon: Clock, title: "Horaires", content: ["Petit-déjeuner (lun – ven) : 6h30 – 10h00", "Petit-déjeuner (sam – dim) : 6h30 – 10h30", "Déjeuner & dîner : 11h – 22h"] },
             { icon: MapPin, title: "Emplacement", content: ["Hôtel Nahoui Balmer", "01 BP 1864 San-Pedro 01", "Côte d'Ivoire"] },
             { icon: Star, title: "Spécialités", content: ["Cuisine ivoirienne", "Fruits de mer", "Plats traditionnels"] },
           ].map((item, index) => (

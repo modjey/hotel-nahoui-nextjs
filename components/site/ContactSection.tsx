@@ -25,7 +25,7 @@ const contactItems = [
   {
     icon: Clock,
     title: "Horaires",
-    lines: ["Réception 24h/24", "Restaurant 6h – 23h"],
+    lines: ["Réception 24h/24", "Restaurant 6h30 – 22h"],
     href: "/contact",
   },
 ];

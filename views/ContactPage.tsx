@@ -49,7 +49,7 @@ export function ContactPage() {
     { icon: Mail, title: "Email", content: ["hotelnahoui@yahoo.com"] },
     { icon: Mail, title: "Réservations", content: ["reservations@nahouihotel.ci"] },
     { icon: MapPin, title: "Adresse", content: ["Hôtel Nahoui Balmer", "01 BP 1864 San-Pedro 01", "Côte d'Ivoire"] },
-    { icon: Clock, title: "Horaires", content: ["Réception : 24h/24", "Restaurant : 6h – 23h", "Spa : 9h – 20h"] },
+    { icon: Clock, title: "Horaires", content: ["Réception : 24h/24", "Restaurant : 6h30 – 22h", "Spa : 9h – 20h"] },
   ];
 
   const getContactHref = (title: string, line: string): string | null => {
