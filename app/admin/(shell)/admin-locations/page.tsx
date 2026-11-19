@@ -218,7 +218,7 @@ export default function AdminLocationsPage() {
                   <Input id="amenities" name="amenities" placeholder="Piscine, Restaurant, Wi-Fi..." />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="order">Ordre d'affichage</Label>
+                  <Label htmlFor="order">Ordre d&apos;affichage</Label>
                   <Input id="order" name="order" type="number" defaultValue={0} />
                 </div>
                 <div className="flex items-center gap-6">

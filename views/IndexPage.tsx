@@ -1,6 +1,8 @@
 "use client";
 import { Nav } from "@/components/site/Nav";
-import { Hero } from "@/components/site/Hero";
+import { Hero, type HeroContent } from "@/components/site/Hero";
+import { HighlightsSection } from "@/components/site/HighlightsSection";
+import type { PublicEvent, PublicOffer } from "@/lib/public-content";
 import { SearchBar } from "@/components/site/SearchBar";
 import { IntroSection } from "@/components/site/IntroSection";
 import { QuickLinksSection } from "@/components/site/QuickLinksSection";
@@ -16,14 +18,20 @@ import { Footer } from "@/components/site/Footer";
 
 export function IndexPage({
   facts,
+  hero,
+  offers = [],
+  events = [],
 }: {
   facts: Array<{ value: string; label: string }>;
+  hero: HeroContent;
+  offers?: PublicOffer[];
+  events?: PublicEvent[];
 }) {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Nav />
       <main>
-        <Hero />
+        <Hero content={hero} />
 
         {/* Barre de réservation à cheval sur le hero */}
         <div className="relative z-20 -mt-24 sm:-mt-[4.25rem] lg:-mt-[4.75rem]">
@@ -33,10 +41,12 @@ export function IndexPage({
         </div>
 
         <IntroSection facts={facts} />
+        {/* Les chambres d'abord : l'objectif n°1 du site est la demande de réservation. */}
+        <RoomsShowcaseSection />
+        <HighlightsSection offers={offers} events={events} />
         <QuickLinksSection />
         <HotelHistorySection />
         <BeHotelSection />
-        <RoomsShowcaseSection />
         <AvisSection />
         <ContactSection />
         <NewsletterSection />

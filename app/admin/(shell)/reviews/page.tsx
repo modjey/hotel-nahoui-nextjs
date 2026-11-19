@@ -33,9 +33,6 @@ export default function AdminReviewsPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  useEffect(() => {
-    fetchReviews();
-  }, [filter, page]);
 
   const fetchReviews = async () => {
     try {
@@ -107,6 +104,14 @@ export default function AdminReviewsPage() {
     APPROVED: "Approuvé",
     REJECTED: "Rejeté",
   };
+
+  // Chargement depuis l'API au montage et quand les filtres changent.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchReviews();
+    // fetch* est recréée à chaque rendu : on ne relance la requête que si les filtres changent.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter, page]);
 
   return (
     <div>

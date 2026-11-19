@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/admin/PageHeader";
@@ -16,7 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { api, ApiError } from "@/lib/api-client";
 import { useApi } from "@/hooks/use-api";
-import { Plus, Pencil, Trash2, Search, FilterX, Image as ImageIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, FilterX, ChevronLeft, ChevronRight } from "lucide-react";
 
 type Photo = {
   id: string;
@@ -38,8 +38,8 @@ type Photo = {
 export default function AdminPhotosPage() {
   const router = useRouter();
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const { data, loading, error, refetch } = useApi<{ photos: Photo[]; total: number; page: number; limit: number; totalPages: number }>(`/api/admin/admin-photos?page=${page}&limit=24`);
+  const { data, loading, refetch } = useApi<{ photos: Photo[]; total: number; page: number; limit: number; totalPages: number }>(`/api/admin/admin-photos?page=${page}&limit=24`);
+  const totalPages = data?.totalPages || 1;
   const { data: albumsData } = useApi<{ albums: { id: string; name: string; slug: string }[] }>("/api/admin/admin-photo-albums");
 
   const [search, setSearch] = useState("");
@@ -57,11 +57,6 @@ export default function AdminPhotosPage() {
     }
   };
 
-  useEffect(() => {
-    if (data?.totalPages) {
-      setTotalPages(data.totalPages);
-    }
-  }, [data]);
 
   const clearFilters = () => {
     setSearch("");

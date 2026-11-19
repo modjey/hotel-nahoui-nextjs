@@ -109,7 +109,7 @@ export function AvisSection() {
                 <figcaption className="mt-8 pt-6 border-t border-border flex items-center gap-3">
                   {review.user?.image ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={review.user.image} alt="" className="h-10 w-10 object-cover" />
+                    <img loading="lazy" decoding="async" src={review.user.image} alt="" className="h-10 w-10 object-cover" />
                   ) : (
                     <span className="h-10 w-10 frame-inset grid place-items-center font-display text-base">
                       {(review.user?.name || "A")[0].toUpperCase()}

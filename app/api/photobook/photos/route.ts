@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/utils";
 import { rateLimit, clientKey } from "@/lib/rate-limit";
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
     const isApproved = searchParams.get("isApproved");
     const isFeatured = searchParams.get("isFeatured");
 
-    const where: any = {};
+    const where: Prisma.PhotoWhereInput = {};
 
     if (isApproved === "true") {
       where.isApproved = true;
@@ -61,7 +62,7 @@ export async function GET(req: NextRequest) {
     await prisma.photo.updateMany({
       where: {
         id: {
-          in: photos.map((p: any) => p.id),
+          in: photos.map((p) => p.id),
         },
       },
       data: {

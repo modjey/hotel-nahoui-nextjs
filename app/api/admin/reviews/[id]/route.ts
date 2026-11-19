@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { prisma } from "@/lib/prisma";
-import { ok, fail, withAuth } from "@/lib/auth/api";
+import { ok, fail } from "@/lib/auth/api";
+import { getSession, hasRole } from "@/lib/auth/session";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -13,6 +14,11 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const session = await getSession(req);
+  if (!session) return fail("Non authentifié", 401, "UNAUTHENTICATED");
+  if (!hasRole(session, "ADMIN", "SUPER_ADMIN")) {
+    return fail("Accès refusé", 403, "FORBIDDEN");
+  }
   const { id } = await params;
 
   try {
@@ -54,6 +60,11 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const session = await getSession(req);
+  if (!session) return fail("Non authentifié", 401, "UNAUTHENTICATED");
+  if (!hasRole(session, "ADMIN", "SUPER_ADMIN")) {
+    return fail("Accès refusé", 403, "FORBIDDEN");
+  }
   const { id } = await params;
 
   try {

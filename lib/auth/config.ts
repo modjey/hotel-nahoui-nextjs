@@ -1,15 +1,11 @@
+import { getJwtSecret } from "./secret";
+
 // Centralized auth configuration. All env-derived constants live here.
 
-const required = (name: string, fallback?: string) => {
-  const v = process.env[name] ?? fallback;
-  if (!v && process.env.NODE_ENV === "production") {
-    throw new Error(`[auth] Missing required env var: ${name}`);
-  }
-  return v ?? "";
-};
-
 export const authConfig = {
-  jwtSecret: required("AUTH_JWT_SECRET", "dev-insecure-secret-change-me-please-32chars!!"),
+  get jwtSecret() {
+    return getJwtSecret();
+  },
   accessTokenTtl: process.env.AUTH_ACCESS_TOKEN_TTL ?? "15m",
   refreshTokenTtlDays: Number(process.env.AUTH_REFRESH_TOKEN_TTL_DAYS ?? 30),
   cookieDomain: process.env.AUTH_COOKIE_DOMAIN || undefined,
@@ -25,7 +21,8 @@ export const authConfig = {
     ttlMinutes: Number(process.env.OTP_TTL_MINUTES ?? 10),
     maxAttempts: Number(process.env.OTP_MAX_ATTEMPTS ?? 5),
     length: Number(process.env.OTP_LENGTH ?? 6),
-    debug: process.env.OTP_DEBUG === "true",
+    // Jamais en production : les codes seraient écrits dans les logs et renvoyés au client.
+    debug: process.env.OTP_DEBUG === "true" && process.env.NODE_ENV !== "production",
   },
 
   google: {

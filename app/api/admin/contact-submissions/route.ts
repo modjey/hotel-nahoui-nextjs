@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { isAdmin } from "@/lib/auth/session";
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status");
 
-    const where: any = {};
+    const where: Prisma.ContactSubmissionWhereInput = {};
     if (status && status !== "all") {
       where.status = status;
     }

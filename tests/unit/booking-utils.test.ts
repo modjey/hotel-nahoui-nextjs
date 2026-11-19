@@ -12,7 +12,6 @@ import {
 import { buildAvailabilityMap, isRangeAvailable } from "@/components/site/HotelBookingCalendar";
 import { normalizePaymentStatus } from "@/lib/payments";
 
-const DAY = 86_400_000;
 const localKey = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const atMidnight = (offsetDays: number) => {

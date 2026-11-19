@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { paymentProviderManager } from "@/lib/payment-provider";
 import { prisma } from "@/lib/prisma";
 import { getSession, isAdmin } from "@/lib/auth/session";
-import { generatePaymentReference, nightsBetween } from "@/lib/bookings";
-import { getDiscountedPrice } from "@/lib/pricing";
+import { generatePaymentReference } from "@/lib/bookings";
+import { priceStayForRoom } from "@/lib/stay-pricing-server";
 
 /**
  * Initie le paiement d'une réservation existante (metadata.booking_id).
@@ -44,7 +44,7 @@ export async function handlePaymentCheckout(request: NextRequest): Promise<NextR
       where: { id: bookingId },
       include: {
         payments: { orderBy: [{ dueAt: "asc" }, { createdAt: "asc" }] },
-        room: { select: { name: true, basePrice: true, currency: true, discountPercent: true } },
+        room: { select: { name: true, basePrice: true, currency: true, discountPercent: true, roomTypeId: true, minStay: true } },
       },
     });
 
@@ -76,8 +76,7 @@ export async function handlePaymentCheckout(request: NextRequest): Promise<NextR
     const paidTotal = booking.payments
       .filter((p) => p.status === "SUCCESS")
       .reduce((sum, p) => sum + p.amount, 0);
-    const nightlyRate = getDiscountedPrice(booking.room.basePrice, booking.room.discountPercent);
-    const stayTotal = nightlyRate * Math.max(1, nightsBetween(booking.checkIn, booking.checkOut));
+    const stayTotal = (await priceStayForRoom(booking.room, booking.checkIn, booking.checkOut)).total;
     const remaining = Math.max(0, stayTotal - paidTotal);
 
     if (!nextDue && remaining <= 0) {

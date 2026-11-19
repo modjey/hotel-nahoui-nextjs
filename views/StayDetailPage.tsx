@@ -1,67 +1,23 @@
 "use client";
+import { displayRoomName } from "@/lib/room-display";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { Suspense, useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { Suspense, useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Star, MapPin, Calendar, Users, Shield, Clock, Share2, ChevronLeft, ChevronRight, X, Check, AlertCircle, Sparkles, Images } from "lucide-react";
-import { format, addDays, differenceInDays, isWithinInterval, isSameDay } from "date-fns";
+import { Star, MapPin, Shield, Clock, Share2, ChevronLeft, ChevronRight, X, Check, Images } from "lucide-react";
+import { format, addDays, differenceInDays} from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
 import { api } from "@/lib/api-client";
 import { AuthModal } from "@/components/auth/AuthModal";
-import { useAuth } from "@/components/auth/AuthProvider";
-import { Calendar as CalendarPicker } from "@/components/ui/calendar";
-import HotelBookingCalendar, { type GuestCount, buildAvailabilityMap, isRangeAvailable } from "@/components/site/HotelBookingCalendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
+import HotelBookingCalendar, { type AvailabilityMap, type GuestCount, buildAvailabilityMap, mergeAvailability, stayTotalFromMap } from "@/components/site/HotelBookingCalendar";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getDiscountedPrice } from "@/lib/pricing";
-
-type Room = {
-  id: string;
-  slug: string;
-  name: string;
-  roomNumber: string | null;
-  description: string | null;
-  shortDescription: string | null;
-  basePrice: number;
-  currency: string;
-  discountPercent: number;
-  maxGuests: number;
-  beds: number | null;
-  bathrooms: number | null;
-  sizeSqm: number | null;
-  coverImageUrl: string | null;
-  isFeatured: boolean;
-  isPublished: boolean;
-  amenities: string[];
-  checkInStart: string | null;
-  checkInEnd: string | null;
-  checkOutTime: string | null;
-  checkInMethod: string | null;
-  cancellationPolicy: string | null;
-  roomType: { id: string; slug: string; name: string };
-  location: { id: string; slug: string; name: string; city: string | null; mapLink: string | null };
-  media: {
-    id: string;
-    type: string;
-    url: string;
-    thumbnailUrl: string | null;
-    title: string | null;
-    alt: string | null;
-    order: number;
-  }[];
-};
-
-function fcfa(value: number, currency = "XOF") {
-  if (currency !== "XOF") {
-    return new Intl.NumberFormat("fr-FR", { style: "currency", currency, maximumFractionDigits: 0 }).format(value);
-  }
-  return `${new Intl.NumberFormat("fr-FR").format(value).replace(/\u202f|\u00a0/g, " ")} FCFA`;
-}
+import { type Room, fcfa } from "@/components/site/booking/room";
+import { BookingFlowOverlay } from "@/components/site/booking/BookingFlowOverlay";
 
 function StayDetailPageContent() {
   const params = useParams<{ slug: string }>();
@@ -76,13 +32,10 @@ function StayDetailPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [checkIn, setCheckIn] = useState<Date | undefined>(() => checkInParam ? new Date(checkInParam) : addDays(new Date(), 14));
   const [checkOut, setCheckOut] = useState<Date | undefined>(() => checkOutParam ? new Date(checkOutParam) : addDays(new Date(), 17));
-  const [adults, setAdults] = useState(() => adultsParam ? parseInt(adultsParam, 10) : 1);
+  const [adults, setAdults] = useState(() => adultsParam ? parseInt(adultsParam, 10) : 2);
   const [children, setChildren] = useState(() => childrenParam ? parseInt(childrenParam, 10) : 0);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [datePickerOpen, setDatePickerOpen] = useState(false);
-  const [guestPickerOpen, setGuestPickerOpen] = useState(false);
-  const [mobileGuestPickerOpen, setMobileGuestPickerOpen] = useState(false);
   const [availability, setAvailability] = useState<boolean | null>(null);
   const [checkingAvailability, setCheckingAvailability] = useState(false);
   const [conflictingBookings, setConflictingBookings] = useState<{ id: string; checkIn: string; checkOut: string; status: string }[]>([]);
@@ -91,7 +44,7 @@ function StayDetailPageContent() {
   const [bookingFlowOpen, setBookingFlowOpen] = useState(false);
   const [reviews, setReviews] = useState<{ id: string; rating: number; comment: string; user: { name: string; image?: string }; createdAt: string }[]>([]);
   const [reviewStats, setReviewStats] = useState({ averageRating: 0, approved: 0, total: 0 });
-  const [showReviewForm, setShowReviewForm] = useState(true);
+  const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
@@ -99,21 +52,6 @@ function StayDetailPageContent() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authPurpose, setAuthPurpose] = useState<"booking" | "review">("booking");
   const reviewSectionRef = useRef<HTMLDivElement>(null);
-  const [saved, setSaved] = useState(false);
-  const [savedRooms, setSavedRooms] = useState<string[]>([]);
-
-  // Load saved rooms from localStorage (client-only)
-  useEffect(() => {
-    const saved = localStorage.getItem('savedRooms');
-    setSavedRooms(saved ? JSON.parse(saved) : []);
-  }, []);
-
-  // Check if current room is saved
-  const isRoomSaved = useMemo(() => savedRooms.includes(slug || ''), [savedRooms, slug]);
-
-  useEffect(() => {
-    setSaved(isRoomSaved);
-  }, [isRoomSaved]);
 
   // Share functionality
   const handleShare = async () => {
@@ -121,7 +59,7 @@ function StayDetailPageContent() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: room?.name || 'Chambre',
+          title: room ? displayRoomName(room.name, room.roomNumber) : 'Chambre',
           text: room?.shortDescription || 'Découvrez cette chambre',
           url,
         });
@@ -153,6 +91,8 @@ function StayDetailPageContent() {
   // Restore booking flow state after OAuth redirect (client-only)
   useEffect(() => {
     if (localStorage.getItem('bookingFlowOpen') === 'true') {
+      // localStorage n'existe qu'après l'hydratation : lecture volontaire au montage.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setBookingFlowOpen(true);
       localStorage.removeItem('bookingFlowOpen');
     }
@@ -197,7 +137,7 @@ function StayDetailPageContent() {
     (async () => {
       setCheckingAvailability(true);
       try {
-        const res = await fetch(`/api/rooms/${slug}/availability?checkIn=${checkIn.toISOString()}&checkOut=${checkOut.toISOString()}&userId=${user?.id || ''}`);
+        const res = await fetch(`/api/rooms/${slug}/availability?checkIn=${checkIn.toISOString()}&checkOut=${checkOut.toISOString()}`);
         const data = await res.json();
         if (data.success) {
           setAvailability(data.data.available);
@@ -246,8 +186,29 @@ function StayDetailPageContent() {
     })();
   }, [slug]);
 
-  // Nuits déjà réservées (le jour de départ reste disponible comme arrivée)
-  const availabilityMap = useMemo(() => buildAvailabilityMap(bookings), [bookings]);
+  // Prix, séjour minimum et fermetures par date (tarifs saisonniers gérés dans l'admin)
+  const [calendarDays, setCalendarDays] = useState<AvailabilityMap>({});
+  const [defaultMinStay, setDefaultMinStay] = useState(1);
+  const [holdHours, setHoldHours] = useState(24);
+  useEffect(() => {
+    if (!slug) return;
+    let cancelled = false;
+    fetch(`/api/rooms/${slug}/calendar`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled || !data.success) return;
+        setCalendarDays(data.data.days || {});
+        setDefaultMinStay(data.data.defaultMinStay || 1);
+        setHoldHours(data.data.holdHours || 24);
+      })
+      .catch((err) => console.error("Erreur chargement calendrier:", err));
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+
+  // Nuits déjà réservées (le jour de départ reste disponible comme arrivée), superposées au calendrier tarifaire
+  const availabilityMap = useMemo(() => mergeAvailability(calendarDays, buildAvailabilityMap(bookings)), [calendarDays, bookings]);
 
   // Submit review handler
   const handleSubmitReview = async () => {
@@ -420,9 +381,10 @@ function StayDetailPageContent() {
 
   const p = {
     id: room.slug,
-    title: room.name,
+    title: displayRoomName(room.name, room.roomNumber),
     category: room.roomType.name,
-    location: room.location.city ? `${room.location.city}, ${room.location.name}` : room.location.name,
+    // Évite « San Pedro, San Pedro » quand la ville et le lieu portent le même nom.
+    location: room.location.city && room.location.city.trim().toLowerCase() !== room.location.name.trim().toLowerCase() ? `${room.location.city}, ${room.location.name}` : room.location.name,
     country: "Côte d’Ivoire",
     price: getDiscountedPrice(room.basePrice, room.discountPercent),
     originalPrice: room.basePrice,
@@ -438,12 +400,14 @@ function StayDetailPageContent() {
     gallery: gallery.length > 0 ? gallery : [{ type: "image" as const, url: "/placeholder.jpg", isYoutube: false }],
     host: {
       name: "Hotel Nahoui",
-      since: "2024",
+      since: "2016",
       superhost: room.isFeatured,
     },
   };
 
   const nights = checkIn && checkOut ? differenceInDays(checkOut, checkIn) : 0;
+  // Total nuit par nuit (tarifs saisonniers), identique à celui du tunnel de réservation.
+  const stayTotal = checkIn && checkOut && nights > 0 ? stayTotalFromMap(availabilityMap, checkIn, checkOut, p.price) : 0;
 
   const handleSelectionChange = (newCheckIn: Date | null, newCheckOut: Date | null) => {
     setCheckIn(newCheckIn ?? undefined);
@@ -482,7 +446,6 @@ function StayDetailPageContent() {
               {p.title}
             </h1>
             <div className="flex items-center gap-x-5 gap-y-2 mt-5 text-[0.9375rem] text-muted-foreground flex-wrap">
-              {room?.roomNumber && <span>Chambre n° {room.roomNumber}</span>}
               {p.reviews > 0 && (
                 <span className="flex items-center gap-1.5"><Star className="h-4 w-4 fill-primary text-primary" /> <strong className="text-foreground tabular">{p.rating.toFixed(1).replace(".", ",")}</strong> · {p.reviews} avis</span>
               )}
@@ -679,83 +642,6 @@ function StayDetailPageContent() {
             ))}
           </dl>
 
-          {/* Mobile: Date picker */}
-          <div className="lg:hidden py-6 border-b border-border">
-            <div className="border border-border overflow-hidden">
-              <div className="grid grid-cols-2 border-b border-border">
-                <div className="p-3 border-r border-border">
-                  <div className="text-xs text-muted-foreground">Arrivée</div>
-                  <div className="text-sm font-medium">{checkIn ? format(checkIn, 'dd MMM yyyy', { locale: fr }) : 'Sélectionner'}</div>
-                </div>
-                <div className="p-3">
-                  <div className="text-xs text-muted-foreground">Départ</div>
-                  <div className="text-sm font-medium">{checkOut ? format(checkOut, 'dd MMM yyyy', { locale: fr }) : 'Sélectionner'}</div>
-                </div>
-              </div>
-              <div className="p-3 border-b border-border flex justify-center">
-                <CalendarPicker
-                  mode="range"
-                  selected={{ from: checkIn, to: checkOut }}
-                  onSelect={(range) => {
-                    setCheckIn(range?.from);
-                    setCheckOut(range?.to);
-                  }}
-                  disabled={(date) => {
-                    // Désactiver les dates passées
-                    if (date < new Date()) return true;
-
-                    // Désactiver les dates déjà réservées (exclure les annulées)
-                    const isBooked = bookings.some((b) => {
-                      // Exclure les réservations annulées
-                      if (b.status === "CANCELLED") return false;
-                      const checkIn = new Date(b.checkIn);
-                      const checkOut = new Date(b.checkOut);
-                      return isWithinInterval(date, { start: checkIn, end: new Date(checkOut.getTime() - 1) }) ||
-                             isSameDay(date, checkIn) ||
-                             isSameDay(date, new Date(checkOut.getTime() - 1));
-                    });
-                    return isBooked;
-                  }}
-                  numberOfMonths={1}
-                />
-              </div>
-              <Popover open={mobileGuestPickerOpen} onOpenChange={setMobileGuestPickerOpen}>
-                <PopoverTrigger asChild>
-                  <button className="p-3 text-left hover:bg-secondary/50 transition-colors">
-                    <div className="text-xs text-muted-foreground">Voyageurs</div>
-                    <div className="text-sm font-medium">{adults + children} voyageur{adults + children > 1 ? 's' : ''}</div>
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-64 p-4" align="start">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-sm font-medium">Adultes</div>
-                        <div className="text-xs text-muted-foreground">13 ans ou plus</div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => setAdults(Math.max(1, adults - 1))} className="h-8 w-8 border border-border flex items-center justify-center hover:bg-secondary transition-colors">-</button>
-                        <span className="w-6 text-center">{adults}</span>
-                        <button onClick={() => setAdults(Math.min(p.guests, adults + 1))} className="h-8 w-8 border border-border flex items-center justify-center hover:bg-secondary transition-colors">+</button>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-sm font-medium">Enfants</div>
-                        <div className="text-xs text-muted-foreground">2 à 12 ans</div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => setChildren(Math.max(0, children - 1))} className="h-8 w-8 border border-border flex items-center justify-center hover:bg-secondary transition-colors">-</button>
-                        <span className="w-6 text-center">{children}</span>
-                        <button onClick={() => setChildren(Math.min(p.guests - adults, children + 1))} className="h-8 w-8 border border-border flex items-center justify-center hover:bg-secondary transition-colors">+</button>
-                      </div>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-
           {/* Mobile: Own booking info */}
           {availability === false && isOwnBooking && (
             <div className="lg:hidden py-6 border-b border-border">
@@ -826,7 +712,7 @@ function StayDetailPageContent() {
             </dl>
           </div>
 
-          <div className="py-10 border-b border-border">
+          <div id="disponibilites" className="py-10 border-b border-border scroll-mt-28">
             <h2 className="font-display text-3xl mb-6">Disponibilités &amp; tarifs</h2>
             <HotelBookingCalendar
               hotelName={room.name}
@@ -834,6 +720,7 @@ function StayDetailPageContent() {
               basePrice={getDiscountedPrice(room.basePrice, room.discountPercent)}
               currencyLabel={room.currency === "XOF" ? "FCFA" : room.currency}
               monthsToShow={2}
+              defaultMinStay={defaultMinStay}
               maxGuestsPerRoom={room.maxGuests}
               initialCheckIn={checkIn ?? null}
               initialCheckOut={checkOut ?? null}
@@ -887,7 +774,7 @@ function StayDetailPageContent() {
               <div className="mb-6 p-6 border border-border bg-secondary/20">
                 {!user ? (
                   <div className="text-center py-8">
-                    <p className="text-muted-foreground mb-3">Connectez-vous pour laisser un avis</p>
+                    <p className="text-muted-foreground mb-3">Connectez-vous pour laisser un avis. Les avis sont réservés aux clients ayant séjourné dans cette chambre.</p>
                     <button
                       onClick={() => {
                         setAuthPurpose("review");
@@ -953,7 +840,7 @@ function StayDetailPageContent() {
                     <div className="flex items-start justify-between mb-1">
                       <div className="flex items-center gap-3">
                         {review.user?.image ? (
-                          <img src={review.user.image} alt={review.user.name || "User"} className="h-10 w-10 object-cover" />
+                          <img loading="lazy" decoding="async" src={review.user.image} alt={review.user.name || "User"} className="h-10 w-10 object-cover" />
                         ) : (
                           <div className="h-10 w-10 bg-secondary grid place-items-center font-display text-sm">
                             {(review.user?.name || "U")[0]}
@@ -984,13 +871,13 @@ function StayDetailPageContent() {
               <div className="frame-inset px-7 py-6 flex items-end justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[0.8125rem] font-semibold text-white/90">La nuit, à partir de</span>
+                    <span className="text-[0.8125rem] font-semibold text-white">La nuit, à partir de</span>
                     {p.discountPercent > 0 && (
-                      <span className="bg-red-600 text-white text-[0.6875rem] font-semibold px-1.5 py-0.5">-{p.discountPercent}%</span>
+                      <span className="bg-white text-brand-text text-xs font-semibold px-1.5 py-0.5">-{p.discountPercent} %</span>
                     )}
                   </div>
                   {p.discountPercent > 0 && (
-                    <div className="text-sm text-white/70 line-through">{fcfa(p.originalPrice, p.currency)}</div>
+                    <div className="text-sm text-white line-through decoration-white/70">{fcfa(p.originalPrice, p.currency)}</div>
                   )}
                   <div className="font-display text-4xl leading-none mt-1.5 tabular">{fcfa(p.price, p.currency)}</div>
                 </div>
@@ -1000,87 +887,26 @@ function StayDetailPageContent() {
               </div>
               <div className="p-6 sm:p-7">
 
-              <div className="mt-4 border border-border overflow-hidden">
-                <div className="grid grid-cols-2">
-                  <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-                    <PopoverTrigger asChild>
-                      <button className="p-3 border-r border-b border-border text-left hover:bg-secondary/50 transition-colors">
-                        <div className="text-xs text-muted-foreground">Arrivée</div>
-                        <div className="text-sm font-medium">{checkIn ? format(checkIn, 'dd MMM yyyy', { locale: fr }) : 'Ajouter date'}</div>
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <CalendarPicker
-                        mode="range"
-                        selected={{ from: checkIn, to: checkOut }}
-                        onSelect={(range) => {
-                          setCheckIn(range?.from);
-                          setCheckOut(range?.to);
-                        }}
-                        disabled={(date) => {
-                          // Désactiver les dates passées
-                          if (date < new Date()) return true;
-
-                          // Désactiver les dates déjà réservées (exclure les annulées)
-                          const isBooked = bookings.some((b) => {
-                            // Exclure les réservations annulées
-                            if (b.status === "CANCELLED") return false;
-                            const checkIn = new Date(b.checkIn);
-                            const checkOut = new Date(b.checkOut);
-                            return isWithinInterval(date, { start: checkIn, end: new Date(checkOut.getTime() - 1) }) ||
-                                   isSameDay(date, checkIn) ||
-                                   isSameDay(date, new Date(checkOut.getTime() - 1));
-                          });
-                          return isBooked;
-                        }}
-                        numberOfMonths={2}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-                    <PopoverTrigger asChild>
-                      <button className="p-3 border-b border-border text-left hover:bg-secondary/50 transition-colors">
-                        <div className="text-xs text-muted-foreground">Départ</div>
-                        <div className="text-sm font-medium">{checkOut ? format(checkOut, 'dd MMM yyyy', { locale: fr }) : 'Ajouter date'}</div>
-                      </button>
-                    </PopoverTrigger>
-                  </Popover>
+              {/* Résumé : le calendrier « Disponibilités & tarifs » est la seule source pour les dates et voyageurs */}
+              <a href="#disponibilites" className="block border border-border hover:border-foreground transition-colors">
+                <div className="grid grid-cols-2 border-b border-border">
+                  <div className="p-3 border-r border-border">
+                    <div className="text-sm text-muted-foreground">Arrivée</div>
+                    <div className="text-sm font-medium">{checkIn ? format(checkIn, 'd MMM yyyy', { locale: fr }) : 'À choisir'}</div>
+                  </div>
+                  <div className="p-3">
+                    <div className="text-sm text-muted-foreground">Départ</div>
+                    <div className="text-sm font-medium">{checkOut ? format(checkOut, 'd MMM yyyy', { locale: fr }) : 'À choisir'}</div>
+                  </div>
                 </div>
-                <Popover open={guestPickerOpen} onOpenChange={setGuestPickerOpen}>
-                  <PopoverTrigger asChild>
-                    <button className="p-3 text-left hover:bg-secondary/50 transition-colors">
-                      <div className="text-xs text-muted-foreground">Voyageurs</div>
-                      <div className="text-sm font-medium">{adults + children} voyageur{adults + children > 1 ? 's' : ''}</div>
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-64 p-4" align="start">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-sm font-medium">Adultes</div>
-                          <div className="text-xs text-muted-foreground">13 ans et plus</div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => setAdults(Math.max(1, adults - 1))} className="h-8 w-8 border border-border flex items-center justify-center hover:border-foreground">−</button>
-                          <span className="w-6 text-center">{adults}</span>
-                          <button onClick={() => setAdults(Math.min(p.guests, adults + 1))} disabled={adults + children >= p.guests} className="h-8 w-8 border border-border flex items-center justify-center hover:border-foreground disabled:opacity-30">+</button>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-sm font-medium">Enfants</div>
-                          <div className="text-xs text-muted-foreground">2–12 ans</div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => setChildren(Math.max(0, children - 1))} className="h-8 w-8 border border-border flex items-center justify-center hover:border-foreground">−</button>
-                          <span className="w-6 text-center">{children}</span>
-                          <button onClick={() => setChildren(Math.min(p.guests - adults, children + 1))} disabled={adults + children >= p.guests} className="h-8 w-8 border border-border flex items-center justify-center hover:border-foreground disabled:opacity-30">+</button>
-                        </div>
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              </div>
+                <div className="p-3 flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm text-muted-foreground">Voyageurs</div>
+                    <div className="text-sm font-medium">{adults} adulte{adults > 1 ? 's' : ''}{children > 0 ? `, ${children} enfant${children > 1 ? 's' : ''}` : ''}</div>
+                  </div>
+                  <span className="text-sm underline underline-offset-4">Modifier</span>
+                </div>
+              </a>
 
               {checkingAvailability ? (
                 <div className="mt-4 h-12 w-full bg-muted text-muted-foreground font-medium grid place-items-center">
@@ -1127,21 +953,26 @@ function StayDetailPageContent() {
                 </>
               )}
               {availability === true && (
-                <p className="text-center text-xs text-emerald-700 mt-3 flex items-center justify-center gap-1">
-                  <Check className="h-3 w-3" />
+                <p className="text-center text-sm text-foreground mt-3 flex items-center justify-center gap-1.5">
+                  <Check className="h-4 w-4 text-brand-text" aria-hidden="true" />
                   Disponible pour ces dates
+                </p>
+              )}
+              {availability !== false && (
+                <p className="mt-2 text-center text-sm text-muted-foreground">
+                  Sans paiement en ligne · chambre bloquée {holdHours} h · l&apos;hôtel vous rappelle
                 </p>
               )}
 
               {nights > 0 && (
                 <dl className="mt-6 pt-5 border-t border-border space-y-2 text-[0.9375rem]">
                   <div className="flex justify-between gap-4">
-                    <dt className="text-muted-foreground">{fcfa(p.price, p.currency)} × {nights} nuit{nights > 1 ? "s" : ""}</dt>
-                    <dd className="tabular">{fcfa(p.price * nights, p.currency)}</dd>
+                    <dt className="text-muted-foreground">{stayTotal !== p.price * nights ? "En moyenne " : ""}{fcfa(Math.round(stayTotal / nights), p.currency)} × {nights} nuit{nights > 1 ? "s" : ""}</dt>
+                    <dd className="tabular">{fcfa(stayTotal, p.currency)}</dd>
                   </div>
                   <div className="flex justify-between gap-4 pt-3 border-t border-border">
                     <dt className="font-semibold">Total</dt>
-                    <dd className="font-display text-2xl leading-none tabular">{fcfa(p.price * nights, p.currency)}</dd>
+                    <dd className="font-display text-2xl leading-none tabular">{fcfa(stayTotal, p.currency)}</dd>
                   </div>
                 </dl>
               )}
@@ -1158,7 +989,8 @@ function StayDetailPageContent() {
             <span className="font-display text-xl tabular">{fcfa(p.price, p.currency)}</span>
             <span className="text-xs text-muted-foreground">/ nuit</span>
           </div>
-          {nights > 0 && <div className="text-xs text-muted-foreground">{nights} nuit{nights > 1 ? 's' : ''} · total {fcfa(p.price * nights, p.currency)}</div>}
+          {nights > 0 && <div className="text-xs text-muted-foreground">{nights} nuit{nights > 1 ? 's' : ''} · total {fcfa(stayTotal, p.currency)}</div>}
+          <div className="text-xs text-muted-foreground">Sans paiement en ligne</div>
         </div>
         {checkingAvailability ? (
           <div className="h-12 px-4 bg-muted text-muted-foreground text-sm font-medium grid place-items-center">Vérification…</div>
@@ -1175,12 +1007,14 @@ function StayDetailPageContent() {
           )
         ) : (
           <button onClick={() => setBookingFlowOpen(true)} className="btn-fill-editorial !min-h-12 shrink-0">
-            Je réserve
+            Réserver
           </button>
         )}
       </div>
 
       <Footer />
+      {/* Espace sous le pied de page pour la barre de réservation fixe (mobile) */}
+      <div className="h-24 lg:hidden" aria-hidden="true" />
 
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} purpose={authPurpose} />
 
@@ -1200,6 +1034,9 @@ function StayDetailPageContent() {
               initialAdults={adults}
               initialChildren={children}
               bookings={bookings}
+              calendarDays={calendarDays}
+              defaultMinStay={defaultMinStay}
+              holdHours={holdHours}
               onClose={() => setBookingFlowOpen(false)}
             />
           </motion.div>
@@ -1209,620 +1046,6 @@ function StayDetailPageContent() {
   );
 }
 
-function BookingFlowOverlay({ room, initialCheckIn, initialCheckOut, initialAdults, initialChildren, bookings, onClose }: { room: Room | null; initialCheckIn: Date | undefined; initialCheckOut: Date | undefined; initialAdults: number; initialChildren: number; bookings: { id: string; checkIn: string; checkOut: string; status: string }[]; onClose: () => void }) {
-  const { user, refresh } = useAuth();
-  const steps = ["Dates", "Détails", "Récapitulatif"] as const;
-  type Step = typeof steps[number];
-  const [step, setStep] = useState<Step>(() => {
-    const storedState = localStorage.getItem('bookingFlowState');
-    if (storedState) {
-      try {
-        const state = JSON.parse(storedState);
-        const restoredStep = state.step === 'Auth' ? 'Détails' : state.step;
-        localStorage.removeItem('bookingFlowState');
-        return (steps as readonly string[]).includes(restoredStep) ? restoredStep : 'Dates';
-      } catch {
-        return 'Dates';
-      }
-    }
-    return 'Dates';
-  });
-  const stepIndex = steps.indexOf(step);
-  const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [confirmed, setConfirmed] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [processingPayment, setProcessingPayment] = useState(false);
-  const hasSyncedUserInfo = useRef(false);
-
-  // Local state for editable fields
-  const [checkIn, setCheckIn] = useState<Date | undefined>(() => {
-    const storedState = localStorage.getItem('bookingFlowState');
-    if (storedState) {
-      try {
-        const state = JSON.parse(storedState);
-        return state.checkIn ? new Date(state.checkIn) : initialCheckIn;
-      } catch {
-        return initialCheckIn;
-      }
-    }
-    return initialCheckIn;
-  });
-  const [checkOut, setCheckOut] = useState<Date | undefined>(() => {
-    const storedState = localStorage.getItem('bookingFlowState');
-    if (storedState) {
-      try {
-        const state = JSON.parse(storedState);
-        return state.checkOut ? new Date(state.checkOut) : initialCheckOut;
-      } catch {
-        return initialCheckOut;
-      }
-    }
-    return initialCheckOut;
-  });
-  const maxGuests = room?.maxGuests ?? 10;
-  const [adults, setAdults] = useState(() => {
-    const clamp = (v: number) => Math.min(v || 1, maxGuests);
-    const storedState = localStorage.getItem('bookingFlowState');
-    if (storedState) {
-      try {
-        const state = JSON.parse(storedState);
-        return clamp(state.adults || initialAdults || 1);
-      } catch {
-        return clamp(initialAdults || 1);
-      }
-    }
-    return clamp(initialAdults || 1);
-  });
-  const [children, setChildren] = useState(() => {
-    const clamp = (v: number) => Math.min(v || 0, Math.max(0, maxGuests - adults));
-    const storedState = localStorage.getItem('bookingFlowState');
-    if (storedState) {
-      try {
-        const state = JSON.parse(storedState);
-        return clamp(state.children || initialChildren || 0);
-      } catch {
-        return clamp(initialChildren || 0);
-      }
-    }
-    return clamp(initialChildren || 0);
-  });
-  const [guestInfo, setGuestInfo] = useState(() => {
-    const storedState = localStorage.getItem('bookingFlowState');
-    if (storedState) {
-      try {
-        const state = JSON.parse(storedState);
-        return state.guestInfo || { firstName: '', lastName: '', email: '', phone: '' };
-      } catch {
-        return { firstName: '', lastName: '', email: '', phone: '' };
-      }
-    }
-    return { firstName: '', lastName: '', email: '', phone: '' };
-  });
-
-  // Store booking flow state in window for OAuth redirect
-  useEffect(() => {
-    (window as unknown as { __bookingFlowState?: unknown }).__bookingFlowState = {
-      step,
-      checkIn,
-      checkOut,
-      adults,
-      children,
-      guestInfo,
-    };
-  }, [step, checkIn, checkOut, adults, children, guestInfo]);
-
-  // Refresh user state after auth modal closes
-  useEffect(() => {
-    if (!authModalOpen) {
-      refresh();
-    }
-  }, [authModalOpen, refresh]);
-
-  // Block body scroll when overlay is open
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, []);
-
-  // Sync guest info when user changes, but only if guestInfo is empty and not already synced
-  useEffect(() => {
-    if (user && !hasSyncedUserInfo.current && !guestInfo.firstName && !guestInfo.lastName && !guestInfo.email) {
-      setGuestInfo({
-        firstName: user.name?.split(' ')[0] || '',
-        lastName: user.name?.split(' ').slice(1).join(' ') || '',
-        email: user.email || '',
-        phone: user.phone || '',
-      });
-      hasSyncedUserInfo.current = true;
-    }
-  }, [user, guestInfo.firstName, guestInfo.lastName, guestInfo.email]);
-
-  const nights = checkIn && checkOut ? differenceInDays(checkOut, checkIn) : 3;
-  const nightlyPrice = room ? getDiscountedPrice(room.basePrice, room.discountPercent) : 0;
-  const total = nightlyPrice * nights;
-
-  const overlayAvailabilityMap = useMemo(() => buildAvailabilityMap(bookings), [bookings]);
-
-  // Vérification locale et immédiate : aucune nuit de la plage choisie ne doit être indisponible
-  const rangeFullyAvailable = useMemo(() => {
-    if (!checkIn || !checkOut || checkOut <= checkIn) return true;
-    return isRangeAvailable(overlayAvailabilityMap, checkIn, checkOut);
-  }, [checkIn, checkOut, overlayAvailabilityMap]);
-
-  // Real-time availability check whenever the selected dates change
-  const [availability, setAvailability] = useState<boolean | null>(null);
-  const [checkingAvailability, setCheckingAvailability] = useState(false);
-  const [conflictingBookings, setConflictingBookings] = useState<{ id: string; checkIn: string; checkOut: string; status: string }[]>([]);
-  const [isOwnBooking, setIsOwnBooking] = useState(false);
-
-  useEffect(() => {
-    if (!room?.slug || !checkIn || !checkOut || checkOut <= checkIn) {
-      setAvailability(null);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      setCheckingAvailability(true);
-      try {
-        const res = await fetch(`/api/rooms/${room.slug}/availability?checkIn=${encodeURIComponent(checkIn.toISOString())}&checkOut=${encodeURIComponent(checkOut.toISOString())}&userId=${user?.id || ''}`);
-        const data = await res.json();
-        if (cancelled) return;
-        if (data.success) {
-          setAvailability(data.data.available);
-          setConflictingBookings(data.data.conflictingBookings || []);
-          setIsOwnBooking(data.data.isOwnBooking || false);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          console.error("Erreur vérification disponibilité", err);
-          setAvailability(null);
-        }
-      } finally {
-        if (!cancelled) setCheckingAvailability(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [room?.slug, checkIn, checkOut, user?.id]);
-
-  const validateStep = () => {
-    const newErrors: Record<string, string> = {};
-    if (step === 'Dates') {
-      if (!checkIn) newErrors.checkIn = 'Date d\'arrivée requise';
-      if (!checkOut) newErrors.checkOut = 'Date de départ requise';
-      if (checkIn && checkOut && checkOut <= checkIn) newErrors.dates = 'Le départ doit être après l\'arrivée';
-      if (checkIn && checkOut && checkOut > checkIn && !rangeFullyAvailable) newErrors.dates = 'Cette période contient des nuits déjà réservées. Choisissez une plage entièrement disponible.';
-      else if (checkIn && checkOut && checkOut > checkIn && availability === false) newErrors.dates = isOwnBooking ? 'Vous avez déjà une réservation pour ces dates' : 'Cette chambre n\'est plus disponible pour ces dates';
-    }
-    if (step === 'Détails') {
-      // Only validate details if user is authenticated
-      if (user) {
-        if (!guestInfo.firstName.trim()) newErrors.firstName = 'Prénom requis';
-        if (!guestInfo.lastName.trim()) newErrors.lastName = 'Nom requis';
-        const hasEmail = guestInfo.email.trim();
-        const hasPhone = guestInfo.phone.trim();
-        if (!hasEmail && !hasPhone) {
-          newErrors.contact = 'Email ou téléphone requis';
-        }
-        if (hasEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestInfo.email)) {
-          newErrors.email = 'Adresse email invalide';
-        }
-      }
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const next = () => {
-    if (validateStep()) {
-      const idx = steps.indexOf(step);
-      if (idx < steps.length - 1) setStep(steps[idx + 1]);
-    }
-  };
-
-  const prev = () => {
-    const idx = steps.indexOf(step);
-    if (idx > 0) setStep(steps[idx - 1]);
-    else onClose();
-  };
-
-  const canContinue =
-    (step === 'Dates' && checkIn && checkOut && checkOut > checkIn && rangeFullyAvailable && !checkingAvailability && availability !== false) ||
-    (step === 'Détails' && user && guestInfo.firstName && guestInfo.lastName && (guestInfo.email || guestInfo.phone)) ||
-    step === 'Récapitulatif';
-
-  const inputCls = "h-12 w-full rounded-xl border border-border bg-background px-4 text-sm focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-foreground transition-all";
-
-  const handlePayNow = async () => {
-    // Vérifier la session avant de payer
-    try {
-      const authCheck = await api.get<{ user: { id?: string; name?: string; email?: string } }>("/api/auth/me");
-      if (!authCheck.user) {
-        setAuthModalOpen(true);
-        toast.error('Vous devez être connecté pour effectuer une réservation.');
-        return;
-      }
-      refresh();
-    } catch {
-      setAuthModalOpen(true);
-      toast.error('Vous devez être connecté pour effectuer une réservation.');
-      return;
-    }
-
-    if (!room || !checkIn || !checkOut) {
-      toast.error('Veuillez sélectionner des dates valides avant de payer.');
-      return;
-    }
-
-    setProcessingPayment(true);
-
-    try {
-      const availabilityResponse = await fetch(`/api/rooms/${room.slug}/availability?checkIn=${encodeURIComponent(checkIn.toISOString())}&checkOut=${encodeURIComponent(checkOut.toISOString())}&userId=${user?.id || ''}`);
-      const availabilityResult = await availabilityResponse.json();
-
-      if (!availabilityResponse.ok || !availabilityResult.success || !availabilityResult.data?.available) {
-        // Si c'est la propre réservation de l'utilisateur, rediriger vers ses réservations
-        if (availabilityResult.data?.isOwnBooking) {
-          toast.info("Vous avez déjà une réservation pour ces dates. Redirection vers vos réservations...");
-          setTimeout(() => {
-            window.location.href = '/bookings';
-          }, 1500);
-          setProcessingPayment(false);
-          return;
-        }
-        toast.error(availabilityResult.message || "Cette chambre n'est plus disponible pour ces dates.");
-        setProcessingPayment(false);
-        return;
-      }
-
-      // Vérifier que la chambre est toujours publiée
-      if (!room.isPublished) {
-        toast.error("Cette chambre n'est plus disponible à la réservation.");
-        setProcessingPayment(false);
-        return;
-      }
-
-      const bookingResponse = await fetch('/api/bookings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          roomId: room.id,
-          checkIn: checkIn.toISOString(),
-          checkOut: checkOut.toISOString(),
-          adults,
-          children,
-          guestFirstName: guestInfo.firstName,
-          guestLastName: guestInfo.lastName,
-          guestEmail: guestInfo.email,
-          guestPhone: guestInfo.phone,
-        }),
-      });
-      console.log('[Booking] Request sent:', {
-        roomId: room.id,
-        checkIn: checkIn.toISOString(),
-        checkOut: checkOut.toISOString(),
-        adults,
-        children,
-        guestFirstName: guestInfo.firstName,
-        guestLastName: guestInfo.lastName,
-        guestEmail: guestInfo.email,
-        guestPhone: guestInfo.phone,
-      });
-
-      const bookingResult = await bookingResponse.json();
-
-      if (bookingResult.success && bookingResult.data?.booking) {
-        toast.success('Réservation enregistrée ! Finalisez le paiement pour la confirmer.');
-        setConfirmed(true);
-        setProcessingPayment(false);
-        setTimeout(() => {
-          window.location.href = '/bookings';
-        }, 1800);
-      } else {
-        toast.error(bookingResult.error?.message || bookingResult.message || 'Erreur inconnue');
-        setProcessingPayment(false);
-      }
-    } catch (error) {
-      console.error('Payment error:', error);
-      toast.error('Erreur lors de la vérification de disponibilité ou de la création du paiement');
-      setProcessingPayment(false);
-    }
-  };
-
-  return (
-    <div className="h-screen bg-background overflow-y-auto">
-      <div className="mx-auto max-w-6xl px-6 lg:px-10 pt-10 pb-6">
-        <button onClick={onClose} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-          <X className="h-4 w-4" /> Quitter
-        </button>
-
-        <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl mt-6 leading-none">Confirmer et payer</h1>
-
-        {/* Stepper */}
-        <div className="mt-6 flex items-center gap-3 sm:gap-6 flex-wrap">
-          {steps.map((s, i) => {
-            const active = i === stepIndex;
-            const done = i < stepIndex;
-            return (
-              <div key={s} className="flex items-center gap-2 sm:gap-3">
-                <div className={`h-8 w-8 grid place-items-center text-xs font-medium border transition-all shrink-0 ${
-                  done ? "bg-ink text-white border-ink"
-                  : active ? "bg-primary text-white border-primary"
-                  : "bg-background text-muted-foreground border-border"
-                }`}>
-                  {done ? <Check className="h-4 w-4" /> : i + 1}
-                </div>
-                <span className={`text-sm hidden sm:inline ${active ? "text-foreground font-medium" : "text-muted-foreground"}`}>{s}</span>
-                {active && <span className="text-sm sm:hidden font-medium text-foreground">{s}</span>}
-                {i < steps.length - 1 && <span className="hidden sm:inline-block h-px w-8 bg-border" />}
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8">
-          {/* Step content */}
-          <div className={`order-2 lg:order-1 ${step === "Récapitulatif" ? "lg:col-span-3" : "lg:col-span-5"}`}>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={step}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -16 }}
-                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-              >
-                {step === "Dates" && (
-                  <div className="border border-border p-5 bg-card">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground"><Calendar className="h-4 w-4" />Votre voyage</div>
-                    <div className="mt-3 space-y-3">
-                      <HotelBookingCalendar
-                        availability={overlayAvailabilityMap}
-                        basePrice={nightlyPrice}
-                        currencyLabel={room?.currency === "XOF" ? "FCFA" : room?.currency ?? "FCFA"}
-                        monthsToShow={1}
-                        maxGuestsPerRoom={room?.maxGuests ?? 4}
-                        initialCheckIn={checkIn ?? null}
-                        initialCheckOut={checkOut ?? null}
-                        onSelectionChange={(ci, co) => {
-                          setCheckIn(ci ?? undefined);
-                          setCheckOut(co ?? undefined);
-                        }}
-                        onGuestsChange={(guests) => {
-                          const maxGuests = room?.maxGuests ?? guests.adults + guests.children;
-                          const nextAdults = Math.min(guests.adults, maxGuests);
-                          setAdults(nextAdults);
-                          setChildren(Math.min(guests.children, maxGuests - nextAdults));
-                        }}
-                      />
-                      {errors.dates && <p className="mt-2 text-sm text-destructive flex items-center gap-1"><AlertCircle className="h-4 w-4" />{errors.dates}</p>}
-
-                      {checkIn && checkOut && checkOut > checkIn && (
-                        !rangeFullyAvailable ? (
-                          <div className="p-3 bg-destructive/10">
-                            <p className="text-sm font-medium text-destructive flex items-center gap-1">
-                              <AlertCircle className="h-4 w-4" />
-                              Cette période contient des nuits déjà réservées. Choisissez une plage entièrement disponible.
-                            </p>
-                          </div>
-                        ) : checkingAvailability ? (
-                          <p className="text-sm text-muted-foreground flex items-center gap-2">
-                            <span className="h-3.5 w-3.5 rounded-full border-2 border-muted-foreground border-t-transparent animate-spin" />
-                            Vérification de la disponibilité…
-                          </p>
-                        ) : availability === false ? (
-                          <div className="p-3 bg-destructive/10">
-                            <p className="text-sm font-medium text-destructive flex items-center gap-1">
-                              <AlertCircle className="h-4 w-4" />
-                              {isOwnBooking ? "Vous avez déjà une réservation pour ces dates" : "Chambre indisponible pour ces dates"}
-                            </p>
-                            {conflictingBookings.length > 0 && (
-                              <div className="mt-1">
-                                {conflictingBookings.map((booking, idx) => (
-                                  <div key={idx} className="text-xs text-muted-foreground">
-                                    {new Date(booking.checkIn).toLocaleDateString('fr-FR')} – {new Date(booking.checkOut).toLocaleDateString('fr-FR')}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        ) : null
-                      )}
-
-                      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                        <span className="text-muted-foreground">{nights} nuit{nights > 1 ? "s" : ""} · {room?.location.city ? `${room.location.city}, ${room.location.name}` : room?.location.name}</span>
-                        {checkIn && checkOut && checkOut > checkIn && rangeFullyAvailable && !checkingAvailability && availability === true && (
-                          <span className="text-emerald-700 flex items-center gap-1 text-xs font-medium">
-                            <Check className="h-3.5 w-3.5" />
-                            Disponible
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {step === "Détails" && (
-                  <div className="border border-border p-7 bg-card">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      {user ? <Users className="h-4 w-4" /> : <Shield className="h-4 w-4" />}
-                      {user ? "Vos coordonnées" : "Authentification"}
-                    </div>
-                    <div className="mt-5">
-                      {user ? (
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <label className="block">
-                              <span className="text-xs font-medium text-muted-foreground">Prénom</span>
-                              <div className="mt-1.5">
-                                <input value={guestInfo.firstName} onChange={(e) => setGuestInfo({...guestInfo, firstName: e.target.value})} placeholder="Jean" className={inputCls} />
-                                {errors.firstName && <p className="mt-1 text-xs text-destructive">{errors.firstName}</p>}
-                              </div>
-                            </label>
-                            <label className="block">
-                              <span className="text-xs font-medium text-muted-foreground">Nom</span>
-                              <div className="mt-1.5">
-                                <input value={guestInfo.lastName} onChange={(e) => setGuestInfo({...guestInfo, lastName: e.target.value})} placeholder="Adje" className={inputCls} />
-                                {errors.lastName && <p className="mt-1 text-xs text-destructive">{errors.lastName}</p>}
-                              </div>
-                            </label>
-                          </div>
-                          <label className="block">
-                            <span className="text-xs font-medium text-muted-foreground">Email</span>
-                            <div className="mt-1.5">
-                              <input value={guestInfo.email} onChange={(e) => setGuestInfo({...guestInfo, email: e.target.value})} placeholder="email@example.com" type="email" className={inputCls} />
-                              {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email}</p>}
-                            </div>
-                          </label>
-                          <label className="block">
-                            <span className="text-xs font-medium text-muted-foreground">Téléphone</span>
-                            <div className="mt-1.5">
-                              <div className="flex">
-                                <span className="inline-flex items-center gap-2 px-3 h-12 border border-r-0 border-border bg-muted text-muted-foreground text-sm">
-                                  <img src="https://www.countryflags.com/wp-content/uploads/cote-d-ivoire-flag-png-large.png" alt="CI" className="h-5 w-auto" />
-                                  225
-                                </span>
-                                <input
-                                  value={guestInfo.phone}
-                                  onChange={(e) => setGuestInfo({...guestInfo, phone: e.target.value})}
-                                  placeholder="07 00 00 00 00"
-                                  type="tel"
-                                  className={inputCls + " rounded-l-none"}
-                                />
-                              </div>
-                              {errors.phone && <p className="mt-1 text-xs text-destructive">{errors.phone}</p>}
-                            </div>
-                          </label>
-                          {errors.contact && <p className="mt-2 text-sm text-destructive flex items-center gap-1"><AlertCircle className="h-4 w-4" />{errors.contact}</p>}
-                        </div>
-                      ) : (
-                        <div className="p-4 bg-secondary/50 text-center">
-                          <p className="text-sm text-muted-foreground mb-3">Veuillez vous connecter pour continuer</p>
-                          <Button onClick={() => setAuthModalOpen(true)} className="w-full">Se connecter</Button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {step === "Récapitulatif" && (
-                  <div className="border border-border p-7 bg-card">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground"><Shield className="h-4 w-4" />Récapitulatif</div>
-                    <div className="mt-5 space-y-3">
-                      <div className="flex justify-between py-3 border-b border-border text-sm">
-                        <span className="text-muted-foreground">Chambre</span>
-                        <span className="font-medium">{room?.name}</span>
-                      </div>
-                      <div className="flex justify-between py-3 border-b border-border text-sm">
-                        <span className="text-muted-foreground">Dates</span>
-                        <span className="font-medium">{checkIn && checkOut ? `${format(checkIn, 'dd MMM yyyy')} – ${format(checkOut, 'dd MMM yyyy')} (${nights} nuit${nights > 1 ? 's' : ''})` : '-'}</span>
-                      </div>
-                      <div className="flex justify-between py-3 border-b border-border text-sm">
-                        <span className="text-muted-foreground">Voyageurs</span>
-                        <span className="font-medium">{adults} adulte{adults > 1 ? 's' : ''}{children > 0 ? `, ${children} enfant${children > 1 ? 's' : ''}` : ''}</span>
-                      </div>
-                      <div className="flex justify-between py-3 border-b border-border text-sm">
-                        <span className="text-muted-foreground">Contact</span>
-                        <span className="font-medium">{guestInfo.firstName} {guestInfo.lastName}</span>
-                      </div>
-                      <div className="flex justify-between py-3 border-b border-border text-sm">
-                        <span className="text-muted-foreground">Email</span>
-                        <span className="font-medium">{guestInfo.email}</span>
-                      </div>
-                      <div className="flex justify-between py-3 text-sm">
-                        <span className="text-muted-foreground">Téléphone</span>
-                        <span className="font-medium">{guestInfo.phone ? `+225 ${guestInfo.phone}` : ''}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-            </AnimatePresence>
-
-            {confirmed && (
-              <div className="mt-8 border border-border p-8 bg-card text-center">
-                <div className="mx-auto h-14 w-14 bg-primary text-primary-foreground grid place-items-center">
-                  <Check className="h-6 w-6" />
-                </div>
-                <h2 className="font-display text-2xl mt-5">Réservation enregistrée</h2>
-                <p className="text-muted-foreground mt-2">
-                  Votre créneau est bloqué pendant 15 minutes. Finalisez le paiement depuis « Mes réservations »
-                  pour confirmer votre séjour.
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Summary — uniquement au récapitulatif (étape 3) */}
-          {step === "Récapitulatif" && (
-            <aside className="lg:col-span-2 order-1 lg:order-2">
-              <div className="lg:sticky lg:top-28 border border-border p-4 sm:p-6 bg-card shadow-[var(--shadow-card)]">
-                <div className="flex gap-3 sm:gap-4">
-                  <img src={room?.coverImageUrl || '/placeholder.jpg'} alt={room?.name} className="h-16 w-16 sm:h-24 sm:w-24 object-cover shrink-0" />
-                  <div className="min-w-0">
-                    <div className="text-xs text-muted-foreground">{room?.roomType.name}</div>
-                    <div className="font-display text-base sm:text-lg truncate">{room?.name}</div>
-                    <div className="text-xs sm:text-sm text-muted-foreground truncate">{room?.location.city ? `${room.location.city}, ${room.location.name}` : room?.location.name}</div>
-                  </div>
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-border space-y-3 text-sm">
-                  <div className="flex justify-between"><span className="text-muted-foreground">{fcfa(nightlyPrice, room?.currency)} × {nights} nuit{nights > 1 ? 's' : ''}</span><span className="tabular">{fcfa(total, room?.currency)}</span></div>
-                  <div className="pt-3 border-t border-border flex justify-between font-display text-lg">
-                    <span>Total</span><span className="tabular">{fcfa(total, room?.currency)}</span>
-                  </div>
-                </div>
-
-                <div className="mt-4 p-4 bg-secondary/60 text-xs text-muted-foreground leading-relaxed">
-                  {room?.cancellationPolicy || "Votre chambre est bloquée 15 minutes le temps du paiement."}
-                </div>
-
-                {!confirmed && (
-                  <button
-                    onClick={handlePayNow}
-                    disabled={processingPayment}
-                    className="mt-3 w-full btn-fill-editorial !min-h-14 flex-col !gap-0 leading-tight disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    {processingPayment ? 'Traitement en cours...' : (
-                      <><span>Confirmer la réservation</span><span className="text-xs opacity-90 tabular">{fcfa(total, room?.currency)}</span></>
-                    )}
-                  </button>
-                )}
-              </div>
-            </aside>
-          )}
-        </div>
-
-        {!confirmed && (
-          <div className="sticky bottom-0 -mx-6 lg:-mx-10 mt-8 border-t border-border bg-background/95 backdrop-blur px-6 lg:px-10 py-4 flex items-center justify-between gap-4">
-            <button onClick={prev} className="text-sm text-muted-foreground hover:text-foreground shrink-0">{step === "Dates" ? "Retour au détail" : "Étape précédente"}</button>
-            {step === "Récapitulatif" ? (
-              <button
-                onClick={handlePayNow}
-                disabled={processingPayment}
-                className="btn-fill-editorial !min-h-14 !px-6 sm:!px-8 flex-col !gap-0 leading-tight disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {processingPayment ? 'Traitement...' : (
-                  <><span>Confirmer la réservation</span><span className="text-xs opacity-90 tabular">{fcfa(total, room?.currency)}</span></>
-                )}
-              </button>
-            ) : (
-              <button
-                onClick={() => next()}
-                disabled={!canContinue}
-                className="btn-fill-editorial !px-8 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Continuer
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-
-      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} purpose="booking" />
-    </div>
-  );
-}
 export function StayDetailPage() {
   return (
     <Suspense fallback={

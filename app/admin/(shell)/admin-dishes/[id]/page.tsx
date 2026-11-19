@@ -74,10 +74,12 @@ export default function AdminDishEditPage() {
   }, [id]);
 
   useEffect(() => {
+    // Chargement au montage (synchronisation avec l'API).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadDish();
   }, [loadDish]);
 
-  const update = useMutation<{ dish: Dish }, any>(
+  const update = useMutation<{ dish: Dish }, Record<string, unknown>>(
     `/api/admin/admin-dishes/${id}`,
     { method: "PATCH", onSuccess: () => toast.success("Mis à jour") },
   );

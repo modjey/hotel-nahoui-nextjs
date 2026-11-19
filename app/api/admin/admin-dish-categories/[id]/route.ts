@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import { ok, fail, withAuth } from "@/lib/auth/api";
 import type { NextRequest } from "next/server";
 import { slugify } from "@/lib/catalog/schemas";
@@ -28,7 +29,7 @@ const handler = withAuth(async (req: NextRequest) => {
       const body = await req.json();
       const { name, description, order, isPublished } = body;
 
-      const updateData: any = {};
+      const updateData: Prisma.DishCategoryUpdateInput = {};
       if (name !== undefined) {
         updateData.name = name;
         updateData.slug = slugify(name);
@@ -51,6 +52,10 @@ const handler = withAuth(async (req: NextRequest) => {
 
   if (req.method === "DELETE") {
     try {
+      const dishCount = await prisma.dish.count({ where: { categoryId: id } });
+      if (dishCount > 0) {
+        return fail(`Cette catégorie contient ${dishCount} plat(s) : déplacez-les ou supprimez-les d'abord.`, 409, "CATEGORY_NOT_EMPTY");
+      }
       await prisma.dishCategory.delete({
         where: { id },
       });

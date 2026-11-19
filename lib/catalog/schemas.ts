@@ -67,6 +67,7 @@ export const roomCreateSchema = z.object({
   basePrice: z.number().int().min(0).optional(),
   currency: z.string().length(3).optional(),
   discountPercent: z.number().int().min(0).max(100).optional(),
+  minStay: z.number().int().min(1).max(30).optional(),
   maxGuests: z.number().int().min(1).max(20).optional(),
   beds: z.number().int().min(0).max(20).optional(),
   bathrooms: z.number().int().min(0).max(20).optional(),
@@ -87,6 +88,7 @@ export const roomUpdateSchema = roomCreateSchema.partial();
 
 /** Libellés français des champs chambre pour les messages d'erreur formulaire. */
 export const roomFieldLabels: Record<string, string> = {
+  minStay: "Séjour minimum",
   name: "Nom",
   slug: "Slug",
   roomNumber: "Numéro de chambre",

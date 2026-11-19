@@ -3,6 +3,7 @@ import { ok, fail, withAuth } from "@/lib/auth/api";
 import { PENDING_BOOKING_TTL_MS, generatePaymentReference } from "@/lib/bookings";
 import { Prisma, PaymentStatus, PaymentMethod } from "@prisma/client";
 import { NextRequest } from "next/server";
+import { sendBookingEmail } from "@/lib/booking-emails";
 
 export const runtime = "nodejs";
 
@@ -39,14 +40,14 @@ function normalizePaymentData(body: Record<string, unknown>) {
 
 /**
  * Un acompte encaissé (au moins un versement SUCCESS) confirme la réservation
- * et libère l'expiration du créneau.
+ * et libère l'expiration du créneau. Renvoie true si la réservation vient d'être confirmée.
  */
-async function syncBookingStatus(bookingId: string) {
+async function syncBookingStatus(bookingId: string): Promise<boolean> {
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
     select: { id: true, status: true },
   });
-  if (!booking || booking.status === "CANCELLED" || booking.status === "COMPLETED") return;
+  if (!booking || booking.status === "CANCELLED" || booking.status === "COMPLETED") return false;
 
   const paid = await prisma.payment.findFirst({
     where: { bookingId, status: "SUCCESS" },
@@ -59,6 +60,7 @@ async function syncBookingStatus(bookingId: string) {
       ? { status: "CONFIRMED", expiresAt: null }
       : { status: "PENDING", expiresAt: new Date(Date.now() + PENDING_BOOKING_TTL_MS) },
   });
+  return Boolean(paid) && booking.status === "PENDING";
 }
 
 const handler = withAuth(async (req: NextRequest) => {
@@ -86,7 +88,10 @@ const handler = withAuth(async (req: NextRequest) => {
         },
       });
 
-      await syncBookingStatus(bookingId);
+      const confirmed = await syncBookingStatus(bookingId);
+      if (payment.status === "SUCCESS") {
+        await sendBookingEmail(bookingId, { type: "PAYMENT_RECEIVED", paymentId: payment.id, confirmed });
+      }
       return ok({ payment }, { status: 201 });
     }
 
@@ -119,7 +124,13 @@ const handler = withAuth(async (req: NextRequest) => {
         },
       });
 
-      await syncBookingStatus(bookingId);
+      const confirmed = await syncBookingStatus(bookingId);
+      // « Marqué comme reçu » ou remboursé : le client est prévenu (pas pour une simple correction).
+      if (existing.status !== "SUCCESS" && payment.status === "SUCCESS") {
+        await sendBookingEmail(bookingId, { type: "PAYMENT_RECEIVED", paymentId: payment.id, confirmed });
+      } else if (existing.status === "SUCCESS" && payment.status === "REFUNDED") {
+        await sendBookingEmail(bookingId, { type: "PAYMENT_REFUNDED", paymentId: payment.id });
+      }
       return ok({ payment });
     }
 

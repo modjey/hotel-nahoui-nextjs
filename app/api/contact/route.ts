@@ -13,6 +13,7 @@ const contactSchema = z.object({
   phone: z.string().trim().max(40).optional().nullable(),
   subject: z.string().trim().min(1).max(160),
   message: z.string().trim().min(1).max(5000),
+  bookingReference: z.string().trim().max(40).optional().nullable(),
 });
 
 export async function POST(req: NextRequest) {
@@ -41,7 +42,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { firstName, lastName, email, phone, subject, message } = parsed.data;
+    const { firstName, lastName, email, phone, subject, message, bookingReference } = parsed.data;
+    const category = subject === "reclamation" ? "reclamation" : "info";
 
     const submission = await prisma.contactSubmission.create({
       data: {
@@ -51,14 +53,16 @@ export async function POST(req: NextRequest) {
         phone: phone || null,
         subject,
         message,
+        category,
+        bookingReference: category === "reclamation" ? bookingReference || null : null,
       },
     });
 
     await createAdminNotification({
       type: "CONTACT_MESSAGE",
-      title: "Nouveau message de contact",
-      message: `${firstName} ${lastName} — ${subject}`,
-      link: "/admin/contact-submissions",
+      title: category === "reclamation" ? "Nouvelle réclamation" : "Nouveau message de contact",
+      message: `${firstName} ${lastName} — ${subject}${bookingReference ? ` (${bookingReference})` : ""}`,
+      link: `/admin/contact-submissions/${submission.id}`,
     });
 
     return NextResponse.json({

@@ -22,6 +22,16 @@ import { useApi } from "@/hooks/use-api";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import { trimValues } from "@/lib/utils";
 
+type PhotoDetail = {
+  title: string | null;
+  description: string | null;
+  imageUrl: string | null;
+  albumId: string | null;
+  isApproved: boolean | null;
+  isFeatured: boolean | null;
+  order: number | null;
+};
+
 export default function EditPhotoPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const [id, setId] = useState<string>("");
@@ -35,26 +45,25 @@ export default function EditPhotoPage({ params }: { params: Promise<{ id: string
     isFeatured: false,
     order: 0,
   });
-  const { data: photoData, loading: photoLoading } = useApi<any>(`/api/admin/admin-photos/${id}`);
+  // Le formulaire est rempli à la réception de la photo (pas d'effet de synchronisation).
+  const { loading: photoLoading } = useApi<PhotoDetail>(id ? `/api/admin/admin-photos/${id}` : null, {
+    onSuccess: (photo) =>
+      setFormData({
+        title: photo.title || "",
+        description: photo.description || "",
+        imageUrl: photo.imageUrl || "",
+        albumId: photo.albumId || "",
+        isApproved: photo.isApproved ?? true,
+        isFeatured: photo.isFeatured ?? false,
+        order: photo.order || 0,
+      }),
+  });
   const { data: albumsData } = useApi<{ albums: { id: string; name: string; slug: string }[] }>("/api/admin/admin-photo-albums");
 
   useEffect(() => {
     params.then((p) => setId(p.id));
   }, [params]);
 
-  useEffect(() => {
-    if (photoData) {
-      setFormData({
-        title: photoData.title || "",
-        description: photoData.description || "",
-        imageUrl: photoData.imageUrl || "",
-        albumId: photoData.albumId || "",
-        isApproved: photoData.isApproved ?? true,
-        isFeatured: photoData.isFeatured ?? false,
-        order: photoData.order || 0,
-      });
-    }
-  }, [photoData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

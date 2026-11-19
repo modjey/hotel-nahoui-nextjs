@@ -15,7 +15,7 @@ interface CheckoutRequest {
     email?: string;
     phone?: string;
   };
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 interface CheckoutResponse {
@@ -28,7 +28,10 @@ interface CheckoutResponse {
   message?: string;
 }
 
+// Chaque prestataire envoie son propre format de callback (typé dans fineopay.ts / centralapis.ts) :
+// le gestionnaire commun le transmet tel quel.
 interface CallbackData {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 }
 
@@ -40,7 +43,7 @@ interface Payment {
   transaction_id?: string;
   payment_method?: string;
   payment_date?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 interface PaymentProviderService {

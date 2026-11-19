@@ -69,6 +69,7 @@ function guestPayload(range: { checkIn: string; checkOut: string }, overrides: R
     guestFirstName: "E2E",
     guestLastName: "Test",
     guestEmail: "e2e-guest@example.com",
+    guestPhone: "+225 07 00 00 00 00",
     ...overrides,
   };
 }

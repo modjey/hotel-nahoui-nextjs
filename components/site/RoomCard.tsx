@@ -1,4 +1,5 @@
 "use client";
+import { displayRoomName } from "@/lib/room-display";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, BedDouble, Maximize2, Users } from "lucide-react";
@@ -116,9 +117,8 @@ export function RoomCard({
         <div className="pt-5">
           <p className="eyebrow text-muted-foreground">
             {room.roomType?.name || "Chambre"}
-            {room.roomNumber ? ` · N° ${room.roomNumber}` : ""}
           </p>
-          <h3 className="font-display mt-1.5 text-[1.75rem] leading-tight truncate">{room.name}</h3>
+          <h3 className="font-display mt-1.5 text-[1.75rem] leading-tight truncate">{displayRoomName(room.name, room.roomNumber)}</h3>
           <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
             {room.sizeSqm ? <li className="inline-flex items-center gap-1.5"><Maximize2 className="h-3.5 w-3.5" />{room.sizeSqm} m²</li> : null}
             <li className="inline-flex items-center gap-1.5"><Users className="h-3.5 w-3.5" />{room.maxGuests} pers.</li>

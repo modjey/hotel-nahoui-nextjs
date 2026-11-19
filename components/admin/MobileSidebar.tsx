@@ -1,24 +1,9 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  MapPin,
-  BedDouble,
-  Tag,
-  CalendarCheck,
-  Star,
-  Users,
-  UtensilsCrossed,
-  Image as ImageIcon,
-  Images,
-  Settings,
-  CreditCard,
-  Newspaper,
-  MessageSquare,
-  X,
-} from "lucide-react";
+import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ADMIN_NAV, isNavActive } from "@/components/admin/nav-items";
 import {
   Sheet,
   SheetContent,
@@ -26,24 +11,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 
-const items = [
-  { href: "/admin", label: "Tableau de bord", icon: LayoutDashboard, exact: true },
-  { href: "/admin/admin-locations", label: "Localisations", icon: MapPin },
-  { href: "/admin/admin-room-types", label: "Types de chambre", icon: Tag },
-  { href: "/admin/admin-rooms", label: "Chambres", icon: BedDouble },
-  { href: "/admin/bookings", label: "Réservations", icon: CalendarCheck },
-  { href: "/admin/payments", label: "Paiements", icon: CreditCard },
-  { href: "/admin/reviews", label: "Avis", icon: Star },
-  { href: "/admin/admin-dishes", label: "Plats", icon: UtensilsCrossed },
-  { href: "/admin/admin-dish-categories", label: "Catégories de plats", icon: Tag },
-  { href: "/admin/admin-photo-albums", label: "Albums photo", icon: Images },
-  { href: "/admin/admin-photos", label: "Photos", icon: ImageIcon },
-  { href: "/admin/blog-posts", label: "Articles de blog", icon: Newspaper },
-  { href: "/admin/contact-submissions", label: "Messages de contact", icon: MessageSquare },
-  { href: "/admin/media", label: "Médias", icon: ImageIcon },
-  { href: "/admin/users", label: "Utilisateurs", icon: Users },
-  { href: "/admin/settings", label: "Paramètres", icon: Settings },
-];
 
 interface MobileSidebarProps {
   open: boolean;
@@ -53,8 +20,6 @@ interface MobileSidebarProps {
 export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
   const pathname = usePathname() ?? "";
 
-  const isActive = (href: string, exact?: boolean) =>
-    exact ? pathname === href : pathname === href || pathname.startsWith(href + "/");
 
   const handleLinkClick = () => {
     onClose();
@@ -82,27 +47,32 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
           </div>
         </SheetHeader>
 
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-          {items.map((it) => {
-            const Icon = it.icon;
-            const active = isActive(it.href, it.exact);
-            return (
-              <Link
-                key={it.href}
-                href={it.href}
-                onClick={handleLinkClick}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-3 rounded-lg text-sm transition-colors",
-                  active
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                )}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                <span>{it.label}</span>
-              </Link>
-            );
-          })}
+        <nav className="flex-1 overflow-y-auto px-3 py-4 ">
+          {ADMIN_NAV.map((group, gi) => (
+            <div key={gi} className={cn("space-y-0.5", gi > 0 && "pt-4")}>
+              {group.title && (
+                <div className="px-3 pb-1 text-[0.7rem] font-semibold uppercase tracking-wider text-muted-foreground/80">{group.title}</div>
+              )}
+              {group.items.map((it) => {
+                const Icon = it.icon;
+                const active = isNavActive(pathname, it.href, it.exact);
+                return (
+                  <Link
+                    key={it.href}
+                    href={it.href} onClick={handleLinkClick}
+                    aria-current={active ? "page" : undefined}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-3 rounded-lg text-sm transition-colors",
+                      active ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    )}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span>{it.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
       </SheetContent>
     </Sheet>

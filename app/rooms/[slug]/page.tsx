@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { displayRoomName } from "@/lib/room-display";
 import { StayDetailPage } from "@/views/StayDetailPage";
 import { prisma } from "@/lib/prisma";
 import { getDiscountedPrice } from "@/lib/pricing";
@@ -27,7 +28,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!room) {
     return { title: "Chambre introuvable", robots: { index: false, follow: false } };
   }
-  const title = room.roomNumber ? `${room.name} (N° ${room.roomNumber})` : room.name;
+  const title = displayRoomName(room.name, room.roomNumber);
   const description =
     room.shortDescription ??
     room.description?.slice(0, 160) ??

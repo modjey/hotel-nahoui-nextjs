@@ -1,31 +1,14 @@
-import { NextRequest } from "next/server";
-import { z } from "zod";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { withAuth, ok, fail, parseBody } from "@/lib/auth/api";
+import { withAuth, ok, fail } from "@/lib/auth/api";
 import { slugify } from "@/lib/utils";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
 
 // Schema for creating a photo
-const createPhotoSchema = z.object({
-  title: z.string().optional(),
-  description: z.string().optional(),
-  albumId: z.string(),
-  isApproved: z.boolean().default(true),
-  isFeatured: z.boolean().default(false),
-  order: z.number().default(0),
-  uploadedBy: z.string().optional(),
-});
 
 // Schema for updating a photo
-const updatePhotoSchema = z.object({
-  title: z.string().optional(),
-  description: z.string().optional(),
-  isApproved: z.boolean().optional(),
-  isFeatured: z.boolean().optional(),
-  order: z.number().optional(),
-});
 
 // Helper function to save uploaded file
 async function saveUploadedFile(file: File, folder: string): Promise<string> {
@@ -49,7 +32,7 @@ async function saveUploadedFile(file: File, folder: string): Promise<string> {
 }
 
 // GET /api/admin/admin-photos - List all photos (admin only)
-export const GET = withAuth(async (req, { session }) => {
+export const GET = withAuth(async (req) => {
   const { searchParams } = new URL(req.url);
   const albumId = searchParams.get("albumId");
   const isApproved = searchParams.get("isApproved");
@@ -57,7 +40,7 @@ export const GET = withAuth(async (req, { session }) => {
   const page = parseInt(searchParams.get("page") || "1", 10);
   const limit = parseInt(searchParams.get("limit") || "24", 10);
 
-  const where: any = {};
+  const where: Prisma.PhotoWhereInput = {};
   if (albumId) where.albumId = albumId;
   if (isApproved !== null && isApproved !== undefined && isApproved !== "") {
     where.isApproved = isApproved === "true";
@@ -96,7 +79,7 @@ export const GET = withAuth(async (req, { session }) => {
 }, { roles: ["ADMIN", "SUPER_ADMIN"] });
 
 // POST /api/admin/admin-photos - Create a new photo with upload (admin only)
-export const POST = withAuth(async (req, { session }) => {
+export const POST = withAuth(async (req) => {
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;

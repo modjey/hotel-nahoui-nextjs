@@ -1,5 +1,7 @@
 import { IndexPage } from '@/views/IndexPage';
 import { prisma } from '@/lib/prisma';
+import { getSetting } from '@/lib/site-settings';
+import { getPublishedOffers, getUpcomingEvents } from '@/lib/public-content';
 
 const DEFAULT_FACTS = [
   { value: "28", label: "chambres et suites, de 23 à 80 m²" },
@@ -37,5 +39,14 @@ export default async function Page() {
     console.error("[home] stats indisponibles, valeurs par défaut utilisées", e);
   }
 
-  return <IndexPage facts={facts} />;
+  const [hero, offers, events] = await Promise.all([
+    getSetting("home"),
+    getPublishedOffers({ featuredOnly: true, limit: 3 }),
+    getUpcomingEvents({ featuredOnly: true, limit: 3 }),
+  ]);
+
+  return <IndexPage facts={facts} hero={hero} offers={offers} events={events} />;
 }
+
+// Réglages, offres et événements gérés dans l'admin : rafraîchis au plus toutes les minutes.
+export const revalidate = 60;

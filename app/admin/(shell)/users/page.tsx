@@ -71,12 +71,6 @@ const roleLabels: Record<Role, string> = {
   SUPER_ADMIN: "Super Admin",
 };
 
-const roleColors: Record<Role, string> = {
-  USER: "default",
-  MODERATOR: "secondary",
-  ADMIN: "outline",
-  SUPER_ADMIN: "destructive",
-};
 
 export default function UsersPage() {
   const router = useRouter();

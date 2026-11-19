@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, type KeyboardEvent } from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { X, Plus } from "lucide-react";
 
 interface AmenitiesInputProps {

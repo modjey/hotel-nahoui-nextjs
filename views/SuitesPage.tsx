@@ -228,34 +228,30 @@ function SuitesPageContent() {
       {/* Filtres : catégories + tri */}
       <div className="sticky top-[72px] z-30 mt-10 bg-background/95 backdrop-blur-md border-y border-border">
         <div className="mx-auto max-w-[1440px] px-5 lg:px-10 py-3 flex items-center gap-4">
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar flex-1 scroll-fade-mask" role="group" aria-label="Filtrer par catégorie">
-            {[{ name: "Toutes", from: 0, count: rooms.length }, ...categories].map((c) => {
-              const active = c.name === cat;
-              return (
-                <button
-                  key={c.name}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => setCat(c.name)}
-                  className={`shrink-0 h-10 px-4 text-sm font-medium border transition-colors whitespace-nowrap ${
-                    active ? "bg-ink text-white border-ink" : "border-border text-foreground/75 hover:border-foreground hover:text-foreground"
-                  }`}
-                >
-                  {c.name}
-                </button>
-              );
-            })}
-          </div>
-          <label className="hidden md:flex items-center gap-2 text-sm font-medium shrink-0 cursor-pointer">
-            <input type="checkbox" checked={availableOnly} onChange={(e) => setAvailableOnly(e.target.checked)} className="accent-[var(--brand)] h-4 w-4" />
+          {/* Une seule liste de catégories plutôt qu'une rangée de boutons : moins de bruit visuel. */}
+          <label className="sr-only" htmlFor="filter-category">Catégorie</label>
+          <select
+            id="filter-category"
+            value={cat}
+            onChange={(e) => setCat(e.target.value)}
+            className="h-11 min-w-0 flex-1 sm:flex-none sm:w-64 border border-border bg-card px-3 text-sm font-medium focus:outline-none focus:border-foreground"
+          >
+            <option value="Toutes">Toutes les catégories ({rooms.length})</option>
+            {categories.map((c) => (
+              <option key={c.name} value={c.name}>{c.name} ({c.count})</option>
+            ))}
+          </select>
+          <label className="hidden md:flex items-center gap-2.5 min-h-11 text-sm font-medium shrink-0 cursor-pointer">
+            <input type="checkbox" checked={availableOnly} onChange={(e) => setAvailableOnly(e.target.checked)} className="accent-[var(--brand)] h-5 w-5" />
             Disponibles uniquement
           </label>
+          <span className="hidden md:block flex-1" aria-hidden="true" />
           <label className="sr-only" htmlFor="sort-rooms">Trier</label>
           <select
             id="sort-rooms"
             value={sort}
             onChange={(e) => setSort(e.target.value as Sort)}
-            className="h-10 border border-border bg-card px-3 text-sm font-medium focus:outline-none focus:border-foreground shrink-0"
+            className="h-11 border border-border bg-card px-3 text-sm font-medium focus:outline-none focus:border-foreground shrink-0"
           >
             {sorts.map((s) => <option key={s}>{s}</option>)}
           </select>
@@ -277,7 +273,7 @@ function SuitesPageContent() {
           <div className="py-24 text-center">
             <p className="font-display text-3xl">Aucune chambre ne correspond.</p>
             <p className="mt-3 text-muted-foreground">
-              Essayez une autre catégorie ou moins de voyageurs - notre Grande Mezzanine accueille jusqu&rsquo;à 6 personnes.
+              Essayez une autre catégorie ou moins de voyageurs. Pour un grand groupe, plusieurs chambres peuvent être réservées ensemble : écrivez-nous.
             </p>
             <button type="button" onClick={() => { setCat("Toutes"); setAvailableOnly(false); }} className="btn-outline-editorial mt-8">
               Voir toutes les chambres
@@ -285,6 +281,7 @@ function SuitesPageContent() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-14">
+            <h2 className="sr-only">Liste des chambres</h2>
             {list.map((room, index) => {
               const detailsParams = new URLSearchParams({
                 checkIn: availabilityCheckIn.toISOString(),

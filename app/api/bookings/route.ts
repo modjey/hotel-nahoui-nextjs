@@ -16,7 +16,7 @@ import {
   validateBookingDates,
   withRoomLock,
 } from "@/lib/bookings";
-import { getDiscountedPrice } from "@/lib/pricing";
+import { findClosure, priceStayForRoom } from "@/lib/stay-pricing-server";
 
 export const runtime = "nodejs";
 
@@ -29,7 +29,12 @@ const createBookingSchema = z.object({
   guestFirstName: z.string().min(1).max(120),
   guestLastName: z.string().min(1).max(120),
   guestEmail: z.string().email(),
-  guestPhone: z.string().max(40).optional().nullable(),
+  // Le paiement se fait hors plateforme : l'hôtel doit pouvoir joindre le client.
+  guestPhone: z
+    .string()
+    .trim()
+    .max(40)
+    .refine((v) => v.replace(/\D/g, "").length >= 8, "Numéro de téléphone invalide"),
 });
 
 /**
@@ -68,8 +73,10 @@ export const GET = withAuth(
 
 /**
  * POST /api/bookings
- * Crée une réservation PENDING (15 min) + un paiement PENDING associé.
- * La réservation n'est confirmée qu'après paiement.
+ * Crée une demande de réservation PENDING + un paiement PENDING associé.
+ * Le règlement se fait hors plateforme : l'admin confirme la réservation (ou
+ * enregistre le paiement) ; sans confirmation, elle expire après
+ * PENDING_BOOKING_TTL_HOURS et le cron l'annule.
  */
 export const POST = withAuth(async (req, ctx) => {
   // Anti-abus : 20 créations de réservation par heure et par utilisateur.
@@ -93,7 +100,7 @@ export const POST = withAuth(async (req, ctx) => {
 
     const room = await prisma.room.findFirst({
       where: { id: body.roomId, isPublished: true },
-      select: { id: true, name: true, basePrice: true, currency: true, discountPercent: true, maxGuests: true },
+      select: { id: true, name: true, basePrice: true, currency: true, discountPercent: true, maxGuests: true, roomTypeId: true, minStay: true },
     });
     if (!room) return fail("Chambre introuvable", 404, "NOT_FOUND");
 
@@ -107,7 +114,15 @@ export const POST = withAuth(async (req, ctx) => {
     }
 
     const nights = nightsBetween(checkInDate, checkOutDate);
-    const amount = getDiscountedPrice(room.basePrice, room.discountPercent) * nights;
+    // Prix nuit par nuit (tarifs saisonniers puis promo de la chambre) et séjour minimum.
+    const stay = await priceStayForRoom(room, checkInDate, checkOutDate);
+    if (nights < stay.minStay) {
+      return fail(`Séjour minimum de ${stay.minStay} nuits pour une arrivée à cette date`, 400, "MIN_STAY");
+    }
+    if (await findClosure(room.id, checkInDate, checkOutDate)) {
+      return fail("Cette chambre n'est pas disponible pour ces dates", 409, "CONFLICT");
+    }
+    const amount = stay.total;
     const expiresAt = new Date(Date.now() + PENDING_BOOKING_TTL_MS);
 
     const booking = await withRoomLock(room.id, async (tx) => {
@@ -128,7 +143,7 @@ export const POST = withAuth(async (req, ctx) => {
           guestFirstName: body.guestFirstName,
           guestLastName: body.guestLastName,
           guestEmail: body.guestEmail,
-          guestPhone: body.guestPhone ?? null,
+          guestPhone: body.guestPhone,
           reference: generateBookingReference(),
           status: "PENDING",
           expiresAt,
@@ -142,7 +157,7 @@ export const POST = withAuth(async (req, ctx) => {
               provider: "manual",
               customerName: `${body.guestFirstName} ${body.guestLastName}`.trim(),
               customerEmail: body.guestEmail,
-              customerPhone: body.guestPhone ?? null,
+              customerPhone: body.guestPhone,
             },
           },
         },

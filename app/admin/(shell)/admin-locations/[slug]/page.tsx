@@ -65,6 +65,8 @@ export default function AdminLocationEditPage() {
   }, [slug]);
 
   useEffect(() => {
+    // Chargement au montage (synchronisation avec l'API).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadLocation();
   }, [loadLocation]);
 
@@ -303,7 +305,7 @@ export default function AdminLocationEditPage() {
             </div>
           </div>
           <div className="grid gap-2 max-w-[200px]">
-            <Label htmlFor="order">Ordre d'affichage</Label>
+            <Label htmlFor="order">Ordre d&apos;affichage</Label>
             <Input id="order" name="order" type="number" defaultValue={loc.order} />
           </div>
         </section>

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import { ok, fail, withAuth } from "@/lib/auth/api";
 import type { NextRequest } from "next/server";
 import { slugify } from "@/lib/catalog/schemas";
@@ -12,7 +13,7 @@ export const GET = withAuth(async (req: NextRequest) => {
     const locationId = searchParams.get("locationId");
     const categoryId = searchParams.get("categoryId");
 
-    const where: any = {};
+    const where: Prisma.DishWhereInput = {};
     if (locationId) where.locationId = locationId;
     if (categoryId) where.categoryId = categoryId;
 

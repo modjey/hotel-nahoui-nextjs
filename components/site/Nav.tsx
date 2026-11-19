@@ -14,8 +14,6 @@ const WHATSAPP_URL = "https://api.whatsapp.com/send?phone=%2B2250788494979";
 export function Nav() {
   const pathname = usePathname() ?? "/";
   const { user, logout } = useAuth();
-  const [language, setLanguage] = useState("fr");
-  const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -25,10 +23,6 @@ export function Nav() {
   const isMobile = useIsMobile();
   const isHome = pathname === "/";
   const transparent = isHome && !isScrolled && !isSidebarOpen;
-  const languages = [
-    { code: "fr", name: "Français", flag: "FR" },
-    { code: "en", name: "English", flag: "EN" },
-  ];
 
   const isActive = (path: string) => {
     if (path === "/" && pathname === "/") return true;
@@ -36,10 +30,16 @@ export function Nav() {
     return false;
   };
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
+  // Ferme les menus à chaque changement de page (ajustement pendant le rendu).
+  const [lastPathname, setLastPathname] = useState(pathname);
+  if (pathname !== lastPathname) {
+    setLastPathname(pathname);
     setIsSidebarOpen(false);
     setIsExperienceMenuOpen(false);
+  }
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
   }, [pathname]);
 
   useEffect(() => {
@@ -57,6 +57,7 @@ export function Nav() {
 
   const navLinks = [
     { href: "/stays",      label: "Hébergements" },
+    { href: "/offres",     label: "Offres" },
     { href: "/restaurant", label: "Restauration" },
     { href: "/photobook",  label: "Photobook" },
     { href: "/blog",       label: "Actualité" },
@@ -89,6 +90,7 @@ export function Nav() {
   const drawerLinks = [
     { href: "/",           label: "L'Hôtel" },
     { href: "/stays",      label: "Hébergements" },
+    { href: "/offres",     label: "Offres" },
     { href: "/restaurant", label: "Restauration" },
     { href: "/photobook",  label: "Photobook" },
     { href: "/blog",       label: "Actualité" },
@@ -235,38 +237,6 @@ export function Nav() {
 
           {/* Actions */}
           <div className={`flex items-center gap-4 lg:gap-5 transition-colors duration-500 ${fg}`}>
-            {/* Sélecteur de langue désactivé pour le moment — à réactiver plus tard.
-            <div className="relative hidden sm:block">
-              <button
-                onClick={() => setIsLanguageMenuOpen(!isLanguageMenuOpen)}
-                aria-label="Changer de langue"
-                aria-expanded={isLanguageMenuOpen}
-                className="flex items-center gap-1 text-[0.9375rem] font-medium opacity-90 hover:opacity-100 h-11"
-              >
-                {languages.find((l) => l.code === language)?.flag}
-                <ChevronDown className="h-3.5 w-3.5" />
-              </button>
-              {isLanguageMenuOpen && (
-                <div className="absolute right-0 mt-1 w-44 bg-card border border-border py-1 z-50 shadow-[var(--shadow-elevated)]">
-                  {languages.map((lang) => (
-                    <button
-                      key={lang.code}
-                      onClick={() => {
-                        setLanguage(lang.code);
-                        setIsLanguageMenuOpen(false);
-                      }}
-                      className={`w-full px-4 py-2.5 text-left hover:bg-secondary flex items-center gap-3 text-sm text-foreground ${
-                        language === lang.code ? "font-semibold" : ""
-                      }`}
-                    >
-                      <span className="eyebrow w-6">{lang.flag}</span>
-                      <span>{lang.name}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            */}
 
             <button
               onClick={handleUserClick}
@@ -482,21 +452,6 @@ export function Nav() {
                   </a>
                 </div>
 
-                {/* Sélecteur de langue désactivé pour le moment — à réactiver plus tard.
-                <div className="mt-6 flex gap-2">
-                  {languages.map((lang) => (
-                    <button
-                      key={lang.code}
-                      onClick={() => setLanguage(lang.code)}
-                      className={`h-10 px-4 text-sm font-semibold border transition-colors ${
-                        language === lang.code ? "border-white bg-white text-ink" : "border-white/30 text-white/80 hover:border-white"
-                      }`}
-                    >
-                      {lang.name}
-                    </button>
-                  ))}
-                </div>
-                */}
 
                 <div className="mt-8 pt-6 border-t border-white/15">
                   {user ? (

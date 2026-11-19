@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sendBookingEmail } from "@/lib/booking-emails";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -56,6 +57,11 @@ export async function GET(request: Request) {
 
       cancelled += expired.length;
       paymentsFailed += paymentResult.count;
+
+      // Prévient chaque client que sa demande a expiré (un échec d'envoi n'interrompt pas le nettoyage).
+      // Seules les demandes réellement annulées ici (pas celles réglées entre-temps).
+      const nowCancelled = await prisma.booking.findMany({ where: { id: { in: ids }, status: "CANCELLED" }, select: { id: true } });
+      await Promise.allSettled(nowCancelled.map((b) => sendBookingEmail(b.id, { type: "HOLD_EXPIRED" })));
 
       if (expired.length < BATCH_SIZE) break;
     }

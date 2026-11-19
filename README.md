@@ -1,55 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Hôtel Nahoui — site & back-office (Next.js)
 
-## Environment Variables
+Site public de l'Hôtel Nahoui (chambres, restauration, bien-être, événements, photobook, actualité)
+et back-office d'administration (`/admin`).
 
-### FineoPay Payment Integration
-
-Add the following environment variables to your `.env.local` file to enable FineoPay payment processing:
-
-```env
-FINEOPAY_API_URL=https://api.fineopay.com/api/v1/business/dev/checkout-link
-FINEOPAY_BUSINESS_CODE=ay_solution_sarl
-FINEOPAY_API_KEY=fpay_754bc27ad16518c3abae850c3e9f18cf5243af8ede901599d3746cb37ef3
-FINEOPAY_CALLBACK_URL=http://localhost:3000/api/fineopay/callback
-```
-
-### Base URL
-
-```env
-NEXT_PUBLIC_BASE_URL=http://localhost:3000
-```
-
-## Getting Started
-
-First, run the development server:
+## Démarrage
 
 ```bash
+npm install
+cp env.example.txt .env   # puis renseigner les valeurs
+npm run db:push           # ou npm run db:migrate
+npm run db:seed
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Ouvrir http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Variables d'environnement
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Toutes les variables sont listées dans `env.example.txt`. **Ne jamais écrire de vraie clé
+dans ce README ni dans un fichier suivi par git** : elles vont uniquement dans `.env`
+(ignoré par git) ou dans les variables du serveur d'hébergement.
 
-## Learn More
+Variables indispensables en production :
 
-To learn more about Next.js, take a look at the following resources:
+- `DATABASE_URL`
+- `AUTH_JWT_SECRET` — chaîne aléatoire longue ; le serveur refuse de démarrer les sessions sans elle
+- `CRON_SECRET` — protège les routes `/api/cron/*`
+- `NEXT_PUBLIC_BASE_URL` / `NEXT_PUBLIC_APP_URL`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Réservations
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Le paiement **ne se fait pas en ligne** pour le moment :
 
-## Deploy on Vercel
+1. le client envoie une demande de réservation (statut `PENDING`) ;
+2. la chambre reste bloquée pendant `PENDING_BOOKING_TTL_HOURS` heures (24 h par défaut) ;
+3. l'équipe contacte le client, encaisse le règlement hors plateforme puis confirme la
+   réservation depuis `/admin/bookings` (ou enregistre le paiement) ;
+4. sans confirmation dans le délai, le cron `cleanup-expired-bookings` annule la demande.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Le client peut annuler lui-même une demande encore en attente depuis « Mes réservations ».
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+L'intégration FineoPay / CentralAPIs (`/api/payments/*`) est conservée pour une activation
+ultérieure du paiement en ligne.
+
+## Scripts
+
+| Commande | Rôle |
+|---|---|
+| `npm run dev` | serveur de développement |
+| `npm run build` | build de production |
+| `npm run lint` | ESLint |
+| `npm run test:unit` | tests unitaires |
+| `npm run test:e2e` | tests de bout en bout (serveur requis) |

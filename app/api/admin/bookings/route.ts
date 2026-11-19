@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import { notifyAdminNewBooking } from "@/lib/notifications";
 import { ok, fail, parseBody, withAuth } from "@/lib/auth/api";
 import {
@@ -32,7 +33,7 @@ const handler = withAuth(async (req) => {
   const roomSlug = searchParams.get("roomSlug");
 
   if (req.method === "GET") {
-    const where: any = {};
+    const where: Prisma.BookingWhereInput = {};
     if (roomSlug) {
       const room = await prisma.room.findUnique({ where: { slug: roomSlug } });
       if (!room) return fail("Chambre introuvable", 404, "NOT_FOUND");

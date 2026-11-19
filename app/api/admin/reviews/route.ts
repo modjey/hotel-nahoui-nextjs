@@ -1,13 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { ReviewStatus, type Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ok, fail, withAuth } from "@/lib/auth/api";
-import { z } from "zod";
 
 export const runtime = "nodejs";
 
-const reviewStatusSchema = z.object({
-  status: z.enum(["PENDING", "APPROVED", "REJECTED"]),
-});
 
 const handler = withAuth(async (req) => {
   const { searchParams } = new URL(req.url);
@@ -17,9 +13,9 @@ const handler = withAuth(async (req) => {
 
   if (req.method === "GET") {
     try {
-      const where: any = {};
-      if (status) {
-        where.status = status;
+      const where: Prisma.ReviewWhereInput = {};
+      if (status && (Object.values(ReviewStatus) as string[]).includes(status)) {
+        where.status = status as ReviewStatus;
       }
 
       const [reviews, total] = await Promise.all([

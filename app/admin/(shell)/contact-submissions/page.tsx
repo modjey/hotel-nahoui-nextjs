@@ -17,6 +17,8 @@ type ContactSubmission = {
   message: string;
   status: string;
   reply: string | null;
+  category?: string;
+  bookingReference?: string | null;
   createdAt: string;
 };
 
@@ -26,9 +28,6 @@ export default function ContactSubmissionsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "new" | "read" | "replied" | "archived">("all");
 
-  useEffect(() => {
-    fetchSubmissions();
-  }, [filter]);
 
   const fetchSubmissions = async () => {
     try {
@@ -105,6 +104,14 @@ export default function ContactSubmissionsPage() {
     );
   };
 
+  // Chargement depuis l'API au montage et quand les filtres changent.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchSubmissions();
+    // fetch* est recréée à chaque rendu : on ne relance la requête que si les filtres changent.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter]);
+
   if (loading) {
     return <div>Chargement...</div>;
   }
@@ -174,7 +181,15 @@ export default function ContactSubmissionsPage() {
                   )}
                 </td>
                 <td className="p-4">{submission.email}</td>
-                <td className="p-4">{submission.subject}</td>
+                <td className="p-4">
+                  {submission.category === "reclamation" && (
+                    <span className="mr-2 inline-block rounded bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">Réclamation</span>
+                  )}
+                  {submission.subject}
+                  {submission.bookingReference && (
+                    <div className="text-xs text-muted-foreground font-mono">{submission.bookingReference}</div>
+                  )}
+                </td>
                 <td className="p-4">
                   {new Date(submission.createdAt).toLocaleDateString("fr-FR")}
                 </td>

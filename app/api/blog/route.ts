@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
@@ -7,7 +8,7 @@ export async function GET(req: NextRequest) {
     const categoryId = searchParams.get("categoryId");
     const featured = searchParams.get("featured");
 
-    const where: any = {
+    const where: Prisma.BlogPostWhereInput = {
       isPublished: true,
     };
 

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import { ok, fail } from "@/lib/auth/api";
 
 export const runtime = "nodejs";
@@ -10,7 +11,7 @@ export async function GET(req: Request) {
     const locationId = searchParams.get("locationId");
     const categoryId = searchParams.get("categoryId");
 
-    const where: any = { isPublished: true, isAvailable: true };
+    const where: Prisma.DishWhereInput = { isPublished: true, isAvailable: true };
     if (locationId) where.locationId = locationId;
     if (categoryId) where.categoryId = categoryId;
 

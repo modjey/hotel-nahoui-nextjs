@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { sendBookingEmail } from "@/lib/booking-emails";
 
 export type SettledPaymentStatus = "PENDING" | "SUCCESS" | "FAILED" | "REFUNDED";
 
@@ -48,7 +49,7 @@ export async function settlePaymentByReference(
     return { ok: true, payment: existing, changed: false, idempotent: true };
   }
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const payment = await tx.payment.update({
       where: { id: existing.id },
       data: {
@@ -94,4 +95,21 @@ export async function settlePaymentByReference(
 
     return { ok: true as const, payment, changed: true, bookingStatus, latePayment };
   });
+
+  // Email au client, uniquement sur un vrai changement (les renvois du webhook n'en déclenchent pas).
+  // Un paiement arrivé après annulation est traité à la main par l'hôtel : pas d'email automatique.
+  if (existing.booking && !result.latePayment) {
+    if (incomingStatus === "SUCCESS") {
+      await sendBookingEmail(existing.booking.id, {
+        type: "PAYMENT_RECEIVED",
+        paymentId: existing.id,
+        confirmed: existing.booking.status === "PENDING" && result.bookingStatus === "CONFIRMED",
+      });
+    } else if (incomingStatus === "FAILED") {
+      await sendBookingEmail(existing.booking.id, { type: "PAYMENT_FAILED", paymentId: existing.id });
+    } else if (incomingStatus === "REFUNDED") {
+      await sendBookingEmail(existing.booking.id, { type: "PAYMENT_REFUNDED", paymentId: existing.id });
+    }
+  }
+  return result;
 }

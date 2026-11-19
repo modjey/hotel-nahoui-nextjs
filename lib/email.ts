@@ -1,4 +1,15 @@
 import { Resend } from 'resend';
+import { PENDING_BOOKING_TTL_HOURS } from './booking-config';
+
+/** Échappe les valeurs saisies par les clients avant de les insérer dans le HTML des emails. */
+export function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -18,16 +29,13 @@ export async function sendEmail({
   from = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
 }: EmailOptions) {
   try {
-    const emailData: any = {
-      from,
-      to: Array.isArray(to) ? to : [to],
-      subject,
-    };
-
-    if (html) emailData.html = html;
-    if (text) emailData.text = text;
-
-    const { data, error } = await resend.emails.send(emailData);
+    const recipients = Array.isArray(to) ? to : [to];
+    // Resend exige au moins html ou text : on envoie le texte brut en secours.
+    const { data, error } = await resend.emails.send(
+      html
+        ? { from, to: recipients, subject, html, ...(text ? { text } : {}) }
+        : { from, to: recipients, subject, text: text ?? "" },
+    );
 
     if (error) {
       console.error('Error sending email:', error);
@@ -88,7 +96,7 @@ export async function sendAdminBookingNotification(booking: BookingNotificationD
   const row = (label: string, value: string) => `
     <tr>
       <td style="padding:8px 12px;color:#6B655A;font-size:13px;white-space:nowrap;">${label}</td>
-      <td style="padding:8px 12px;font-size:14px;color:#1E1B16;">${value}</td>
+      <td style="padding:8px 12px;font-size:14px;color:#1E1B16;">${escapeHtml(value)}</td>
     </tr>`;
 
   const html = `
@@ -145,10 +153,10 @@ const GUEST_STATUS_CONTENT: Record<
   { subject: string; heading: string; intro: (refunded?: boolean) => string }
 > = {
   PENDING: {
-    subject: "Nous avons bien reçu votre réservation",
-    heading: "Réservation reçue",
+    subject: "Nous avons bien reçu votre demande de réservation",
+    heading: "Demande de réservation reçue",
     intro: () =>
-      "Nous avons bien reçu votre demande de réservation. Votre chambre est bloquée 15 minutes le temps de finaliser le paiement.",
+      `Nous avons bien reçu votre demande de réservation. Votre chambre est réservée pour vous pendant ${PENDING_BOOKING_TTL_HOURS} heures : notre équipe va vous contacter pour convenir du règlement, puis confirmer votre séjour.`,
   },
   CONFIRMED: {
     subject: "Votre réservation est confirmée",
@@ -190,7 +198,7 @@ export async function sendGuestBookingStatusEmail(booking: GuestBookingStatusDat
   const row = (label: string, value: string) => `
     <tr>
       <td style="padding:8px 12px;color:#6B655A;font-size:13px;white-space:nowrap;">${label}</td>
-      <td style="padding:8px 12px;font-size:14px;color:#1E1B16;">${value}</td>
+      <td style="padding:8px 12px;font-size:14px;color:#1E1B16;">${escapeHtml(value)}</td>
     </tr>`;
 
   const html = `
@@ -200,7 +208,7 @@ export async function sendGuestBookingStatusEmail(booking: GuestBookingStatusDat
         <p style="color:#C9C2B4;font-size:13px;margin:6px 0 0;">Hôtel Nahoui</p>
       </div>
       <div style="background:#ffffff;padding:20px 12px;">
-        <p style="font-size:14px;color:#1E1B16;margin:0 0 16px;">Bonjour ${guestName},</p>
+        <p style="font-size:14px;color:#1E1B16;margin:0 0 16px;">Bonjour ${escapeHtml(guestName)},</p>
         <p style="font-size:14px;color:#1E1B16;margin:0 0 16px;">${content.intro(booking.refunded)}</p>
         <table style="width:100%;border-collapse:collapse;">
           ${row("Référence", booking.reference || "—")}
@@ -208,6 +216,11 @@ export async function sendGuestBookingStatusEmail(booking: GuestBookingStatusDat
           ${row("Arrivée", formatDateFr(booking.checkIn))}
           ${row("Départ", formatDateFr(booking.checkOut))}
         </table>
+        ${
+          appUrl && (booking.status === "PENDING" || booking.status === "CONFIRMED")
+            ? `<p style="font-size:12px;color:#6B655A;margin:16px 0 0;">Consultez nos <a href="${appUrl}/conditions" style="color:#2F4538;">conditions de réservation</a>.</p>`
+            : ""
+        }
       </div>
       ${
         appUrl

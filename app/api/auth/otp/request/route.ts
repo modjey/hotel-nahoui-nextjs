@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { fail, ok, parseBody } from "@/lib/auth/api";
 import { otpRequestSchema, identifierSchema } from "@/lib/auth/schemas";
 import { createAndSendOtp } from "@/lib/auth/otp";
+import { authConfig } from "@/lib/auth/config";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -35,7 +36,8 @@ export async function POST(req: NextRequest) {
   return ok({
     channel,
     identifier,
-    ttlMinutes: 10,
+    ttlMinutes: authConfig.otp.ttlMinutes,
+    codeLength: authConfig.otp.length,
     ...(result.debugCode ? { debugCode: result.debugCode } : {}),
   });
 }

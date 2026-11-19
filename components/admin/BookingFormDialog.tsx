@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -146,14 +146,9 @@ function BookingForm({
   const [creatingUser, setCreatingUser] = useState(editingBooking ? !editingBooking.userId : false);
   const [submitting, setSubmitting] = useState(false);
   const [userSearch, setUserSearch] = useState("");
-  const [roomId, setRoomId] = useState(editingBooking?.roomId || fixedRoomId || "");
-
-  // Présélectionne la première chambre pour afficher le calendrier immédiatement
-  useEffect(() => {
-    if (!roomId && !fixedRoomId && rooms.length > 0) {
-      setRoomId(rooms[0].id);
-    }
-  }, [rooms, roomId, fixedRoomId]);
+  const [selectedRoomId, setRoomId] = useState(editingBooking?.roomId || fixedRoomId || "");
+  // Sans choix explicite, la première chambre est présélectionnée pour afficher le calendrier.
+  const roomId = selectedRoomId || rooms[0]?.id || "";
 
   const room = rooms.find((r) => r.id === roomId);
   const formAvailabilityMap = buildAvailabilityMap(

@@ -13,6 +13,7 @@ import { useApi } from "@/hooks/use-api";
 import { toast } from "sonner";
 import { ArrowLeft, User, Mail, Phone, Calendar, CreditCard, Users, BedDouble, Pencil, CheckCircle2, Trash2, CircleCheckBig } from "lucide-react";
 import { BookingFormDialog, type BookingFormRoom } from "@/components/admin/BookingFormDialog";
+import { BookingContactPanel } from "@/components/admin/BookingContactPanel";
 import { getDiscountedPrice } from "@/lib/pricing";
 
 type Booking = {
@@ -91,7 +92,7 @@ const paymentStatusColors: Record<string, "default" | "secondary" | "destructive
 export default function AdminBookingDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params?.id;
-  const { data, loading, error, refetch } = useApi<{ booking: Booking }>(`/api/admin/admin-bookings/${id}`);
+  const { data, loading, error, refetch } = useApi<{ booking: Booking; stayTotal?: number }>(`/api/admin/admin-bookings/${id}`);
   const router = useRouter();
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null);
@@ -309,6 +310,15 @@ export default function AdminBookingDetailPage() {
             </Button>
           </div>
         }
+      />
+
+      <BookingContactPanel
+        bookingId={booking.id}
+        reference={booking.reference}
+        status={booking.status}
+        guestName={[booking.guestFirstName, booking.guestLastName].filter(Boolean).join(" ") || booking.user?.name || "le client"}
+        email={booking.guestEmail || booking.user?.email || null}
+        phone={booking.guestPhone || booking.user?.phone || null}
       />
 
       {editRoom && (
@@ -612,7 +622,8 @@ export default function AdminBookingDetailPage() {
                 Math.round((new Date(booking.checkOut).getTime() - new Date(booking.checkIn).getTime()) / 86400000)
               );
               const nightlyRate = getDiscountedPrice(booking.room.basePrice, booking.room.discountPercent);
-              const stayTotal = nightlyRate * nights;
+              // Le serveur applique les tarifs saisonniers ; repli sur le prix de base.
+              const stayTotal = data?.stayTotal ?? nightlyRate * nights;
               const currency = booking.payments[0]?.currency || booking.room.currency;
               const paid = booking.payments
                 .filter((p) => p.status === "SUCCESS")

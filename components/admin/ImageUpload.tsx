@@ -46,8 +46,11 @@ export function ImageUpload({
   const pendingRef = useRef<File | null>(null);
   const blobRef = useRef<string | null>(null);
   const onChangeRef = useRef(onChange);
-  pendingRef.current = pendingFile;
-  onChangeRef.current = onChange;
+  // Garde les dernières valeurs pour les callbacks asynchrones (mise à jour après rendu).
+  useEffect(() => {
+    pendingRef.current = pendingFile;
+    onChangeRef.current = onChange;
+  });
 
   const releaseBlob = () => {
     if (blobRef.current) {
@@ -82,7 +85,7 @@ export function ImageUpload({
         return url;
       },
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [name, folder, uploadUrl]);
 
   useEffect(() => releaseBlob, []);
@@ -170,7 +173,7 @@ export function ImageUpload({
           </Button>
           {pendingFile && (
             <p className="text-xs text-amber-600">
-              « {pendingFile.name} » sera envoyée à l'enregistrement.
+              « {pendingFile.name} » sera envoyée à l&apos;enregistrement.
             </p>
           )}
           <div className="text-xs text-muted-foreground">

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { isAdmin } from "@/lib/auth/session";
+import { sendContactReplyEmail } from "@/lib/email-templates";
 
 export async function GET(
   req: NextRequest,
@@ -61,7 +63,7 @@ export async function PUT(
     const body = await req.json();
     const { status, reply } = body;
 
-    const updateData: any = {};
+    const updateData: Prisma.ContactSubmissionUpdateInput = {};
     if (status) {
       updateData.status = status;
       if (status === "replied" && !reply) {
@@ -77,6 +79,29 @@ export async function PUT(
       }
     }
 
+    // Une réponse est envoyée par email au client avant d'être enregistrée comme « répondue ».
+    let emailSent = false;
+    if (typeof reply === "string" && reply.trim() && status === "replied") {
+      const current = await prisma.contactSubmission.findUnique({ where: { id } });
+      if (!current) {
+        return NextResponse.json({ success: false, error: "Message introuvable" }, { status: 404 });
+      }
+      const result = await sendContactReplyEmail({
+        to: current.email,
+        name: `${current.firstName} ${current.lastName}`.trim(),
+        subject: current.subject,
+        originalMessage: current.message,
+        reply: reply.trim(),
+      });
+      emailSent = Boolean(result.success);
+      if (!emailSent) {
+        return NextResponse.json(
+          { success: false, error: "L'email n'a pas pu être envoyé : la réponse n'a pas été enregistrée." },
+          { status: 502 },
+        );
+      }
+    }
+
     const submission = await prisma.contactSubmission.update({
       where: { id },
       data: updateData,
@@ -84,7 +109,7 @@ export async function PUT(
 
     return NextResponse.json({
       success: true,
-      data: { submission },
+      data: { submission, emailSent },
     });
   } catch (error) {
     console.error("Error updating contact submission:", error);

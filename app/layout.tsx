@@ -3,6 +3,7 @@ import { Bodoni_Moda, Schibsted_Grotesk } from "next/font/google";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
+import { FlashOfferPopup } from "@/components/site/FlashOfferPopup";
 import { ORGANIZATION, SITE_DESCRIPTION, SITE_KEYWORDS, SITE_NAME, SITE_URL, DEFAULT_OG_IMAGE } from "@/lib/seo";
 import "./globals.css";
 
@@ -151,7 +152,10 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
         />
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          {children}
+          <FlashOfferPopup />
+        </AuthProvider>
         <GoogleAnalytics />
         <Toaster richColors position="top-center" toastOptions={{ style: { borderRadius: 0 } }} />
       </body>

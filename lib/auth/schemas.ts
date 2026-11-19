@@ -16,17 +16,6 @@ export function normalizeIvoryCoastPhone(input: string): string | null {
 }
 
 export const emailSchema = z.string().trim().toLowerCase().email();
-const phoneInputSchema = z
-  .string()
-  .trim()
-  .transform((v, ctx) => {
-    const norm = normalizeIvoryCoastPhone(v);
-    if (!norm) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Numéro Côte d'Ivoire invalide" });
-      return z.NEVER;
-    }
-    return norm;
-  });
 
 /**
  * Identifier can be email OR a CI phone number.

@@ -25,13 +25,21 @@ export function AuthModal({ isOpen, onClose, purpose = "booking" }: AuthModalPro
   const [resendIn, setResendIn] = useState(0);
   const idRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
+  // Réinitialise le formulaire à chaque ouverture (ajustement pendant le rendu, sans effet en cascade).
+  const [wasOpen, setWasOpen] = useState(isOpen);
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen);
     if (isOpen) {
       setStep("identifier");
       setCode("");
       setSubmitting(false);
-      setTimeout(() => idRef.current?.focus(), 50);
     }
+  }
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const t = setTimeout(() => idRef.current?.focus(), 50);
+    return () => clearTimeout(t);
   }, [isOpen]);
 
   useEffect(() => {
@@ -95,7 +103,7 @@ export function AuthModal({ isOpen, onClose, purpose = "booking" }: AuthModalPro
     // Store booking flow state before redirect (only if purpose is booking)
     if (purpose === "booking" && currentUrl.includes('rooms/')) {
       // Get booking flow state from the window (if it exists)
-      const bookingFlowState = (window as any).__bookingFlowState;
+      const bookingFlowState = (window as unknown as { __bookingFlowState?: unknown }).__bookingFlowState;
       if (bookingFlowState) {
         localStorage.setItem('bookingFlowState', JSON.stringify(bookingFlowState));
       }

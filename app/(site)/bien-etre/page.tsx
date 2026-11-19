@@ -1,3 +1,4 @@
+import { getFacilities } from '@/lib/public-content';
 import type { Metadata } from "next";
 import { BienEtrePage } from '@/views/BienEtrePage';
 
@@ -9,4 +10,10 @@ export const metadata: Metadata = {
   openGraph: { url: "/bien-etre", title: "Bien-être — Hôtel Nahoui Balmer" },
 };
 
-export default function Page() { return <BienEtrePage />; }
+
+// Contenus gérés dans l'admin : rafraîchis au plus toutes les minutes.
+export const revalidate = 60;
+
+export default async function Page() {
+  return <BienEtrePage facilities={await getFacilities("BIEN_ETRE")} />;
+}

@@ -1,4 +1,6 @@
 "use client";
+import { FacilityBlock } from "@/components/site/content/cards";
+import type { PublicFacility } from "@/lib/public-content";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Clock, Shield, Sparkles, Waves } from "lucide-react";
@@ -6,7 +8,7 @@ import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
 import { EditorialSplit } from "@/components/site/EditorialSplit";
 
-export function BienEtrePage() {
+export function BienEtrePage({ facilities = [] }: { facilities?: PublicFacility[] }) {
   const poolFeatures = ["Extérieure", "Traitement au chlore"];
   const poolAmenities = ["Douche", "Maître-nageur", "Bassin pour enfant"];
 
@@ -50,33 +52,44 @@ export function BienEtrePage() {
         </div>
       </section>
 
-      <EditorialSplit
-        eyebrow="Piscine"
-        title="Un moment de fraîcheur, à votre rythme."
-        text="Notre piscine extérieure, ouverte toute la journée, invite à la détente seul ou entre proches. Douche, maître-nageur et bassin pour enfants complètent cet espace pensé pour le repos."
-        cta={{ label: "Réserver votre séjour", href: "/stays" }}
-        image="https://hotelnahoui.net/wp-content/uploads/2024/06/311479626_566194395305573_3980613546623940281_n.jpg"
-        imageAlt="Piscine de l'Hôtel Nahoui Balmer"
-      />
+      {/* Espaces gérés dans Admin → Espaces (rubrique Bien-être) ; sinon présentation par défaut */}
+      {facilities.length > 0 ? (
+        <div className="mx-auto max-w-[1440px] px-5 lg:px-10">
+          {facilities.map((f, i) => (
+            <FacilityBlock key={f.id} facility={f} reverse={i % 2 === 1} />
+          ))}
+        </div>
+      ) : (
+        <>
+          <EditorialSplit
+            eyebrow="Piscine"
+            title="Un moment de fraîcheur, à votre rythme."
+            text="Notre piscine extérieure, ouverte toute la journée, invite à la détente seul ou entre proches. Douche, maître-nageur et bassin pour enfants complètent cet espace pensé pour le repos."
+            cta={{ label: "Réserver votre séjour", href: "/stays" }}
+            image="https://hotelnahoui.net/wp-content/uploads/2024/06/311479626_566194395305573_3980613546623940281_n.jpg"
+            imageAlt="Piscine de l'Hôtel Nahoui Balmer"
+          />
 
-      <EditorialSplit
-        eyebrow="Salle de sport"
-        title="Maintenez votre rythme, même en voyage."
-        text="Équipée des derniers appareils cardio et de musculation, notre salle de sport, accompagnée d'un coach qualifié, est ouverte tous les jours de 9h à 19h."
-        cta={{ label: "Réserver votre séjour", href: "/stays" }}
-        image="/assets/sport.jpg"
-        imageAlt="Salle de sport de l'Hôtel Nahoui Balmer"
-        reverse
-      />
+          <EditorialSplit
+            eyebrow="Salle de sport"
+            title="Maintenez votre rythme, même en voyage."
+            text="Équipée des derniers appareils cardio et de musculation, notre salle de sport, accompagnée d'un coach qualifié, est ouverte tous les jours de 9h à 19h."
+            cta={{ label: "Réserver votre séjour", href: "/stays" }}
+            image="/assets/sport.jpg"
+            imageAlt="Salle de sport de l'Hôtel Nahoui Balmer"
+            reverse
+          />
 
-      <EditorialSplit
-        eyebrow="SPA"
-        title="Une parenthèse sensorielle, hors du temps."
-        text="Soins bien-être sur mesure et gestes experts, directement dans l'intimité de votre chambre : massages relaxants, soins du visage et rituels sur-mesure pour apaiser le corps et l'esprit."
-        cta={{ label: "Réserver un soin", href: "/contact" }}
-        image="/assets/spa.png"
-        imageAlt="SPA de l'Hôtel Nahoui Balmer"
-      />
+          <EditorialSplit
+            eyebrow="SPA"
+            title="Une parenthèse sensorielle, hors du temps."
+            text="Soins bien-être sur mesure et gestes experts, directement dans l'intimité de votre chambre : massages relaxants, soins du visage et rituels sur-mesure pour apaiser le corps et l'esprit."
+            cta={{ label: "Réserver un soin", href: "/contact" }}
+            image="/assets/spa.png"
+            imageAlt="SPA de l'Hôtel Nahoui Balmer"
+          />
+        </>
+      )}
 
       <section className="mx-auto max-w-[1440px] px-5 lg:px-10 pb-24 lg:pb-32">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 border-t border-border pt-16">

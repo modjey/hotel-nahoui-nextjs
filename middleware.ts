@@ -1,9 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 import { ACCESS_COOKIE } from "@/lib/auth/config";
+import { getJwtSecret } from "@/lib/auth/secret";
 
 const encoder = new TextEncoder();
-const secret = () => encoder.encode(process.env.AUTH_JWT_SECRET ?? "dev-insecure-secret-change-me-please-32chars!!");
+const secret = () => encoder.encode(getJwtSecret());
 
 const ADMIN_ROLES = new Set(["ADMIN", "SUPER_ADMIN", "MODERATOR"]);
 

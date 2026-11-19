@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/admin/PageHeader";
+import { DishCategoriesPanel } from "@/components/admin/DishCategoriesPanel";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -35,9 +37,20 @@ type Dish = {
 };
 
 export default function AdminDishesPage() {
+  return (
+    <Suspense>
+      <AdminDishes />
+    </Suspense>
+  );
+}
+
+/** Plats et catégories du menu réunis sur une seule page, en deux onglets. */
+function AdminDishes() {
   const router = useRouter();
-  const { data, loading, error, refetch } = useApi<{ dishes: Dish[] }>("/api/admin/admin-dishes");
-  const { data: categoriesData } = useApi<{ categories: { id: string; name: string }[] }>("/api/admin/admin-dish-categories");
+  const pathname = usePathname();
+  const tab = useSearchParams().get("tab") === "categories" ? "categories" : "dishes";
+  const { data, loading, refetch } = useApi<{ dishes: Dish[] }>("/api/admin/admin-dishes");
+  const { data: categoriesData, refetch: refetchCategories } = useApi<{ categories: { id: string; name: string }[] }>("/api/admin/admin-dish-categories");
   const { data: locationsData } = useApi<{ locations: { id: string; name: string; city: string | null }[] }>("/api/admin/admin-locations");
   
   const [search, setSearch] = useState("");
@@ -91,18 +104,32 @@ export default function AdminDishesPage() {
   return (
     <div>
       <PageHeader
-        title="Plats"
-        description="Gérez les plats du restaurant."
-        actions={
+        title="Plats & catégories"
+        description="Gérez la carte du restaurant : les plats et les catégories qui les regroupent."
+        actions={tab === "dishes" ? (
           <Link href="/admin/admin-dishes/new">
             <Button>
               <Plus className="h-4 w-4" />
               Nouveau plat
             </Button>
           </Link>
-        }
+        ) : undefined}
       />
 
+      <Tabs
+        value={tab}
+        onValueChange={(v) => router.replace(v === "categories" ? `${pathname}?tab=categories` : pathname, { scroll: false })}
+      >
+        <TabsList className="mb-4">
+          <TabsTrigger value="dishes">Plats ({data?.dishes.length ?? 0})</TabsTrigger>
+          <TabsTrigger value="categories">Catégories ({categoriesData?.categories.length ?? 0})</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="categories">
+          <DishCategoriesPanel onChange={() => { refetchCategories(); refetch(); }} />
+        </TabsContent>
+
+        <TabsContent value="dishes">
       <div className="rounded-2xl bg-card border border-border">
         <div className="p-4 border-b border-border">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -216,6 +243,8 @@ export default function AdminDishesPage() {
           </div>
         )}
       </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

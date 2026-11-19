@@ -1,4 +1,6 @@
 "use client";
+import { FacilityBlock, OfferCard } from "@/components/site/content/cards";
+import type { PublicFacility, PublicOffer } from "@/lib/public-content";
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -101,7 +103,7 @@ function ServiceBlock({ eyebrow, title, text, cta, image, imageAlt, reverse, fea
   );
 }
 
-export function ServicesPage() {
+export function ServicesPage({ seminarRooms = [], seminarOffers = [] }: { seminarRooms?: PublicFacility[]; seminarOffers?: PublicOffer[] }) {
   const [activeId, setActiveId] = useState(quickLinks[0].id);
   const isClickScrolling = useRef(false);
 
@@ -216,6 +218,29 @@ export function ServicesPage() {
           reverse
         />
       </div>
+
+      {/* Séminaires : salles et formules gérées dans l'admin */}
+      {(seminarRooms.length > 0 || seminarOffers.length > 0) && (
+        <section id="seminaires" className="scroll-mt-36 mx-auto max-w-[1440px] px-5 lg:px-10 py-16 lg:py-20 border-t border-border">
+          <div className="flex flex-wrap items-end justify-between gap-6">
+            <div>
+              <span className="eyebrow text-primary">Séminaires & réunions</span>
+              <h2 className="font-display mt-4 text-3xl sm:text-4xl font-light">Nos salles et formules</h2>
+            </div>
+            <Link href="/devis?type=seminaire" className="btn-fill-editorial">Demander un devis</Link>
+          </div>
+          {seminarRooms.map((f, i) => (
+            <FacilityBlock key={f.id} facility={f} reverse={i % 2 === 1} />
+          ))}
+          {seminarOffers.length > 0 && (
+            <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {seminarOffers.map((o) => (
+                <OfferCard key={o.id} offer={o} />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Expérience Nahoui */}
       <section id="experience" className="scroll-mt-36 mx-auto max-w-[1440px] px-5 lg:px-10 py-16 lg:py-20 border-t border-border">

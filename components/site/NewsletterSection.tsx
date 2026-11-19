@@ -35,14 +35,14 @@ export function NewsletterSection() {
           className="mx-auto max-w-[1440px] px-5 lg:px-10 py-14 lg:py-20 grid gap-10 lg:grid-cols-2 lg:items-end"
         >
           <div>
-            <span className="eyebrow text-white/90">Restons en contact</span>
+            <span className="eyebrow text-white">Restons en contact</span>
             <h2 className="font-display mt-4 text-4xl sm:text-5xl leading-[1.04] text-balance">
               Recevez nos actualités et offres.
             </h2>
           </div>
 
           <form onSubmit={handleSubmit} className="w-full">
-            <label htmlFor="newsletter-email" className="eyebrow block text-white/90">
+            <label htmlFor="newsletter-email" className="eyebrow block text-white">
               Votre adresse e-mail
             </label>
             <div className="mt-3 flex flex-col sm:flex-row gap-3 sm:gap-0">
@@ -60,7 +60,7 @@ export function NewsletterSection() {
                 <ArrowRight className="h-4 w-4" />
               </button>
             </div>
-            <p className="mt-3 text-xs text-white/80">Un e-mail de temps en temps, jamais de spam. Désinscription en un clic.</p>
+            <p className="mt-3 text-sm text-white">Un e-mail de temps en temps, jamais de spam. Désinscription en un clic.</p>
           </form>
         </motion.div>
       </div>

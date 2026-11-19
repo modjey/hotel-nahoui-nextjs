@@ -7,8 +7,8 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --env-file-if-exists=.env --import tsx --test tests/unit/booking-utils.test.ts tests/e2e/reservations.test.ts",
-    "test:unit": "node --env-file-if-exists=.env --import tsx --test tests/unit/booking-utils.test.ts",
+    "test": "node --env-file-if-exists=.env --import tsx --test tests/unit/booking-utils.test.ts tests/unit/stay-pricing.test.ts tests/e2e/reservations.test.ts",
+    "test:unit": "node --env-file-if-exists=.env --import tsx --test tests/unit/booking-utils.test.ts tests/unit/stay-pricing.test.ts",
     "test:e2e": "node --env-file-if-exists=.env --import tsx --test tests/e2e/reservations.test.ts",
     "test:integration": "npm run build && npm run test:e2e",
     "postinstall": "prisma generate",
@@ -16,6 +16,7 @@
     "db:studio": "prisma studio",
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",
+    "db:seed-content": "node --env-file-if-exists=.env --import tsx prisma/seed-content.ts",
     "tunnel": "cloudflared tunnel --url http://localhost:3000"
   },
   "prisma": {

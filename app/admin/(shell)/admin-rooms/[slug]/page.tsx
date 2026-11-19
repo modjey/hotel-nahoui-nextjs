@@ -41,6 +41,7 @@ type Room = {
   basePrice: number;
   currency: string;
   discountPercent: number;
+  minStay?: number;
   maxGuests: number;
   beds: number;
   bathrooms: number;
@@ -121,6 +122,8 @@ export default function AdminRoomEditPage() {
   }, [slug]);
 
   useEffect(() => {
+    // Chargement au montage (synchronisation avec l'API).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadRoom();
   }, [loadRoom]);
 
@@ -169,6 +172,7 @@ export default function AdminRoomEditPage() {
       order: raw.order ? Number(raw.order) : 0,
       basePrice: raw.basePrice ? Number(raw.basePrice) : undefined,
       discountPercent: raw.discountPercent ? Number(raw.discountPercent) : 0,
+      minStay: raw.minStay ? Math.max(1, Number(raw.minStay)) : 1,
       maxGuests: raw.maxGuests ? Number(raw.maxGuests) : undefined,
       beds: raw.beds ? Number(raw.beds) : undefined,
       bathrooms: raw.bathrooms ? Number(raw.bathrooms) : undefined,
@@ -348,6 +352,13 @@ export default function AdminRoomEditPage() {
               />
               <p className="text-xs text-muted-foreground">
                 Réduction appliquée au prix de base, visible côté client.
+              </p>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="minStay">Séjour minimum (nuits)</Label>
+              <Input id="minStay" name="minStay" type="number" min={1} max={30} defaultValue={room.minStay ?? 1} />
+              <p className="text-xs text-muted-foreground">
+                Toute l&apos;année. Les tarifs saisonniers peuvent l&apos;augmenter sur une période.
               </p>
             </div>
           </div>

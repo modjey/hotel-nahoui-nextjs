@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit, Trash2, Eye, EyeOff, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Edit, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 
 type BlogPost = {
   id: string;
@@ -31,9 +31,6 @@ export default function BlogPostsPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  useEffect(() => {
-    fetchPosts();
-  }, [filter, page]);
 
   const fetchPosts = async () => {
     try {
@@ -76,6 +73,14 @@ export default function BlogPostsPage() {
     setFilter(newFilter);
     setPage(1);
   };
+
+  // Chargement depuis l'API au montage et quand les filtres changent.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchPosts();
+    // fetch* est recréée à chaque rendu : on ne relance la requête que si les filtres changent.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter, page]);
 
   if (loading) {
     return <div>Chargement...</div>;

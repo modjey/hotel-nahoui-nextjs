@@ -2,12 +2,7 @@ import { randomBytes } from "crypto";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
-/**
- * Durée de vie d'une réservation PENDING (non payée). Passé ce délai, la
- * réservation n'occupe plus la chambre : elle peut être annulée par le cron
- * et ne bloque plus la disponibilité, même si le cron n'a pas encore tourné.
- */
-export const PENDING_BOOKING_TTL_MS = 15 * 60 * 1000;
+export { PENDING_BOOKING_TTL_HOURS, PENDING_BOOKING_TTL_MS } from "./booking-config";
 
 /** Statuts qui rendent une chambre indisponible tant qu'ils couvrent la plage. */
 export const BLOCKING_BOOKING_STATUSES = ["PENDING", "CONFIRMED"] as const;

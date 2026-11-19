@@ -42,9 +42,6 @@ export default function NewBlogPostPage() {
     order: 0,
   });
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
 
   const fetchCategories = async () => {
     try {
@@ -92,6 +89,12 @@ export default function NewBlogPostPage() {
       setLoading(false);
     }
   };
+
+  // Chargement depuis l'API au montage et quand les filtres changent.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchCategories();
+  }, []);
 
   return (
     <div className="p-6">
@@ -218,7 +221,7 @@ export default function NewBlogPostPage() {
             {loading ? "Création..." : (
               <>
                 <Save className="h-4 w-4 mr-2" />
-                Créer l'article
+                Créer l&apos;article
               </>
             )}
           </Button>

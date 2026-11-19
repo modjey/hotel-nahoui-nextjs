@@ -69,9 +69,12 @@ export function MediaGallery({
   const pendingRef = useRef<PendingFile[]>([]);
   const parentRef = useRef(parentPayload);
   const onChangeRef = useRef(onChange);
-  pendingRef.current = pendingFiles;
-  parentRef.current = parentPayload;
-  onChangeRef.current = onChange;
+  // Garde les dernières valeurs pour les callbacks asynchrones (mise à jour après rendu).
+  useEffect(() => {
+    pendingRef.current = pendingFiles;
+    parentRef.current = parentPayload;
+    onChangeRef.current = onChange;
+  });
 
   useEffect(() => {
     return registerPendingUpload({
@@ -243,7 +246,7 @@ export function MediaGallery({
 
       {pendingFiles.length > 0 && (
         <p className="text-xs text-amber-600">
-          {pendingFiles.length} image{pendingFiles.length > 1 ? "s" : ""} en attente - sera{pendingFiles.length > 1 ? "ont" : ""} envoyée{pendingFiles.length > 1 ? "s" : ""} à l'enregistrement.
+          {pendingFiles.length} image{pendingFiles.length > 1 ? "s" : ""} en attente - sera{pendingFiles.length > 1 ? "ont" : ""} envoyée{pendingFiles.length > 1 ? "s" : ""} à l&apos;enregistrement.
         </p>
       )}
 
@@ -365,7 +368,7 @@ export function MediaGallery({
               </div>
               <div className="p-2 text-xs truncate">
                 <div className="font-medium truncate">{p.title || "Sans titre"}</div>
-                <div className="text-muted-foreground truncate">Envoyée à l'enregistrement</div>
+                <div className="text-muted-foreground truncate">Envoyée à l&apos;enregistrement</div>
               </div>
             </div>
           ))}

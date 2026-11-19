@@ -1,4 +1,3 @@
-import { NextRequest } from "next/server";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
@@ -22,7 +21,7 @@ const updateUserSchema = z.object({
 });
 
 // GET /api/admin/users/[id] - Get a single user (admin only)
-export const GET = withAuth(async (req, { session }) => {
+export const GET = withAuth(async (req) => {
   const id = req.url.split("/").pop();
   
   if (!id) {

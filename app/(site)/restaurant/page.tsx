@@ -1,3 +1,4 @@
+import { getFacilities, getPublishedOffers } from '@/lib/public-content';
 import type { Metadata } from "next";
 import { RestaurantPage } from '@/views/RestaurantPage';
 
@@ -9,4 +10,11 @@ export const metadata: Metadata = {
   openGraph: { url: "/restaurant", title: "Restaurant — Hôtel Nahoui Balmer" },
 };
 
-export default function Page() { return <RestaurantPage />; }
+
+// Contenus gérés dans l'admin : rafraîchis au plus toutes les minutes.
+export const revalidate = 60;
+
+export default async function Page() {
+  const [spaces, offers] = await Promise.all([getFacilities("RESTAURANT"), getPublishedOffers({ category: "RESTAURANT" })]);
+  return <RestaurantPage spaces={spaces} offers={offers} />;
+}

@@ -93,6 +93,8 @@ export function PhotobookPage() {
     }
   }, [selectedAlbum, selectedLocation, fromDate, toDate]);
 
+  // Chargement depuis l'API quand les filtres changent.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchAlbums(); }, [fetchAlbums]);
 
   const openLightbox = (index: number) => {
@@ -180,11 +182,12 @@ export function PhotobookPage() {
     }
   };
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchPhotos(); }, [fetchPhotos]);
 
   useEffect(() => {
     photos.forEach((photo) => { fetchLikeStatus(photo.id); });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [photos]);
 
   const goToNext = useCallback(() => {
@@ -353,7 +356,7 @@ export function PhotobookPage() {
                   <h2 className="font-display mt-5 text-3xl sm:text-4xl font-light">Photo du mois</h2>
                 </div>
                 <div className="relative overflow-hidden aspect-[21/9]">
-                  <img src={featuredPhoto.imageUrl} alt={featuredPhoto.title || "Photo du mois"} className="h-full w-full object-cover" />
+                  <img loading="lazy" decoding="async" src={featuredPhoto.imageUrl} alt={featuredPhoto.title || "Photo du mois"} className="h-full w-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-8 sm:p-12">
                     <h3 className="font-display text-2xl sm:text-3xl text-white font-light mb-3">{featuredPhoto.title || "Photo du mois"}</h3>

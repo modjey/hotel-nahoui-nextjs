@@ -1,4 +1,3 @@
-import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { withAuth, ok, fail, parseBody } from "@/lib/auth/api";
@@ -17,7 +16,7 @@ const updateAlbumSchema = z.object({
 });
 
 // GET /api/admin/admin-photo-albums/[id] - Get a single album (admin only)
-export const GET = withAuth(async (req, { session }) => {
+export const GET = withAuth(async (req) => {
   const id = req.url.split("/").pop();
   
   if (!id) {
@@ -48,7 +47,7 @@ export const GET = withAuth(async (req, { session }) => {
 }, { roles: ["ADMIN", "SUPER_ADMIN"] });
 
 // PUT /api/admin/admin-photo-albums/[id] - Update an album (admin only)
-export const PUT = withAuth(async (req, { session }) => {
+export const PUT = withAuth(async (req) => {
   const id = req.url.split("/").pop();
   
   if (!id) {
@@ -95,7 +94,7 @@ export const PUT = withAuth(async (req, { session }) => {
 }, { roles: ["ADMIN", "SUPER_ADMIN"] });
 
 // DELETE /api/admin/admin-photo-albums/[id] - Delete an album (admin only)
-export const DELETE = withAuth(async (req, { session }) => {
+export const DELETE = withAuth(async (req) => {
   const id = req.url.split("/").pop();
   
   if (!id) {

@@ -1,11 +1,12 @@
 "use client";
 import Link from "next/link";
+import { HOTEL_CONTACT } from "@/lib/hotel-contact";
 
 const socialLinks = [
   { name: "Instagram", href: "https://www.instagram.com/hotel_nahoui/" },
   { name: "Facebook", href: "https://www.facebook.com/hotelnahouibalmer" },
   { name: "TikTok", href: "https://www.tiktok.com/@nahouihotel?is_from_webapp=1&sender_device=pc" },
-  { name: "WhatsApp", href: "https://api.whatsapp.com/send?phone=%2B2250788494979" },
+  { name: "WhatsApp", href: HOTEL_CONTACT.whatsappUrl },
 ];
 
 const footerSections = [
@@ -13,6 +14,8 @@ const footerSections = [
     title: "Séjourner",
     links: [
       { label: "Hébergements", href: "/stays" },
+      { label: "Offres du moment", href: "/offres" },
+      { label: "Groupes & séminaires", href: "/devis" },
       { label: "Mes réservations", href: "/bookings" },
       { label: "Avis clients", href: "/avis" },
     ],
@@ -30,7 +33,7 @@ const footerSections = [
   },
 ];
 
-const phoneNumbers = ["+225 27 34 71 22 33", "+225 07 87 94 34 49"];
+const phoneNumbers = HOTEL_CONTACT.phones;
 
 export function Footer() {
   return (
@@ -103,8 +106,9 @@ export function Footer() {
         <div className="pt-8 border-t border-white/15 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-[0.8125rem] text-white/60">
           <p>© {new Date().getFullYear()} Hôtel Nahoui Balmer. Tous droits réservés.</p>
           <div className="flex flex-wrap gap-x-6 gap-y-2">
-            <Link href="/contact" className="hover:text-white">Mentions légales</Link>
-            <Link href="/contact" className="hover:text-white">Confidentialité</Link>
+            <Link href="/conditions" className="hover:text-white">Conditions de réservation</Link>
+            <Link href="/mentions-legales" className="hover:text-white">Mentions légales</Link>
+            <Link href="/confidentialite" className="hover:text-white">Confidentialité</Link>
           </div>
         </div>
       </div>

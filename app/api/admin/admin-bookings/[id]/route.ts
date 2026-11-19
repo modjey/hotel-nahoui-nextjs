@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { ok, fail, withAuth } from "@/lib/auth/api";
+import { priceStayForRoom } from "@/lib/stay-pricing-server";
 
 export const runtime = "nodejs";
 
@@ -15,7 +16,7 @@ const handler = withAuth(async (req) => {
       where: { id },
       include: {
         user: { select: { id: true, name: true, email: true, phone: true, role: true } },
-        room: { select: { id: true, name: true, slug: true, coverImageUrl: true, basePrice: true, currency: true, discountPercent: true } },
+        room: { select: { id: true, name: true, slug: true, coverImageUrl: true, basePrice: true, currency: true, discountPercent: true, roomTypeId: true, minStay: true } },
         payments: {
           select: {
             id: true,
@@ -40,7 +41,9 @@ const handler = withAuth(async (req) => {
       return fail("Réservation introuvable", 404, "NOT_FOUND");
     }
 
-    return ok({ booking });
+    // Montant du séjour avec tarifs saisonniers (même calcul que la proforma et la réservation en ligne).
+    const stay = await priceStayForRoom(booking.room, booking.checkIn, booking.checkOut);
+    return ok({ booking, stayTotal: stay.total });
   }
 
   return fail("Méthode non autorisée", 405, "METHOD_NOT_ALLOWED");

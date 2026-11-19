@@ -1,3 +1,4 @@
+import { getFacilities, getPublishedOffers } from '@/lib/public-content';
 import type { Metadata } from "next";
 import { ServicesPage } from '@/views/ServicesPage';
 
@@ -9,4 +10,11 @@ export const metadata: Metadata = {
   openGraph: { url: "/services", title: "Expériences — Hôtel Nahoui Balmer" },
 };
 
-export default function Page() { return <ServicesPage />; }
+
+// Contenus gérés dans l'admin : rafraîchis au plus toutes les minutes.
+export const revalidate = 60;
+
+export default async function Page() {
+  const [seminarRooms, seminarOffers] = await Promise.all([getFacilities("SEMINAIRE"), getPublishedOffers({ category: "SEMINAIRE" })]);
+  return <ServicesPage seminarRooms={seminarRooms} seminarOffers={seminarOffers} />;
+}

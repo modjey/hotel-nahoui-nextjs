@@ -17,7 +17,7 @@ interface CheckoutRequest {
     email?: string;
     phone?: string;
   };
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 interface CheckoutResponse {
@@ -47,7 +47,7 @@ interface Payment {
   transaction_id?: string;
   payment_method?: string;
   payment_date?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 class FineoPayService {
@@ -125,14 +125,6 @@ class FineoPayService {
       payment_method: callbackData.clientAccountNumber,
       payment_date: callbackData.timestamp,
     };
-  }
-
-  /**
-   * Update payment status in database
-   */
-  async updatePaymentStatus(reference: string, status: string, transactionId?: string): Promise<void> {
-    // This will be implemented in the callback route
-    // The callback route will use Prisma to update the payment status
   }
 
   /**

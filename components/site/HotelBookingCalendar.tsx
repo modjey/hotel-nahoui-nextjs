@@ -47,6 +47,32 @@ export function buildAvailabilityMap(
 }
 
 /**
+ * Superpose les réservations (dates indisponibles) au calendrier tarifaire du serveur
+ * (prix, séjour minimum et fermetures par date).
+ */
+export function mergeAvailability(calendar: AvailabilityMap, booked: AvailabilityMap): AvailabilityMap {
+  const merged: AvailabilityMap = { ...calendar };
+  for (const [key, value] of Object.entries(booked)) {
+    merged[key] = { ...calendar[key], ...value, available: value.available && (calendar[key]?.available ?? true) };
+  }
+  return merged;
+}
+
+/** Total d'un séjour à partir des prix par date ; `fallback` pour les dates sans prix. */
+export function stayTotalFromMap(availability: AvailabilityMap, checkIn: Date, checkOut: Date, fallback: number): number {
+  const cursor = new Date(checkIn);
+  cursor.setHours(0, 0, 0, 0);
+  const end = new Date(checkOut);
+  end.setHours(0, 0, 0, 0);
+  let total = 0;
+  while (cursor < end) {
+    total += availability[toKey(cursor)]?.price ?? fallback;
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return total;
+}
+
+/**
  * Vérifie que toutes les nuits entre checkIn (inclus) et checkOut (exclu) sont disponibles.
  * Permet de bloquer "Continuer" dès qu'une nuit de la plage choisie est indisponible,
  * sans attendre la vérification serveur asynchrone.
@@ -489,7 +515,7 @@ export default function HotelBookingCalendar({
                           {inMonth && !disabled && (
                             <span
                               className={`mt-1 text-xs leading-none ${
-                                selected ? "text-white/85" : "text-[#5e4c44]"
+                                selected ? "text-white" : "text-[#5e4c44]"
                               }`}
                             >
                               {new Intl.NumberFormat("fr-FR", { notation: "compact" }).format(info.price)}
@@ -600,7 +626,7 @@ function GuestStepper({
           onClick={() => onChange(value - 1)}
           disabled={value <= min}
           aria-label={`Diminuer ${label}`}
-          className="grid h-6 w-6 place-items-center border border-[rgb(42_23_18/0.14)] text-sm disabled:opacity-30"
+          className="grid h-10 w-10 place-items-center border border-[rgb(42_23_18/0.14)] text-base hover:border-[var(--mahogany)] disabled:opacity-30"
         >
           −
         </button>
@@ -609,7 +635,7 @@ function GuestStepper({
           type="button"
           onClick={() => onChange(value + 1)}
           aria-label={`Augmenter ${label}`}
-          className="grid h-6 w-6 place-items-center border border-[rgb(42_23_18/0.14)] text-sm"
+          className="grid h-10 w-10 place-items-center border border-[rgb(42_23_18/0.14)] text-base hover:border-[var(--mahogany)]"
         >
           +
         </button>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, Suspense } from 'react';
+import { useEffect, useRef, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { CheckCircle, Calendar, CreditCard, Clock, Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -20,35 +20,42 @@ function BookingConfirmedContent() {
   const [loading, setLoading] = useState(true);
   const attemptsRef = useRef(0);
 
-  const load = useCallback(async () => {
-    if (!reference) {
-      setLoading(false);
-      return;
-    }
-    try {
-      const res = await fetch(`/api/payments/status?reference=${encodeURIComponent(reference)}`, {
-        cache: 'no-store',
-      });
-      const json = await res.json();
-      if (json.success) {
-        setData(json.data);
-        // Polling court tant que le paiement est encore en attente.
-        if (json.data?.status === 'PENDING' && attemptsRef.current < 5) {
-          attemptsRef.current += 1;
-          setTimeout(load, 3000);
-          return;
-        }
-      }
-    } catch (err) {
-      console.error('Error fetching payment status:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [reference]);
-
   useEffect(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    async function load() {
+      if (!reference) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const res = await fetch(`/api/payments/status?reference=${encodeURIComponent(reference)}`, {
+          cache: 'no-store',
+        });
+        const json = await res.json();
+        if (cancelled) return;
+        if (json.success) {
+          setData(json.data);
+          // Polling court tant que le paiement est encore en attente.
+          if (json.data?.status === 'PENDING' && attemptsRef.current < 5) {
+            attemptsRef.current += 1;
+            timer = setTimeout(load, 3000);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching payment status:', err);
+      }
+      if (!cancelled) setLoading(false);
+    }
+
     load();
-  }, [load]);
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [reference]);
 
   if (loading) {
     return (

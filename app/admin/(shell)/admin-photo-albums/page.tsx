@@ -41,7 +41,7 @@ const albumTypeLabels: Record<string, string> = {
   AMENITY: "Équipements",
 };
 
-const albumTypeColors: Record<string, string> = {
+const albumTypeColors: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
   GALLERY: "default",
   GUEST: "secondary",
   EVENT: "outline",
@@ -51,7 +51,7 @@ const albumTypeColors: Record<string, string> = {
 
 export default function AdminPhotoAlbumsPage() {
   const router = useRouter();
-  const { data, loading, error, refetch } = useApi<{ albums: PhotoAlbum[] }>("/api/admin/admin-photo-albums");
+  const { data, loading, refetch } = useApi<{ albums: PhotoAlbum[] }>("/api/admin/admin-photo-albums");
   const { data: locationsData } = useApi<{ locations: { id: string; name: string; city: string | null }[] }>("/api/admin/admin-locations");
   
   const [search, setSearch] = useState("");
@@ -178,7 +178,7 @@ export default function AdminPhotoAlbumsPage() {
                     {album.location?.name} {album.location?.city && `(${album.location.city})`}
                   </div>
                   <div className="flex items-center gap-2 mt-1">
-                    <Badge variant={albumTypeColors[album.type] as any}>
+                    <Badge variant={albumTypeColors[album.type]}>
                       {albumTypeLabels[album.type]}
                     </Badge>
                     <Badge variant={album.isPublished ? "default" : "secondary"}>

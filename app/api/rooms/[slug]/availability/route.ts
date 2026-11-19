@@ -2,11 +2,15 @@ import { prisma } from "@/lib/prisma";
 import { ok, fail } from "@/lib/auth/api";
 import { blockingBookingWhere } from "@/lib/bookings";
 import { NextRequest } from "next/server";
+import { getSession } from "@/lib/auth/session";
+import { findClosure, priceStayForRoom } from "@/lib/stay-pricing-server";
+import { nightsBetween } from "@/lib/bookings";
 
 export const runtime = "nodejs";
 
 /**
- * GET /api/rooms/[slug]/availability?checkIn=2024-01-01&checkOut=2024-01-03&userId=xxx
+ * GET /api/rooms/[slug]/availability?checkIn=2024-01-01&checkOut=2024-01-03
+ * « isOwnBooking » est calculé à partir de la session, jamais d'un paramètre client.
  * Vérifie si une chambre est disponible pour les dates données
  */
 export async function GET(
@@ -17,7 +21,6 @@ export async function GET(
   const { searchParams } = new URL(req.url);
   const checkIn = searchParams.get("checkIn");
   const checkOut = searchParams.get("checkOut");
-  const userId = searchParams.get("userId");
 
   if (!checkIn || !checkOut) {
     return fail("checkIn et checkOut sont requis", 400, "BAD_REQUEST");
@@ -54,12 +57,26 @@ export async function GET(
     });
 
     // Vérifier si le conflit appartient à l'utilisateur connecté
+    const session = await getSession(req);
+    const userId = session?.userId ?? null;
     const isOwnBooking = Boolean(userId) && overlappingBookings.some((b) => b.userId === userId);
 
-    const isAvailable = overlappingBookings.length === 0;
+    const [closure, stay] = await Promise.all([
+      findClosure(room.id, checkInDate, checkOutDate),
+      priceStayForRoom(room, checkInDate, checkOutDate),
+    ]);
+    const nights = nightsBetween(checkInDate, checkOutDate);
+    const meetsMinStay = nights >= stay.minStay;
+    const isAvailable = overlappingBookings.length === 0 && !closure && meetsMinStay;
 
     return ok({
       available: isAvailable,
+      closed: Boolean(closure),
+      minStay: stay.minStay,
+      meetsMinStay,
+      total: stay.total,
+      nights: stay.nights,
+      currency: room.currency,
       roomId: room.id,
       checkIn: checkInDate.toISOString(),
       checkOut: checkOutDate.toISOString(),
@@ -69,7 +86,6 @@ export async function GET(
         checkIn: b.checkIn,
         checkOut: b.checkOut,
         status: b.status,
-        userId: b.userId,
       })),
     });
   } catch (e) {

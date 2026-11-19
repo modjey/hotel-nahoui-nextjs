@@ -63,6 +63,8 @@ export function useApi<T = unknown>(
 
   useEffect(() => {
     if (!enabled || !path) return;
+    // Le hook existe pour synchroniser l'état avec l'API : setState dans fetcher est voulu.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetcher();
     return () => abortRef.current?.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps

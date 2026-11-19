@@ -17,6 +17,11 @@ const STATIC_ROUTES: Array<{
   { path: "/avis", changeFrequency: "weekly", priority: 0.6 },
   { path: "/blog", changeFrequency: "weekly", priority: 0.6 },
   { path: "/contact", changeFrequency: "yearly", priority: 0.5 },
+  { path: "/offres", changeFrequency: "weekly", priority: 0.8 },
+  { path: "/devis", changeFrequency: "yearly", priority: 0.6 },
+  { path: "/conditions", changeFrequency: "yearly", priority: 0.3 },
+  { path: "/mentions-legales", changeFrequency: "yearly", priority: 0.2 },
+  { path: "/confidentialite", changeFrequency: "yearly", priority: 0.2 },
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

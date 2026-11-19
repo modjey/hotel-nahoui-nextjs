@@ -17,7 +17,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import { flushPendingUploads } from "@/lib/pending-uploads";
-import { api, ApiError } from "@/lib/api-client";
+import { ApiError } from "@/lib/api-client";
 import { useApi } from "@/hooks/use-api";
 import { ArrowLeft, Loader2 } from "lucide-react";
 

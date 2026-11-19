@@ -1,50 +1,13 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  Bell,
-  MapPin,
-  BedDouble,
-  Tag,
-  CalendarCheck,
-  Star,
-  Users,
-  UtensilsCrossed,
-  Image as ImageIcon,
-  Images,
-  Settings,
-  CreditCard,
-  Newspaper,
-  MessageSquare,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ADMIN_NAV, isNavActive } from "@/components/admin/nav-items";
 
-const items = [
-  { href: "/admin", label: "Tableau de bord", icon: LayoutDashboard, exact: true },
-  { href: "/admin/admin-locations", label: "Localisations", icon: MapPin },
-  { href: "/admin/admin-room-types", label: "Types de chambre", icon: Tag },
-  { href: "/admin/admin-rooms", label: "Chambres", icon: BedDouble },
-  { href: "/admin/notifications", label: "Notifications", icon: Bell },
-  { href: "/admin/bookings", label: "Réservations", icon: CalendarCheck },
-  { href: "/admin/payments", label: "Paiements", icon: CreditCard },
-  { href: "/admin/reviews", label: "Avis", icon: Star },
-  { href: "/admin/admin-dishes", label: "Plats", icon: UtensilsCrossed },
-  { href: "/admin/admin-dish-categories", label: "Catégories de plats", icon: Tag },
-  { href: "/admin/admin-photo-albums", label: "Albums photo", icon: Images },
-  { href: "/admin/admin-photos", label: "Photos", icon: ImageIcon },
-  { href: "/admin/blog-posts", label: "Articles de blog", icon: Newspaper },
-  { href: "/admin/contact-submissions", label: "Messages de contact", icon: MessageSquare },
-  { href: "/admin/media", label: "Médias", icon: ImageIcon },
-  { href: "/admin/users", label: "Utilisateurs", icon: Users },
-  { href: "/admin/settings", label: "Paramètres", icon: Settings },
-];
 
 export function Sidebar() {
   const pathname = usePathname() ?? "";
 
-  const isActive = (href: string, exact?: boolean) =>
-    exact ? pathname === href : pathname === href || pathname.startsWith(href + "/");
 
   return (
     <aside className="hidden lg:flex flex-col w-64 shrink-0 border-r border-border bg-card h-screen sticky top-0">
@@ -58,26 +21,32 @@ export function Sidebar() {
         </Link>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-        {items.map((it) => {
-          const Icon = it.icon;
-          const active = isActive(it.href, it.exact);
-          return (
-            <Link
-              key={it.href}
-              href={it.href}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
-                active
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-              )}
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              <span>{it.label}</span>
-            </Link>
-          );
-        })}
+      <nav className="flex-1 overflow-y-auto px-3 py-4 ">
+        {ADMIN_NAV.map((group, gi) => (
+          <div key={gi} className={cn("space-y-0.5", gi > 0 && "pt-4")}>
+            {group.title && (
+              <div className="px-3 pb-1 text-[0.7rem] font-semibold uppercase tracking-wider text-muted-foreground/80">{group.title}</div>
+            )}
+            {group.items.map((it) => {
+              const Icon = it.icon;
+              const active = isNavActive(pathname, it.href, it.exact);
+              return (
+                <Link
+                  key={it.href}
+                  href={it.href}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
+                    active ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  )}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span>{it.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
     </aside>

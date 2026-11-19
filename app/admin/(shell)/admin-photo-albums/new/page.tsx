@@ -19,7 +19,7 @@ import { ImageUpload } from "@/components/admin/ImageUpload";
 import { flushPendingUploads } from "@/lib/pending-uploads";
 import { api, ApiError } from "@/lib/api-client";
 import { useApi } from "@/hooks/use-api";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { trimValues } from "@/lib/utils";
 
 export default function NewPhotoAlbumPage() {
@@ -95,7 +95,7 @@ export default function NewPhotoAlbumPage() {
 
           <div className="grid gap-2">
             <Label htmlFor="type">Type</Label>
-            <Select value={formData.type} onValueChange={(value: any) => setFormData({ ...formData, type: value })}>
+            <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value as typeof formData.type })}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>

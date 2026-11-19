@@ -1,3 +1,4 @@
+import { getUpcomingEvents } from '@/lib/public-content';
 import type { Metadata } from "next";
 import { EventsPage } from '@/views/EventsPage';
 
@@ -9,4 +10,10 @@ export const metadata: Metadata = {
   openGraph: { url: "/evenements", title: "Événements — Hôtel Nahoui Balmer" },
 };
 
-export default function Page() { return <EventsPage />; }
+
+// Contenus gérés dans l'admin : rafraîchis au plus toutes les minutes.
+export const revalidate = 60;
+
+export default async function Page() {
+  return <EventsPage events={await getUpcomingEvents()} />;
+}

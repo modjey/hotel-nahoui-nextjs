@@ -221,6 +221,7 @@ model RoomType {
   updatedAt   DateTime @updatedAt
 
   rooms Room[]
+  seasonalRates SeasonalRate[]
 
   @@index([isPublished, order])
 }
@@ -264,6 +265,8 @@ model Room {
   checkOutTime String? @default("11:00")
   checkInMethod String? @default("Arrivée autonome avec clavier")
   cancellationPolicy String? @default("Annulation gratuite avant 7 jours, 50% de remboursement avant 3 jours")
+  // Nombre minimum de nuits (les tarifs saisonniers peuvent l'augmenter)
+  minStay Int @default(1)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -271,6 +274,7 @@ model Room {
   media    Media[]
   bookings Booking[]
   reviews  Review[]
+  closures RoomClosure[]
 
   @@index([locationId])
   @@index([roomTypeId])
@@ -301,6 +305,7 @@ model Booking {
 
   status    BookingStatus @default(PENDING)
   expiresAt DateTime?     // Expiration time for PENDING bookings (15 min window)
+  arrivalReminderSentAt DateTime? // email de rappel avant l'arrivée déjà envoyé
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
@@ -596,6 +601,9 @@ model ContactSubmission {
   subject     String
   message     String   @db.Text
   status      String   @default("new") // new, read, replied, archived
+  // info (question), reclamation (plainte liée à un séjour), autre
+  category         String  @default("info")
+  bookingReference String?
   reply       String?  @db.Text
   repliedAt   DateTime?
   repliedBy   String?
@@ -617,4 +625,180 @@ model AdminNotification {
 
   @@index([read])
   @@index([createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Disponibilités & tarifs
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Fermeture d'une chambre sur une période (travaux, privatisation, usage interne).
+// Bloque la disponibilité comme une réservation confirmée. endDate exclue (comme un départ).
+model RoomClosure {
+  id        String   @id @default(cuid())
+  roomId    String
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  startDate DateTime
+  endDate   DateTime
+  reason    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([roomId, startDate, endDate])
+}
+
+// Tarif saisonnier : remplace le prix de base (price) ou l'ajuste en % (percent) pour
+// les nuits comprises dans [startDate, endDate). roomTypeId null = toutes les chambres.
+model SeasonalRate {
+  id         String    @id @default(cuid())
+  name       String
+  roomTypeId String?
+  roomType   RoomType? @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+  startDate  DateTime
+  endDate    DateTime
+  price      Int?      // prix fixe par nuit (XOF)
+  percent    Int?      // ajustement en % du prix de base (ex: 20 = +20 %, -10 = -10 %)
+  minStay    Int       @default(1)
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([isActive, startDate, endDate])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Commercial : devis groupes / séminaires / événements
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum QuoteType {
+  GROUPE
+  SEMINAIRE
+  EVENEMENT
+}
+
+enum QuoteStatus {
+  NEW         // nouvelle demande
+  IN_PROGRESS // en cours de traitement
+  SENT        // devis envoyé
+  WON         // accepté
+  LOST        // refusé / sans suite
+}
+
+model QuoteRequest {
+  id          String      @id @default(cuid())
+  reference   String      @unique
+  type        QuoteType   @default(GROUPE)
+  status      QuoteStatus @default(NEW)
+  companyName String?
+  contactName String
+  email       String
+  phone       String
+  startDate   DateTime?
+  endDate     DateTime?
+  guests      Int?
+  rooms       Int?
+  needs       String?     @db.Text
+  quoteAmount Int?        // montant du devis (XOF)
+  quoteNotes  String?     @db.Text // détail envoyé au client avec le devis
+  adminNotes  String?     @db.Text // notes internes
+  sentAt      DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Contenus éditables du site
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum OfferCategory {
+  SEJOUR
+  RESTAURANT
+  SEMINAIRE
+  EVENEMENT
+  BIEN_ETRE
+  AUTRE
+}
+
+// Offre commerciale / promotion publiée sur le site (page Offres + accueil).
+model Offer {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  title       String
+  category    OfferCategory @default(SEJOUR)
+  summary     String?       @db.Text
+  description String?       @db.Text
+  imageUrl    String?
+  price       Int?          // prix indicatif (XOF)
+  priceLabel  String?       // ex : "par nuit", "par personne", "à partir de"
+  validFrom   DateTime?
+  validUntil  DateTime?
+  ctaLabel    String?
+  ctaUrl      String?
+  isPublished Boolean       @default(false)
+  isFeatured  Boolean       @default(false)
+  isFlash     Boolean       @default(false) // affichée en pop-up flash sur le site public
+  order       Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([isPublished, category])
+}
+
+// Événement organisé à l'hôtel (soirée, concert, brunch, fête...).
+model HotelEvent {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  summary     String?   @db.Text
+  description String?   @db.Text
+  imageUrl    String?
+  startDate   DateTime
+  endDate     DateTime?
+  venue       String?   // lieu dans l'hôtel (bord de piscine, salle...)
+  price       Int?
+  ctaLabel    String?
+  ctaUrl      String?
+  isPublished Boolean   @default(false)
+  isFeatured  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([isPublished, startDate])
+}
+
+enum FacilityCategory {
+  BIEN_ETRE  // piscine, jardin, salle de sport, spa
+  RESTAURANT // restaurant, restaurant VIP, bars
+  SEMINAIRE  // salles de réunion / séminaire
+  LOISIRS    // espace enfants, activités
+}
+
+// Espace de l'hôtel présenté sur le site (piscine, jardin, salle de sport, restaurant VIP, salles...).
+model Facility {
+  id            String           @id @default(cuid())
+  slug          String           @unique
+  name          String
+  category      FacilityCategory @default(BIEN_ETRE)
+  summary       String?          @db.Text
+  description   String?          @db.Text
+  hours         String?          // ex : "7h - 20h tous les jours"
+  capacity      String?          // ex : "jusqu'à 120 personnes"
+  features      String[]         @default([])
+  coverImageUrl String?
+  gallery       String[]         @default([])
+  isPublished   Boolean          @default(true)
+  order         Int              @default(0)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([isPublished, category, order])
+}
+
+// Réglages globaux du site (accueil, conditions de réservation, proforma...). Valeur JSON validée par lib/site-settings.ts
+model SiteSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
 }

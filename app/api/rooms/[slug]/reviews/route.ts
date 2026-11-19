@@ -4,7 +4,7 @@ import { createAdminNotification } from "@/lib/notifications";
 import { ok, fail, withAuth } from "@/lib/auth/api";
 import { getSession } from "@/lib/auth/session";
 import { z } from "zod";
-import type { ReviewStatus } from "@prisma/client";
+import type { Prisma, ReviewStatus } from "@prisma/client";
 
 export const runtime = "nodejs";
 
@@ -39,7 +39,7 @@ export async function GET(
     const canSeeAll = session?.role === "ADMIN" || session?.role === "SUPER_ADMIN" || session?.role === "MODERATOR";
     const status = canSeeAll && requestedStatus ? requestedStatus : "APPROVED";
 
-    const where: any = {
+    const where: Prisma.ReviewWhereInput = {
       roomId: room.id,
       status: status as ReviewStatus,
     };
@@ -59,9 +59,9 @@ export async function GET(
     });
 
     // Calculate average rating
-    const approvedReviews = reviews.filter((r: any) => r.status === "APPROVED");
+    const approvedReviews = reviews.filter((r) => r.status === "APPROVED");
     const averageRating = approvedReviews.length > 0
-      ? approvedReviews.reduce((sum: number, r: any) => sum + r.rating, 0) / approvedReviews.length
+      ? approvedReviews.reduce((sum: number, r) => sum + r.rating, 0) / approvedReviews.length
       : 0;
 
     return ok({
@@ -127,12 +127,37 @@ const postHandler = withAuth(async (req, { session }) => {
       return fail("Vous avez déjà laissé un avis pour cette chambre", 400, "ALREADY_REVIEWED");
     }
 
+    // Avis vérifiés : seuls les clients ayant séjourné (ou séjournant) dans la
+    // chambre peuvent en laisser un. On rattache l'avis à ce séjour.
+    let bookingId = parsed.bookingId;
+    if (!bookingId) {
+      const stay = await prisma.booking.findFirst({
+        where: {
+          roomId: room.id,
+          userId: session.user.id,
+          status: { in: ["CONFIRMED", "COMPLETED"] },
+          checkIn: { lte: new Date() },
+          reviews: { none: {} },
+        },
+        orderBy: { checkIn: "desc" },
+        select: { id: true },
+      });
+      if (!stay) {
+        return fail(
+          "Seuls les clients ayant séjourné dans cette chambre peuvent laisser un avis.",
+          403,
+          "NO_VERIFIED_STAY",
+        );
+      }
+      bookingId = stay.id;
+    }
+
     // Create review
     const review = await prisma.review.create({
       data: {
         roomId: room.id,
         userId: session.user.id,
-        bookingId: parsed.bookingId,
+        bookingId,
         rating: parsed.rating,
         comment: parsed.comment,
         status: "PENDING", // Requires approval

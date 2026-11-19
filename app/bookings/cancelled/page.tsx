@@ -17,6 +17,8 @@ function BookingCancelledContent() {
     const pendingBooking = localStorage.getItem('pendingBooking');
     if (pendingBooking) {
       try {
+        // localStorage n'existe qu'après l'hydratation : lecture voulue au montage.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setBooking(JSON.parse(pendingBooking));
         localStorage.removeItem('pendingBooking');
       } catch (err) {

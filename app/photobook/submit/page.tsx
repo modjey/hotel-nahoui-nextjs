@@ -38,9 +38,6 @@ export default function SubmitPhotoPage() {
     albumId: "",
   });
 
-  useEffect(() => {
-    fetchAlbums();
-  }, []);
 
   const fetchAlbums = async () => {
     try {
@@ -88,6 +85,12 @@ export default function SubmitPhotoPage() {
     }
   };
 
+  // Chargement depuis l'API au montage et quand les filtres changent.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchAlbums();
+  }, []);
+
   if (submitted) {
     return (
       <div className="min-h-screen bg-background">
@@ -116,6 +119,7 @@ export default function SubmitPhotoPage() {
       </div>
     );
   }
+
 
   return (
     <div className="min-h-screen bg-background">

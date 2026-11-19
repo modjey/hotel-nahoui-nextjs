@@ -47,7 +47,7 @@ interface CheckoutRequest {
     email?: string;
     phone?: string;
   };
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 interface CheckoutResponse {
@@ -80,7 +80,7 @@ interface Payment {
   transaction_id?: string;
   payment_method?: string;
   payment_date?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 class CentralApisService {

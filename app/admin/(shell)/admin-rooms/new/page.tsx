@@ -186,6 +186,7 @@ export default function NewRoomPage() {
       order: raw.order ? Number(raw.order) : 0,
       basePrice: raw.basePrice ? Number(raw.basePrice) : 0,
       discountPercent: raw.discountPercent ? Number(raw.discountPercent) : 0,
+      minStay: raw.minStay ? Math.max(1, Number(raw.minStay)) : 1,
       maxGuests: raw.maxGuests ? Number(raw.maxGuests) : 2,
       beds: raw.beds ? Number(raw.beds) : 1,
       bathrooms: raw.bathrooms ? Number(raw.bathrooms) : 1,
@@ -320,6 +321,13 @@ export default function NewRoomPage() {
               />
               <p className="text-xs text-muted-foreground">
                 Réduction appliquée au prix de base, visible côté client.
+              </p>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="minStay">Séjour minimum (nuits)</Label>
+              <Input id="minStay" name="minStay" type="number" min={1} max={30} defaultValue={1} />
+              <p className="text-xs text-muted-foreground">
+                Toute l&apos;année. Les tarifs saisonniers peuvent l&apos;augmenter sur une période.
               </p>
             </div>
           </div>
@@ -475,7 +483,7 @@ export default function NewRoomPage() {
           <h2 className="font-display text-lg">Politiques et conditions</h2>
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="checkInStart">Heure d'arrivée</Label>
+              <Label htmlFor="checkInStart">Heure d&apos;arrivée</Label>
               <Input
                 id="checkInStart"
                 type="time"
@@ -484,7 +492,7 @@ export default function NewRoomPage() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="checkInEnd">Fin d'arrivée</Label>
+              <Label htmlFor="checkInEnd">Fin d&apos;arrivée</Label>
               <Input
                 id="checkInEnd"
                 type="time"
@@ -512,7 +520,7 @@ export default function NewRoomPage() {
             </div>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="cancellationPolicy">Politique d'annulation</Label>
+            <Label htmlFor="cancellationPolicy">Politique d&apos;annulation</Label>
             <Textarea
               id="cancellationPolicy"
               value={cancellationPolicy}

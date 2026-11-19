@@ -1,4 +1,6 @@
 "use client";
+import { FacilityBlock, OfferCard } from "@/components/site/content/cards";
+import type { PublicFacility, PublicOffer } from "@/lib/public-content";
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -93,7 +95,7 @@ type Category = {
   description: string | null;
 };
 
-export function RestaurantPage() {
+export function RestaurantPage({ spaces = [], offers = [] }: { spaces?: PublicFacility[]; offers?: PublicOffer[] }) {
   const [dishes, setDishes] = useState<Dish[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -409,6 +411,25 @@ export function RestaurantPage() {
           reverse
         />
       </div>
+
+      {/* Restaurant VIP, bars et offres gérés dans l'admin (Espaces / Offres) */}
+      {(spaces.length > 0 || offers.length > 0) && (
+        <section id="vip" className="scroll-mt-28 mx-auto max-w-[1440px] px-5 lg:px-10 pb-16 lg:pb-24">
+          {spaces.map((f, i) => (
+            <FacilityBlock key={f.id} facility={f} reverse={i % 2 === 1} />
+          ))}
+          {offers.length > 0 && (
+            <div className="border-t border-border pt-16">
+              <span className="eyebrow text-primary">Offres du restaurant</span>
+              <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {offers.map((o) => (
+                  <OfferCard key={o.id} offer={o} />
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Reservation CTA */}
       <section className="bg-primary text-white text-center px-5 shadow-[inset_0_0_0_12px_var(--brand),inset_0_0_0_13px_rgb(255_255_255/0.8)] py-20 lg:py-28">

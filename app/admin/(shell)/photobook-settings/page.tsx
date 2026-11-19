@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Save, Settings } from "lucide-react";
+import { Save } from "lucide-react";
 
 export default function PhotobookSettingsPage() {
   const [loading, setLoading] = useState(true);
@@ -19,9 +19,6 @@ export default function PhotobookSettingsPage() {
     watermarkText: "Hotel Nahoui",
   });
 
-  useEffect(() => {
-    fetchSettings();
-  }, []);
 
   const fetchSettings = async () => {
     try {
@@ -65,6 +62,12 @@ export default function PhotobookSettingsPage() {
     }
   };
 
+  // Chargement depuis l'API au montage et quand les filtres changent.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchSettings();
+  }, []);
+
   if (loading) {
     return <div>Chargement...</div>;
   }
@@ -104,7 +107,7 @@ export default function PhotobookSettingsPage() {
               <div className="space-y-0.5">
                 <Label>Exiger un séjour</Label>
                 <p className="text-sm text-muted-foreground">
-                  Les utilisateurs doivent avoir séjourné à l'établissement pour télécharger
+                  Les utilisateurs doivent avoir séjourné à l&apos;établissement pour télécharger
                 </p>
               </div>
               <Switch

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { ContactPage } from '@/views/ContactPage';
 
@@ -9,4 +10,11 @@ export const metadata: Metadata = {
   openGraph: { url: "/contact", title: "Contact — Hôtel Nahoui Balmer" },
 };
 
-export default function Page() { return <ContactPage />; }
+export default function Page() {
+  // useSearchParams (sujet prérempli) exige une frontière Suspense.
+  return (
+    <Suspense>
+      <ContactPage />
+    </Suspense>
+  );
+}

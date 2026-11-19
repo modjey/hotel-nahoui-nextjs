@@ -35,7 +35,7 @@ export async function GET(request: Request) {
 
     // Archive completed bookings
     const results = await Promise.all(
-      completedBookings.map(async (booking: any) => {
+      completedBookings.map(async (booking) => {
         try {
           await prisma.booking.update({
             where: { id: booking.id },

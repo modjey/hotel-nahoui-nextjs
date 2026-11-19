@@ -10,6 +10,7 @@ export const GET = withAuth(async () => {
   try {
     const categories = await prisma.dishCategory.findMany({
       orderBy: { order: "asc" },
+      include: { _count: { select: { dishes: true } } },
     });
     return ok({ categories });
   } catch (e) {

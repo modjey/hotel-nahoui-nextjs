@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { AlbumType, type Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { withAuth, ok, fail, parseBody } from "@/lib/auth/api";
@@ -17,26 +17,17 @@ const createAlbumSchema = z.object({
 });
 
 // Schema for updating an album
-const updateAlbumSchema = z.object({
-  name: z.string().min(1).optional(),
-  description: z.string().nullable().optional(),
-  type: z.enum(["GALLERY", "GUEST", "EVENT", "ROOM", "AMENITY"]).optional(),
-  coverImage: z.string().nullable().optional(),
-  isPublished: z.boolean().optional(),
-  isFeatured: z.boolean().optional(),
-  order: z.number().optional(),
-  locationId: z.string().nullable().optional(),
-});
 
 // GET /api/admin/admin-photo-albums - List all albums (admin only)
-export const GET = withAuth(async (req, { session }) => {
+export const GET = withAuth(async (req) => {
   const { searchParams } = new URL(req.url);
   const type = searchParams.get("type");
   const locationId = searchParams.get("locationId");
   const isPublished = searchParams.get("isPublished");
 
-  const where: any = {};
-  if (type) where.type = type;
+  const where: Prisma.PhotoAlbumWhereInput = {};
+  // Valeur inconnue ignorée plutôt qu'une erreur 500 de Prisma.
+  if (type && (Object.values(AlbumType) as string[]).includes(type)) where.type = type as AlbumType;
   if (locationId) where.locationId = locationId;
   if (isPublished !== null && isPublished !== undefined && isPublished !== "") {
     where.isPublished = isPublished === "true";
@@ -63,7 +54,7 @@ export const GET = withAuth(async (req, { session }) => {
 }, { roles: ["ADMIN", "SUPER_ADMIN"] });
 
 // POST /api/admin/admin-photo-albums - Create a new album (admin only)
-export const POST = withAuth(async (req, { session }) => {
+export const POST = withAuth(async (req) => {
   const bodyResult = await parseBody(req, createAlbumSchema);
   if (!bodyResult.ok) return bodyResult.response;
 

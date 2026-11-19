@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { ok, fail, parseBody, withAuth } from "@/lib/auth/api";
 import { PENDING_BOOKING_TTL_MS, overlapBookingWhere, validateBookingDates } from "@/lib/bookings";
 import { z } from "zod";
+import { notifyGuestBookingStatus } from "@/lib/notifications";
+import { sendBookingEmail } from "@/lib/booking-emails";
 
 const bookingUpdateSchema = z.object({
   roomId: z.string().optional(),
@@ -89,7 +91,8 @@ const handler = withAuth(async (req) => {
         ...(body.guestLastName !== undefined && { guestLastName: body.guestLastName }),
         ...(body.guestEmail !== undefined && { guestEmail: body.guestEmail }),
         ...(body.guestPhone !== undefined && { guestPhone: body.guestPhone }),
-        ...(body.checkIn && { checkIn: new Date(body.checkIn) }),
+        // Nouvelle date d'arrivée : le rappel avant l'arrivée sera renvoyé.
+        ...(body.checkIn && { checkIn: new Date(body.checkIn), arrivalReminderSentAt: null }),
         ...(body.checkOut && { checkOut: new Date(body.checkOut) }),
         ...(body.adults && { adults: body.adults }),
         ...(body.children !== undefined && { children: body.children }),
@@ -119,6 +122,31 @@ const handler = withAuth(async (req) => {
         },
       },
     });
+
+    // Email au client : changement de statut, sinon détail des modifications du séjour.
+    const statusChanged = body.status && body.status !== existing.status;
+    if (statusChanged && body.status !== "PENDING") {
+      await notifyGuestBookingStatus({
+        status: body.status!,
+        reference: updated.reference,
+        roomName: updated.room?.name,
+        checkIn: updated.checkIn,
+        checkOut: updated.checkOut,
+        guestFirstName: updated.guestFirstName,
+        guestLastName: updated.guestLastName,
+        guestEmail: updated.guestEmail,
+      });
+    } else if (!statusChanged) {
+      const changes = [
+        updated.roomId !== existing.roomId && "chambre",
+        updated.checkIn.getTime() !== existing.checkIn.getTime() && "date d'arrivée",
+        updated.checkOut.getTime() !== existing.checkOut.getTime() && "date de départ",
+        (updated.adults !== existing.adults || updated.children !== existing.children) && "nombre de voyageurs",
+      ].filter((c): c is string => Boolean(c));
+      if (changes.length && updated.status !== "CANCELLED") {
+        await sendBookingEmail(id, { type: "MODIFIED", changes });
+      }
+    }
 
     return ok({ booking: updated });
   }

@@ -18,9 +18,7 @@ import {
 } from "@/components/ui/select";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import { flushPendingUploads } from "@/lib/pending-uploads";
-import { api } from "@/lib/api-client";
 import { useApi, useMutation } from "@/hooks/use-api";
-import { slugify } from "@/lib/catalog/schemas";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { trimValues } from "@/lib/utils";
@@ -38,7 +36,7 @@ export default function NewDishPage() {
   const [currency, setCurrency] = useState("XOF");
   const [imageUrl, setImageUrl] = useState("");
 
-  const create = useMutation<{ dish: { id: string; slug: string } }, any>(
+  const create = useMutation<{ dish: { id: string; slug: string } }, Record<string, unknown>>(
     "/api/admin/admin-dishes",
     {
       onSuccess: (res) => {

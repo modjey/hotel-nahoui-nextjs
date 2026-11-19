@@ -1,12 +1,18 @@
 "use client";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { MapPin, Phone, Mail, Clock, Send, CheckCircle, Facebook, Instagram } from "lucide-react";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
 import { SocialSection } from "@/components/site/SocialSection";
 
+const SUBJECTS = ["reservation", "reclamation", "groupe", "restaurant", "spa", "evenements", "autre"];
+
 export function ContactPage() {
+  // Lien « Signaler un problème » depuis Mes réservations : /contact?sujet=reclamation&ref=BK-…
+  const searchParams = useSearchParams();
+  const presetSubject = searchParams?.get("sujet") ?? "";
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState({
@@ -14,8 +20,9 @@ export function ContactPage() {
     lastName: "",
     email: "",
     phone: "",
-    subject: "",
+    subject: SUBJECTS.includes(presetSubject) ? presetSubject : "",
     message: "",
+    bookingReference: searchParams?.get("ref") ?? "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,7 +39,7 @@ export function ContactPage() {
 
       if (data.success) {
         setSubmitted(true);
-        setFormData({ firstName: "", lastName: "", email: "", phone: "", subject: "", message: "" });
+        setFormData({ firstName: "", lastName: "", email: "", phone: "", subject: "", message: "", bookingReference: "" });
       } else {
         alert("Erreur: " + (data.error || "Erreur lors de l'envoi"));
       }
@@ -234,12 +241,31 @@ export function ContactPage() {
                     >
                       <option value="">Sélectionnez un sujet</option>
                       <option value="reservation">Réservation</option>
+                      <option value="reclamation">Réclamation sur une réservation</option>
+                      <option value="groupe">Groupe, séminaire ou événement</option>
                       <option value="restaurant">Restaurant</option>
                       <option value="spa">Spa & Bien-être</option>
                       <option value="evenements">Événements</option>
                       <option value="autre">Autre</option>
                     </select>
+                    {formData.subject === "groupe" && (
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        Pour recevoir un devis détaillé, utilisez plutôt notre <a href="/devis" className="underline underline-offset-4 text-foreground">formulaire de demande de devis</a>.
+                      </p>
+                    )}
                   </div>
+                  {formData.subject === "reclamation" && (
+                    <div>
+                      <label htmlFor="bookingReference" className="eyebrow text-muted-foreground">Référence de la réservation</label>
+                      <input
+                        id="bookingReference"
+                        value={formData.bookingReference}
+                        onChange={(e) => setFormData({ ...formData, bookingReference: e.target.value })}
+                        placeholder="BK-XXXXXXXXXXXX"
+                        className={`mt-2 ${inputClass}`}
+                      />
+                    </div>
+                  )}
                   <div>
                     <label className="eyebrow text-muted-foreground">Message</label>
                     <textarea

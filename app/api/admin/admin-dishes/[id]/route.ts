@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import { ok, fail, withAuth } from "@/lib/auth/api";
 import type { NextRequest } from "next/server";
 import { slugify } from "@/lib/catalog/schemas";
@@ -32,7 +33,7 @@ const handler = withAuth(async (req: NextRequest) => {
       const body = await req.json();
       const { name, description, price, currency, categoryId, locationId, imageUrl, isAvailable, isPublished, isFeatured, order } = body;
 
-      const updateData: any = {};
+      const updateData: Prisma.DishUncheckedUpdateInput = {};
       if (name !== undefined) {
         updateData.name = name;
         updateData.slug = slugify(name);

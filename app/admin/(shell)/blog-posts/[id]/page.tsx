@@ -60,10 +60,6 @@ export default function EditBlogPostPage() {
     order: 0,
   });
 
-  useEffect(() => {
-    fetchPost(id);
-    fetchCategories();
-  }, [id]);
 
   const fetchPost = async (id: string) => {
     try {
@@ -162,6 +158,13 @@ export default function EditBlogPostPage() {
       setDeleting(false);
     }
   };
+
+  // Chargement depuis l'API au montage et quand les filtres changent.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchPost(id);
+    fetchCategories();
+  }, [id]);
 
   if (loading) {
     return <div>Chargement...</div>;

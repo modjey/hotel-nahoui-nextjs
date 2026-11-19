@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { isAdmin } from "@/lib/auth/session";
@@ -20,7 +21,7 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "10", 10);
 
-    const where: any = {};
+    const where: Prisma.BlogPostWhereInput = {};
     if (isPublished === "true") {
       where.isPublished = true;
     }

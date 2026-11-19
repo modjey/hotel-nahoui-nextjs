@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/admin/PageHeader";
+import { RoomTypesPanel } from "@/components/admin/RoomTypesPanel";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -61,6 +63,17 @@ type Room = {
 };
 
 export default function AdminRoomsPage() {
+  return (
+    <Suspense>
+      <AdminRooms />
+    </Suspense>
+  );
+}
+
+/** Chambres et types de chambre réunis sur une seule page, en deux onglets. */
+function AdminRooms() {
+  const pathname = usePathname();
+  const tab = useSearchParams().get("tab") === "types" ? "types" : "rooms";
   const [page, setPage] = useState(1);
   const [limit] = useState(50);
   const [search, setSearch] = useState("");
@@ -78,10 +91,13 @@ export default function AdminRoomsPage() {
     return () => clearTimeout(t);
   }, [search]);
 
-  // Tout changement de filtre ramène à la première page.
-  useEffect(() => {
+  // Tout changement de filtre ramène à la première page (ajustement pendant le rendu).
+  const filterKey = JSON.stringify([debouncedSearch, locationId, roomTypeId, status, promo]);
+  const [lastFilterKey, setLastFilterKey] = useState(filterKey);
+  if (filterKey !== lastFilterKey) {
+    setLastFilterKey(filterKey);
     setPage(1);
-  }, [debouncedSearch, locationId, roomTypeId, status, promo]);
+  }
 
   const params = new URLSearchParams({ page: String(page), limit: String(limit) });
   if (debouncedSearch) params.set("search", debouncedSearch);
@@ -92,7 +108,7 @@ export default function AdminRoomsPage() {
 
   const { data, loading, error, refetch } = useApi<{ rooms: Room[]; total: number; page: number; limit: number; totalPages: number }>(`/api/admin/admin-rooms?${params.toString()}`);
   const { data: locationsData } = useApi<{ locations: { id: string; name: string; city: string | null }[] }>("/api/admin/admin-locations");
-  const { data: typesData } = useApi<{ types: { id: string; name: string }[] }>("/api/admin/admin-room-types");
+  const { data: typesData, refetch: refetchTypes } = useApi<{ types: { id: string; name: string }[] }>("/api/admin/admin-room-types");
   const locations = locationsData?.locations ?? [];
   const roomTypes = typesData?.types ?? [];
 
@@ -149,18 +165,32 @@ export default function AdminRoomsPage() {
   return (
     <div>
       <PageHeader
-        title="Chambres"
-        description="Gérez les chambres disponibles à la réservation."
-        actions={
+        title="Chambres & types"
+        description="Gérez les chambres disponibles à la réservation et les types qui les regroupent (Suite, Confort…)."
+        actions={tab === "rooms" ? (
           <Link href="/admin/admin-rooms/new">
             <Button>
               <Plus className="h-4 w-4" />
               Nouvelle chambre
             </Button>
           </Link>
-        }
+        ) : undefined}
       />
 
+      <Tabs
+        value={tab}
+        onValueChange={(v) => router.replace(v === "types" ? `${pathname}?tab=types` : pathname, { scroll: false })}
+      >
+        <TabsList className="mb-4">
+          <TabsTrigger value="rooms">Chambres{data ? ` (${data.total})` : ""}</TabsTrigger>
+          <TabsTrigger value="types">Types de chambre ({roomTypes.length})</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="types">
+          <RoomTypesPanel onChange={() => { refetchTypes(); refetch(); }} />
+        </TabsContent>
+
+        <TabsContent value="rooms">
       <div className="rounded-2xl bg-card border border-border">
         <div className="p-4 border-b border-border space-y-3">
           <div className="relative">
@@ -487,6 +517,8 @@ export default function AdminRoomsPage() {
           </div>
         )}
       </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

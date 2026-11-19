@@ -78,12 +78,6 @@ const statusLabels: Record<string, string> = {
   REFUNDED: "Remboursé",
 };
 
-const statusColors: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  PENDING: "secondary",
-  SUCCESS: "default",
-  FAILED: "destructive",
-  REFUNDED: "outline",
-};
 
 const statusIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   PENDING: Clock,

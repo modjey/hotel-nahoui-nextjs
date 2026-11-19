@@ -44,7 +44,7 @@ async function getLocation(slug: string): Promise<LocationWithRooms | null> {
       isPublished: true,
       OR: [{ slug }, { id: slug }],
     },
-    select: locationDetailSelect as any,
+    select: locationDetailSelect,
   }) as Promise<LocationWithRooms | null>;
 }
 

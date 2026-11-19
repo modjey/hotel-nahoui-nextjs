@@ -1,11 +1,13 @@
 "use client";
+import { EventCard } from "@/components/site/content/cards";
+import type { PublicEvent } from "@/lib/public-content";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { MapPin, Anchor, Fish, Waves, Trees, Compass, Ship, Droplets } from "lucide-react";
+import { MapPin, Anchor, Fish, Waves, Trees, Compass, Ship } from "lucide-react";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
 
-export function EventsPage() {
+export function EventsPage({ events = [] }: { events?: PublicEvent[] }) {
   const circuits = [
     {
       icon: Anchor,
@@ -125,6 +127,19 @@ export function EventsPage() {
           </motion.p>
         </div>
       </section>
+
+      {/* Agenda de l'hôtel (géré dans Admin → Événements) */}
+      {events.length > 0 && (
+        <section className="mx-auto max-w-[1100px] px-6 pt-24 lg:pt-32">
+          <span className="eyebrow text-primary">À l&rsquo;hôtel</span>
+          <h2 className="font-display mt-5 text-4xl sm:text-5xl font-light">Prochains événements</h2>
+          <div className="mt-10 border-b border-border">
+            {events.map((e) => (
+              <EventCard key={e.id} event={e} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Circuits timeline */}
       <section className="mx-auto max-w-[900px] px-6 py-24 lg:py-32">

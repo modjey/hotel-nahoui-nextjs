@@ -27,6 +27,8 @@ type ContactSubmission = {
   status: string;
   reply: string | null;
   repliedAt: string | null;
+  category?: string;
+  bookingReference?: string | null;
   createdAt: string;
 };
 
@@ -39,9 +41,6 @@ export default function ContactSubmissionDetailPage() {
   const [saving, setSaving] = useState(false);
   const [reply, setReply] = useState("");
 
-  useEffect(() => {
-    fetchSubmission(id);
-  }, [id]);
 
   const fetchSubmission = async (id: string) => {
     try {
@@ -94,9 +93,9 @@ export default function ContactSubmissionDetailPage() {
       const data = await response.json();
       if (data.success) {
         setSubmission(data.data.submission);
-        alert("Réponse enregistrée");
+        alert(data.data.emailSent ? "Réponse envoyée par email au client" : "Réponse enregistrée");
       } else {
-        alert("Erreur lors de l'enregistrement de la réponse");
+        alert(typeof data.error === "string" ? data.error : "Erreur lors de l'envoi de la réponse");
       }
     } catch (error) {
       console.error("Error saving reply:", error);
@@ -126,6 +125,12 @@ export default function ContactSubmissionDetailPage() {
       alert("Erreur lors de la suppression");
     }
   };
+
+  // Chargement depuis l'API au montage et quand les filtres changent.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchSubmission(id);
+  }, [id]);
 
   if (loading) {
     return <div>Chargement...</div>;
@@ -187,6 +192,14 @@ export default function ContactSubmissionDetailPage() {
               <Label>Sujet</Label>
               <p className="font-medium">{submission.subject}</p>
             </div>
+            {submission.category === "reclamation" && (
+              <div className="sm:col-span-2 rounded-lg bg-destructive/10 p-3 text-sm">
+                <span className="font-medium text-destructive">Réclamation</span>
+                {submission.bookingReference && (
+                  <> liée à la réservation <span className="font-mono">{submission.bookingReference}</span></>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="mb-6">
@@ -278,7 +291,7 @@ export default function ContactSubmissionDetailPage() {
             </div>
             <Button onClick={handleReply} disabled={saving || !reply.trim()}>
               <Send className="h-4 w-4 mr-2" />
-              {saving ? "Enregistrement..." : "Enregistrer et marquer comme répondu"}
+              {saving ? "Envoi..." : "Envoyer la réponse par email"}
             </Button>
             {submission.reply && (
               <div className="border-t pt-4">

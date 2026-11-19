@@ -19,8 +19,21 @@ import { ImageUpload } from "@/components/admin/ImageUpload";
 import { flushPendingUploads } from "@/lib/pending-uploads";
 import { api, ApiError } from "@/lib/api-client";
 import { useApi } from "@/hooks/use-api";
-import { ArrowLeft, Trash2, Loader2 } from "lucide-react";
+import { ArrowLeft, Trash2 } from "lucide-react";
 import { trimValues } from "@/lib/utils";
+
+type AlbumTypeValue = "GALLERY" | "GUEST" | "EVENT" | "ROOM" | "AMENITY";
+
+type AlbumDetail = {
+  name: string | null;
+  description: string | null;
+  type: AlbumTypeValue | null;
+  coverImage: string | null;
+  isPublished: boolean | null;
+  isFeatured: boolean | null;
+  order: number | null;
+  locationId: string | null;
+};
 
 export default function EditPhotoAlbumPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -29,14 +42,27 @@ export default function EditPhotoAlbumPage({ params }: { params: Promise<{ id: s
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    type: "GALLERY" as "GALLERY" | "GUEST" | "EVENT" | "ROOM" | "AMENITY",
+    type: "GALLERY" as AlbumTypeValue,
     coverImage: "",
     isPublished: true,
     isFeatured: false,
     order: 0,
     locationId: "",
   });
-  const { data: albumData, loading: albumLoading, refetch } = useApi<any>(`/api/admin/admin-photo-albums/${id}`);
+  // Le formulaire est rempli à la réception de l'album (pas d'effet de synchronisation).
+  const { loading: albumLoading } = useApi<AlbumDetail>(id ? `/api/admin/admin-photo-albums/${id}` : null, {
+    onSuccess: (album) =>
+      setFormData({
+        name: album.name || "",
+        description: album.description || "",
+        type: album.type || "GALLERY",
+        coverImage: album.coverImage || "",
+        isPublished: album.isPublished ?? true,
+        isFeatured: album.isFeatured ?? false,
+        order: album.order || 0,
+        locationId: album.locationId || "",
+      }),
+  });
   const { data: locationsData } = useApi<{ locations: { id: string; name: string; city: string | null }[] }>("/api/admin/admin-locations");
   const locations = locationsData?.locations || [];
 
@@ -44,20 +70,6 @@ export default function EditPhotoAlbumPage({ params }: { params: Promise<{ id: s
     params.then((p) => setId(p.id));
   }, [params]);
 
-  useEffect(() => {
-    if (albumData) {
-      setFormData({
-        name: albumData.name || "",
-        description: albumData.description || "",
-        type: albumData.type || "GALLERY",
-        coverImage: albumData.coverImage || "",
-        isPublished: albumData.isPublished ?? true,
-        isFeatured: albumData.isFeatured ?? false,
-        order: albumData.order || 0,
-        locationId: albumData.locationId || "",
-      });
-    }
-  }, [albumData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,7 +142,7 @@ export default function EditPhotoAlbumPage({ params }: { params: Promise<{ id: s
 
           <div className="grid gap-2">
             <Label htmlFor="type">Type</Label>
-            <Select value={formData.type} onValueChange={(value: any) => setFormData({ ...formData, type: value })}>
+            <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value as AlbumTypeValue })}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
