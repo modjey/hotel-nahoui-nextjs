@@ -31,14 +31,7 @@ export function IndexPage({
     <div className="min-h-screen bg-background text-foreground">
       <Nav />
       <main>
-        <Hero content={hero} />
-
-        {/* Barre de réservation à cheval sur le hero */}
-        <div className="relative z-20 -mt-24 sm:-mt-[4.25rem] lg:-mt-[4.75rem]">
-          <div className="mx-auto max-w-[1440px] px-5 lg:px-10">
-            <SearchBar />
-          </div>
-        </div>
+        <Hero content={hero} searchBar={<SearchBar />} />
 
         <IntroSection facts={facts} />
         {/* Les chambres d'abord : l'objectif n°1 du site est la demande de réservation. */}
