@@ -11,6 +11,15 @@ import { WhatsAppIcon } from "@/components/site/social-icons";
 
 const WHATSAPP_URL = "https://api.whatsapp.com/send?phone=%2B2250788494979";
 
+
+function getInitials(u: { name: string | null; email: string | null; phone: string | null }): string {
+  const src = (u.name || u.email || u.phone || "").trim();
+  if (!src) return "?";
+  const parts = src.split(/[\s@._-]+/).filter(Boolean);
+  const letters = parts.length >= 2 ? parts[0][0] + parts[1][0] : src.slice(0, 2);
+  return letters.toUpperCase();
+}
+
 export function Nav() {
   const pathname = usePathname() ?? "/";
   const { user, logout } = useAuth();
@@ -249,7 +258,7 @@ export function Nav() {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={user.image} alt="" className="h-full w-full object-cover" />
                   ) : (
-                    <User className="h-4 w-4" />
+                    <span className="text-[0.7rem] font-semibold tracking-wide leading-none" aria-hidden="true">{getInitials(user)}</span>
                   )}
                 </span>
               ) : (
@@ -462,7 +471,7 @@ export function Nav() {
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={user.image} alt="" className="h-full w-full object-cover" />
                           ) : (
-                            <User className="h-4 w-4" />
+                            <span className="text-xs font-semibold tracking-wide leading-none" aria-hidden="true">{getInitials(user)}</span>
                           )}
                         </span>
                         <div className="min-w-0">

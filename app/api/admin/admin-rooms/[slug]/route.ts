@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { ok, fail, parseBody, withAuth } from "@/lib/auth/api";
 import { roomUpdateSchema } from "@/lib/catalog/schemas";
+import { attachPaymentSummaries } from "@/lib/payment-summary-server";
 import { roomSlugBase, ensureUniqueRoomSlug } from "@/lib/catalog/slug";
 
 export const runtime = "nodejs";
@@ -51,7 +52,7 @@ const handler = withAuth(async (req) => {
             guestPhone: true,
             status: true,
             expiresAt: true,
-            payments: { select: { status: true } },
+            payments: { select: { status: true, amount: true } },
             userId: true,
             user: {
               select: {
@@ -67,7 +68,8 @@ const handler = withAuth(async (req) => {
       },
     });
     if (!room) return fail("Chambre introuvable", 404, "NOT_FOUND");
-    return ok({ room });
+    const bookings = await attachPaymentSummaries(room.bookings.map((b) => ({ ...b, roomId: room.id })));
+    return ok({ room: { ...room, bookings } });
   }
 
   if (req.method === "PATCH") {

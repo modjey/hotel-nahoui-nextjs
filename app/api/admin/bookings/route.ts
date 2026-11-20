@@ -10,6 +10,7 @@ import {
   validateBookingDates,
   withRoomLock,
 } from "@/lib/bookings";
+import { attachPaymentSummaries } from "@/lib/payment-summary-server";
 import { z } from "zod";
 
 const bookingSchema = z.object({
@@ -53,6 +54,7 @@ const handler = withAuth(async (req) => {
         payments: {
           select: {
             status: true,
+            amount: true,
           },
         },
         user: {
@@ -67,7 +69,7 @@ const handler = withAuth(async (req) => {
       orderBy: { checkIn: "desc" },
     });
 
-    return ok({ bookings });
+    return ok({ bookings: await attachPaymentSummaries(bookings) });
   }
 
   if (req.method === "POST") {

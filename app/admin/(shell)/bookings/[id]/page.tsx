@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { ArrowLeft, User, Mail, Phone, Calendar, CreditCard, Users, BedDouble, Pencil, CheckCircle2, Trash2, CircleCheckBig } from "lucide-react";
 import { BookingFormDialog, type BookingFormRoom } from "@/components/admin/BookingFormDialog";
 import { BookingContactPanel } from "@/components/admin/BookingContactPanel";
+import { PAYMENT_STATE_CLASS, summarizePayments } from "@/lib/payment-summary";
 import { getDiscountedPrice } from "@/lib/pricing";
 
 type Booking = {
@@ -632,6 +633,7 @@ export default function AdminBookingDetailPage() {
                 .filter((p) => p.status === "PENDING")
                 .reduce((s, p) => s + p.amount, 0);
               const remaining = Math.max(0, stayTotal - paid);
+              const payState = summarizePayments(stayTotal, booking.payments).state;
               const fmtAmount = (n: number) => `${new Intl.NumberFormat("fr-FR").format(n)} ${currency}`;
               return (
                 <div className="space-y-2 text-sm">
@@ -657,6 +659,11 @@ export default function AdminBookingDetailPage() {
                   <div className="flex justify-between pt-2 border-t border-border">
                     <span className="text-muted-foreground">Reste à payer</span>
                     <span className="font-display text-xl">{fmtAmount(remaining)}</span>
+                  </div>
+                  <div className="flex justify-end pt-1">
+                    <Badge variant="outline" className={PAYMENT_STATE_CLASS[payState]}>
+                      {payState === "PAID" ? "Séjour entièrement soldé" : payState === "PARTIAL" ? "Paiement partiel" : "Rien encaissé"}
+                    </Badge>
                   </div>
                 </div>
               );

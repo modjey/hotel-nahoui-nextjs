@@ -9,6 +9,7 @@ import {
   validateBookingDates,
   withRoomLock,
 } from "@/lib/bookings";
+import { attachPaymentSummaries } from "@/lib/payment-summary-server";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -268,7 +269,7 @@ const handler = withAuth(async (req) => {
     const totalPages = Math.ceil(total / limit);
 
     return ok({
-      bookings,
+      bookings: await attachPaymentSummaries(bookings),
       pagination: {
         page,
         limit,

@@ -27,6 +27,7 @@ import { Search, Eye, CheckCircle, XCircle, Clock, Pencil } from "lucide-react";
 import { BookingFormDialog } from "@/components/admin/BookingFormDialog";
 import Link from "next/link";
 import { format } from "date-fns";
+import { PAYMENT_STATE_CLASS, PAYMENT_STATE_LABEL, type PaymentSummary } from "@/lib/payment-summary";
 import { fr } from "date-fns/locale";
 
 interface AdminRoom {
@@ -65,6 +66,7 @@ interface Booking {
     slug: string;
     name: string;
   };
+  paymentSummary?: PaymentSummary;
   payments?: {
     id: string;
     status: string;
@@ -305,14 +307,18 @@ export default function AdminBookingsPage() {
                     </TableCell>
                     <TableCell className="font-medium">
                       {(() => {
-                        const payments = booking.payments ?? [];
-                        if (payments.length === 0) return "N/A";
-                        const currency = payments[0].currency;
-                        const paid = payments.filter((p) => p.status === "SUCCESS").reduce((s, p) => s + p.amount, 0);
-                        const total = payments.reduce((s, p) => s + p.amount, 0);
-                        return paid === total
-                          ? `${new Intl.NumberFormat("fr-FR").format(total)} ${currency}`
-                          : `${new Intl.NumberFormat("fr-FR").format(paid)} / ${new Intl.NumberFormat("fr-FR").format(total)} ${currency}`;
+                        const sm = booking.paymentSummary;
+                        const currency = booking.payments?.[0]?.currency ?? "FCFA";
+                        if (!sm) return "N/A";
+                        const fmt = (n: number) => new Intl.NumberFormat("fr-FR").format(n);
+                        return (
+                          <div className="space-y-1">
+                            <div>{fmt(sm.total)} {currency}</div>
+                            <Badge variant="outline" className={`font-normal ${PAYMENT_STATE_CLASS[sm.state]}`}>
+                              {sm.state === "PARTIAL" ? `Partiel · reste ${fmt(sm.remaining)}` : PAYMENT_STATE_LABEL[sm.state]}
+                            </Badge>
+                          </div>
+                        );
                       })()}
                     </TableCell>
                     <TableCell>

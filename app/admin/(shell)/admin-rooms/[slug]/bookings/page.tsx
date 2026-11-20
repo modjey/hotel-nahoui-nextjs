@@ -14,6 +14,7 @@ import { BookingFormDialog } from "@/components/admin/BookingFormDialog";
 import { api, ApiError } from "@/lib/api-client";
 import { useApi } from "@/hooks/use-api";
 import { toast } from "sonner";
+import { PAYMENT_STATE_CLASS, PAYMENT_STATE_LABEL, type PaymentSummary } from "@/lib/payment-summary";
 import { Plus, Calendar as CalendarIcon, Users, Pencil, Trash2, ArrowLeft, ChevronLeft, ChevronRight, Eye } from "lucide-react";
 
 type Room = {
@@ -30,6 +31,8 @@ type Room = {
   roomType: { id: string; name: string };
 };
 
+const fmtMoney = (n: number) => new Intl.NumberFormat("fr-FR").format(n);
+
 type Booking = {
   id: string;
   reference: string | null;
@@ -42,7 +45,8 @@ type Booking = {
   guestEmail: string | null;
   guestPhone: string | null;
   status: string;
-  payments: { status: string | null }[];
+  payments: { status: string | null; amount?: number }[];
+  paymentSummary?: PaymentSummary;
   userId: string | null;
   user?: {
     id: string;
@@ -297,12 +301,18 @@ export default function AdminRoomBookingsPage() {
                   <div className="font-medium">{selectedBooking.reference}</div>
                 </div>
               )}
-              {selectedBooking.payments?.some((p) => p.status === "SUCCESS") && (
+              {selectedBooking.paymentSummary && (
                 <div>
                   <Label className="text-muted-foreground">Paiement</Label>
-                  <Badge variant="outline" className="text-green-600 border-green-600">
-                    Payé
-                  </Badge>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="outline" className={PAYMENT_STATE_CLASS[selectedBooking.paymentSummary.state]}>
+                      {PAYMENT_STATE_LABEL[selectedBooking.paymentSummary.state]}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground tabular-nums">
+                      {fmtMoney(selectedBooking.paymentSummary.paid)} / {fmtMoney(selectedBooking.paymentSummary.total)} FCFA
+                      {selectedBooking.paymentSummary.remaining > 0 && ` · reste ${fmtMoney(selectedBooking.paymentSummary.remaining)}`}
+                    </span>
+                  </div>
                 </div>
               )}
               <div className="flex justify-end gap-2 pt-4">

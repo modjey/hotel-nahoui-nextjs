@@ -13,7 +13,7 @@ import { Footer } from "@/components/site/Footer";
 import { api } from "@/lib/api-client";
 import { AuthModal } from "@/components/auth/AuthModal";
 import HotelBookingCalendar, { type AvailabilityMap, type GuestCount, buildAvailabilityMap, mergeAvailability, stayTotalFromMap } from "@/components/site/HotelBookingCalendar";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getDiscountedPrice } from "@/lib/pricing";
 import { type Room, fcfa } from "@/components/site/booking/room";
@@ -548,79 +548,80 @@ function StayDetailPageContent() {
         </div>
       </section>
 
-      {/* Gallery Lightbox */}
-      <Dialog open={galleryOpen} onOpenChange={setGalleryOpen}>
-        <DialogContent className="max-w-6xl w-full h-[80vh] p-0 bg-black/95 border-none">
-          <DialogTitle className="sr-only">Galerie de photos</DialogTitle>
-          <button
-            onClick={() => setGalleryOpen(false)}
-            className="absolute top-4 right-4 z-10 h-10 w-10 bg-white/10 text-white hover:bg-white/20 flex items-center justify-center transition-colors"
+      {/* Lecteur plein écran (même esprit que le Photobook) */}
+      <DialogPrimitive.Root open={galleryOpen} onOpenChange={setGalleryOpen}>
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-[rgb(26_12_9/0.94)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+          <DialogPrimitive.Content
+            aria-describedby={undefined}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowLeft') handlePrevImage();
+              if (e.key === 'ArrowRight') handleNextImage();
+            }}
+            className="fixed inset-0 z-50 flex flex-col outline-none"
           >
-            <X className="h-5 w-5" />
-          </button>
-          <button
-            onClick={handlePrevImage}
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 bg-white/10 text-white hover:bg-white/20 flex items-center justify-center transition-colors"
-          >
-            <ChevronLeft className="h-6 w-6" />
-          </button>
-          <button
-            onClick={handleNextImage}
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 bg-white/10 text-white hover:bg-white/20 flex items-center justify-center transition-colors"
-          >
-            <ChevronRight className="h-6 w-6" />
-          </button>
-          <div className="w-full h-full flex items-center justify-center">
-            <AnimatePresence mode="wait">
-              {p.gallery[currentImageIndex].type === 'video' && p.gallery[currentImageIndex].isYoutube ? (
-                <motion.iframe
+            <DialogPrimitive.Title className="sr-only">Galerie de photos de {p.title}</DialogPrimitive.Title>
+            <DialogPrimitive.Close
+              aria-label="Fermer la galerie"
+              className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10 h-11 w-11 grid place-items-center text-white/80 hover:text-white bg-black/30 hover:bg-black/50 transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </DialogPrimitive.Close>
+            {p.gallery.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={handlePrevImage}
+                  aria-label="Photo précédente"
+                  className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 grid place-items-center text-white/80 hover:text-white bg-black/30 hover:bg-black/50 transition-colors"
+                >
+                  <ChevronLeft className="h-7 w-7" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextImage}
+                  aria-label="Photo suivante"
+                  className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 grid place-items-center text-white/80 hover:text-white bg-black/30 hover:bg-black/50 transition-colors"
+                >
+                  <ChevronRight className="h-7 w-7" />
+                </button>
+              </>
+            )}
+            <div className="flex-1 min-h-0 flex items-center justify-center px-4 sm:px-20 pt-16 pb-2">
+              {p.gallery[currentImageIndex]?.type === 'video' && p.gallery[currentImageIndex]?.isYoutube ? (
+                <iframe
                   key={currentImageIndex}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.3 }}
                   src={`https://www.youtube.com/embed/${getYoutubeId(p.gallery[currentImageIndex].url)}?autoplay=1`}
-                  className="w-full h-full object-contain"
-                  style={{ aspectRatio: '16/9', maxWidth: '90vw', maxHeight: '90vh' }}
+                  title={`${p.title} - vidéo`}
+                  className="aspect-video max-h-full max-w-full w-[min(100%,calc((100dvh-9rem)*16/9))]"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />
-              ) : p.gallery[currentImageIndex].type === 'video' ? (
-                <motion.video
+              ) : p.gallery[currentImageIndex]?.type === 'video' ? (
+                <video
                   key={currentImageIndex}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.3 }}
                   src={p.gallery[currentImageIndex].url}
                   controls
                   className="max-w-full max-h-full object-contain"
                 />
               ) : (
-                <motion.img
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
                   key={currentImageIndex}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.3 }}
-                  src={p.gallery[currentImageIndex].url}
+                  src={p.gallery[currentImageIndex]?.url}
                   alt={`${p.title} - Photo ${currentImageIndex + 1}`}
                   className="max-w-full max-h-full object-contain"
                 />
               )}
-            </AnimatePresence>
-          </div>
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-            {p.gallery.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrentImageIndex(i)}
-                className={`h-2 rounded-full transition-all ${i === currentImageIndex ? 'w-8 bg-white' : 'w-2 bg-white/50 hover:bg-white/70'}`}
-              />
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
+            </div>
+            <div className="shrink-0 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 flex justify-center">
+              <span className="bg-black/60 px-5 py-2.5 text-white text-sm tabular">
+                {currentImageIndex + 1} / {p.gallery.length}
+              </span>
+            </div>
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
 
       {/* Content + booking */}
       <section className="mx-auto max-w-[1440px] px-5 lg:px-10 py-10 pb-28 lg:pb-16 grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-14">
@@ -930,7 +931,7 @@ function StayDetailPageContent() {
                   onClick={() => setBookingFlowOpen(true)}
                   className="mt-4 btn-fill-editorial w-full"
                 >
-                  Réserver
+                  Je réserve
                 </button>
               )}
 
@@ -1007,7 +1008,7 @@ function StayDetailPageContent() {
           )
         ) : (
           <button onClick={() => setBookingFlowOpen(true)} className="btn-fill-editorial !min-h-12 shrink-0">
-            Réserver
+            Je réserve
           </button>
         )}
       </div>

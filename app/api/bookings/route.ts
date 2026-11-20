@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { notifyAdminNewBooking, notifyGuestBookingStatus } from "@/lib/notifications";
 import { ok, fail, parseBody, withAuth } from "@/lib/auth/api";
+import { getSession } from "@/lib/auth/session";
+import { clientKey } from "@/lib/rate-limit";
+import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { rateLimit } from "@/lib/rate-limit";
@@ -78,9 +81,13 @@ export const GET = withAuth(
  * enregistre le paiement) ; sans confirmation, elle expire après
  * PENDING_BOOKING_TTL_HOURS et le cron l'annule.
  */
-export const POST = withAuth(async (req, ctx) => {
-  // Anti-abus : 20 créations de réservation par heure et par utilisateur.
-  const limit = rateLimit(`booking:${ctx.session.userId}`, 20, 60 * 60 * 1000);
+export async function POST(req: NextRequest) {
+  const session = await getSession(req);
+
+  // Anti-abus : par utilisateur connecté, ou par adresse IP pour une demande sans compte.
+  const limit = session
+    ? rateLimit(`booking:${session.userId}`, 20, 60 * 60 * 1000)
+    : rateLimit(`booking-guest:${clientKey(req.headers)}`, 8, 60 * 60 * 1000);
   if (!limit.ok) {
     return fail("Trop de réservations créées. Réessayez plus tard.", 429, "TOO_MANY_REQUESTS");
   }
@@ -88,6 +95,35 @@ export const POST = withAuth(async (req, ctx) => {
   const parsed = await parseBody(req, createBookingSchema);
   if (!parsed.ok) return parsed.response;
   const body = parsed.data;
+
+  // Demande sans compte : on rattache la réservation à un compte créé en coulisse
+  // (par email). Aucune session n'est ouverte : un visiteur ne peut donc pas
+  // accéder à un compte existant sans passer par la vérification par code.
+  let userId = session?.userId ?? null;
+  if (!userId) {
+    const email = body.guestEmail.trim().toLowerCase();
+    const guestName = `${body.guestFirstName} ${body.guestLastName}`.trim();
+    try {
+      const existing = await prisma.user.findFirst({
+        where: { email: { equals: email, mode: "insensitive" } },
+        select: { id: true, isActive: true },
+      });
+      if (existing) {
+        if (!existing.isActive) return fail("Ce compte est désactivé. Contactez l'hôtel.", 403, "FORBIDDEN");
+        userId = existing.id;
+      } else {
+        const phoneTaken = await prisma.user.findFirst({ where: { phone: body.guestPhone }, select: { id: true } });
+        const created = await prisma.user.create({
+          data: { email, name: guestName, phone: phoneTaken ? null : body.guestPhone },
+          select: { id: true },
+        });
+        userId = created.id;
+      }
+    } catch (e) {
+      console.error("[POST /api/bookings] compte invité", e);
+      return fail("Erreur serveur", 500, "INTERNAL");
+    }
+  }
 
   // Déclarés hors du try pour être utilisables dans le catch (re-vérification
   // de conflit après un aléa transitoire de base de données).
@@ -135,7 +171,7 @@ export const POST = withAuth(async (req, ctx) => {
       return tx.booking.create({
         data: {
           roomId: room.id,
-          userId: ctx.session.userId,
+          userId,
           checkIn: checkInDate,
           checkOut: checkOutDate,
           adults: body.adults,
@@ -223,4 +259,4 @@ export const POST = withAuth(async (req, ctx) => {
     console.error("[POST /api/bookings]", e);
     return fail("Erreur serveur", 500, "INTERNAL");
   }
-});
+}
