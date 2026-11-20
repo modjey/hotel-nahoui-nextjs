@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 import { ACCESS_COOKIE } from "@/lib/auth/config";
 import { getJwtSecret } from "@/lib/auth/secret";
+import { canAccessAdminPath, MODERATOR_HOME } from "@/lib/admin-access";
 
 const encoder = new TextEncoder();
 const secret = () => encoder.encode(getJwtSecret());
@@ -20,6 +21,10 @@ export async function middleware(req: NextRequest) {
       if (payload.typ !== "access") return redirectToLogin(req);
       if (!ADMIN_ROLES.has(String(payload.role))) {
         return NextResponse.redirect(new URL("/?auth_error=forbidden", req.url));
+      }
+      // Un modérateur n'accède qu'aux sections qui lui sont ouvertes.
+      if (!canAccessAdminPath(String(payload.role), pathname)) {
+        return NextResponse.redirect(new URL(MODERATOR_HOME, req.url));
       }
     } catch {
       return redirectToLogin(req);

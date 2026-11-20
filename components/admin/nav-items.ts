@@ -19,8 +19,10 @@ import {
   Waves,
   TrendingUp,
   Briefcase,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
+import { canAccessAdminPath } from "@/lib/admin-access";
 
 export type NavItem = { href: string; label: string; icon: LucideIcon; exact?: boolean };
 export type NavGroup = { title?: string; items: NavItem[] };
@@ -69,10 +71,18 @@ export const ADMIN_NAV: NavGroup[] = [
     title: "Administration",
     items: [
       { href: "/admin/users", label: "Utilisateurs", icon: Users },
+      { href: "/admin/roles", label: "Rôles & permissions", icon: ShieldCheck },
       { href: "/admin/settings", label: "Paramètres", icon: Settings },
     ],
   },
 ];
+
+/** Navigation limitée aux sections accessibles au rôle. */
+export function navForRole(role: string | null | undefined): NavGroup[] {
+  return ADMIN_NAV.map((g) => ({ ...g, items: g.items.filter((it) => canAccessAdminPath(role, it.href)) })).filter(
+    (g) => g.items.length > 0,
+  );
+}
 
 export function isNavActive(pathname: string, href: string, exact?: boolean) {
   return exact ? pathname === href : pathname === href || pathname.startsWith(href + "/");

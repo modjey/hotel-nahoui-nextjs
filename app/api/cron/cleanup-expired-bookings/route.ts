@@ -16,7 +16,7 @@ const BATCH_SIZE = 200;
 export async function GET(request: Request) {
   try {
     const cronSecret = process.env.CRON_SECRET;
-    if (cronSecret) {
+    if (cronSecret || process.env.NODE_ENV === "production") {
       const authHeader = request.headers.get("authorization");
       if (authHeader !== `Bearer ${cronSecret}`) {
         return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });

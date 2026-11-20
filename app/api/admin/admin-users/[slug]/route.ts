@@ -100,8 +100,24 @@ export const PUT = withAuth(async (req, { session }) => {
     return fail("Utilisateur non trouvé", 404, "NOT_FOUND");
   }
 
+  const isSuper = session.role === "SUPER_ADMIN";
+  const isSelf = existing.id === session.userId;
+  // Un admin ne peut pas modifier le compte d'un autre admin ou d'un super admin.
+  if (!isSuper && !isSelf && (existing.role === "ADMIN" || existing.role === "SUPER_ADMIN")) {
+    return fail("Seul un super admin peut modifier un compte administrateur", 403, "FORBIDDEN");
+  }
+  // Un admin ne peut pas attribuer les rôles ADMIN ou SUPER_ADMIN.
+  if (!isSuper && role && role !== existing.role && (role === "ADMIN" || role === "SUPER_ADMIN")) {
+    return fail("Seul un super admin peut nommer un administrateur", 403, "FORBIDDEN");
+  }
+  // Le dernier super admin actif ne peut pas être rétrogradé ni désactivé.
+  if (existing.role === "SUPER_ADMIN" && ((role && role !== "SUPER_ADMIN") || isActive === false)) {
+    const others = await prisma.user.count({ where: { role: "SUPER_ADMIN", isActive: true, id: { not: existing.id } } });
+    if (others === 0) return fail("Il doit rester au moins un super admin actif", 400, "LAST_SUPER_ADMIN");
+  }
+
   // Prevent self-deactivation or role downgrade for super admins
-  if (existing.id === session.userId) {
+  if (isSelf) {
     if (isActive === false) {
       return fail("Vous ne pouvez pas désactiver votre propre compte", 400, "CANNOT_DEACTIVATE_SELF");
     }
@@ -128,8 +144,8 @@ export const PUT = withAuth(async (req, { session }) => {
   // Hash password if provided
   const passwordHash = password ? await bcrypt.hash(password, 12) : undefined;
 
-  // Revoke all active sessions when deactivating the account
-  if (isActive === false) {
+  // Révoque les sessions à la désactivation ou au changement de rôle (le rôle est dans le jeton).
+  if (isActive === false || (role !== undefined && role !== existing.role)) {
     await prisma.session.updateMany({
       where: { userId: id, revokedAt: null },
       data: { revokedAt: new Date() },

@@ -18,7 +18,10 @@ export async function GET(req: NextRequest) {
 
     const where: Prisma.PhotoWhereInput = {};
 
-    if (isApproved === "true") {
+    // Les photos envoyées par les visiteurs restent privées tant qu'elles ne sont pas approuvées.
+    const viewer = await getSession(req).catch(() => null);
+    const isStaff = viewer && ["ADMIN", "SUPER_ADMIN", "MODERATOR"].includes(viewer.role);
+    if (isApproved === "true" || !isStaff) {
       where.isApproved = true;
     }
 

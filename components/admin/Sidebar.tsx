@@ -2,11 +2,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { ADMIN_NAV, isNavActive } from "@/components/admin/nav-items";
+import { navForRole, isNavActive } from "@/components/admin/nav-items";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 
 export function Sidebar() {
   const pathname = usePathname() ?? "";
+  const { user } = useAuth();
+  const nav = navForRole(user?.role);
 
 
   return (
@@ -22,7 +25,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4 ">
-        {ADMIN_NAV.map((group, gi) => (
+        {nav.map((group, gi) => (
           <div key={gi} className={cn("space-y-0.5", gi > 0 && "pt-4")}>
             {group.title && (
               <div className="px-3 pb-1 text-[0.7rem] font-semibold uppercase tracking-wider text-muted-foreground/80">{group.title}</div>

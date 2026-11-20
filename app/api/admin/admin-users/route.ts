@@ -94,11 +94,16 @@ export const GET = withAuth(async (req) => {
 }, { roles: ["ADMIN", "SUPER_ADMIN"] });
 
 // POST /api/admin/users - Create a new user (admin only)
-export const POST = withAuth(async (req) => {
+export const POST = withAuth(async (req, { session }) => {
   const bodyResult = await parseBody(req, createUserSchema);
   if (!bodyResult.ok) return bodyResult.response;
 
   const { email, phone, password, role, isActive, name, locationIds } = bodyResult.data;
+
+  // Seul un super admin peut créer un administrateur ou un super admin.
+  if ((role === "ADMIN" || role === "SUPER_ADMIN") && session.role !== "SUPER_ADMIN") {
+    return fail("Seul un super admin peut créer un administrateur", 403, "FORBIDDEN");
+  }
 
   // Check if email or phone already exists
   const orConditions: Prisma.UserWhereInput[] = [];
